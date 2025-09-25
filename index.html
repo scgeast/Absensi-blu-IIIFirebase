@@ -7,6 +7,9 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <!-- Tambahkan Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
     <style>
         :root {
             --primary-color: #2a2d43;
@@ -75,6 +78,32 @@
         .form-control:focus {
             border-color: var(--accent-color);
             box-shadow: 0 0 0 0.25rem rgba(123, 137, 201, 0.25);
+        }
+
+        /* Firebase Status */
+        .firebase-status {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .firebase-connected {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .firebase-disconnected {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
         }
 
         /* Header Styles */
@@ -701,6 +730,19 @@
             font-weight: bold;
         }
 
+        /* Loading Spinner */
+        .spinner-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100px;
+        }
+
+        .spinner-border {
+            width: 3rem;
+            height: 3rem;
+        }
+
         /* Responsive Styles */
         @media (max-width: 768px) {
             .sidebar {
@@ -722,6 +764,12 @@
     </style>
 </head>
 <body>
+    <!-- Firebase Status Indicator -->
+    <div class="firebase-status firebase-disconnected" id="firebaseStatus">
+        <i class="fas fa-wifi"></i>
+        <span>Connecting to Firebase...</span>
+    </div>
+
     <!-- Login Screen -->
     <div class="login-container" id="loginContainer">
         <div class="login-form">
@@ -1179,16 +1227,18 @@
                                         <td><input type="text" class="form-control" id="totalProject1"></td>
                                         <td><input type="text" class="form-control total-plant" data-row="1" id="totalPlant1"></td>
                                         <td>
-                                            <select class="form-select plant-name" data-row="1" id="plantName1" disabled>
-                                                <option value="">Select Plant</option>
-                                                <option value="Denpasar2">Denpasar2</option>
-                                                <option value="Gianyar">Gianyar</option>
-                                                <option value="Manyar">Manyar</option>
-                                                <option value="Manukan">Manukan</option>
-                                                <option value="Kediri">Kediri</option>
-                                                <option value="Gempol">Gempol</option>
-                                                <option value="Krian">Krian</option>
-                                            </select>
+                                            <div id="plantNameContainer1">
+                                                <select class="form-select plant-name" data-row="1" id="plantName1" disabled>
+                                                    <option value="">Select Plant</option>
+                                                    <option value="Denpasar2">Denpasar2</option>
+                                                    <option value="Gianyar">Gianyar</option>
+                                                    <option value="Manyar">Manyar</option>
+                                                    <option value="Manukan">Manukan</option>
+                                                    <option value="Kediri">Kediri</option>
+                                                    <option value="Gempol">Gempol</option>
+                                                    <option value="Krian">Krian</option>
+                                                </select>
+                                            </div>
                                         </td>
                                         <td><input type="text" class="form-control" id="volume1"></td>
                                     </tr>
@@ -1401,6 +1451,20 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        // Inisialisasi Firebase dengan konfigurasi yang diberikan
+        const firebaseConfig = {
+            apiKey: "AIzaSyCs_65P_SLx529UwLcQO8cF69yD1yLOgKY",
+            authDomain: "blueiiifirebase.firebaseapp.com",
+            projectId: "blueiiifirebase",
+            storageBucket: "blueiiifirebase.firebasestorage.app",
+            messagingSenderId: "194236727932",
+            appId: "1:194236727932:web:6b10d6302d5c56ebac3ff9"
+        };
+
+        // Inisialisasi Firebase
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
         // Data matrik untuk shift
         const shiftMatrix = {
             "Dispatcher": {
@@ -1481,7 +1545,7 @@
             else if (value === "C") td.classList.add("shift-C");
             else if (value === "O") td.classList.add("shift-O");
 
-            saveDataToLocalStorage();
+            saveDataToFirebase();
             generateOutputTable();
             generateOvertimeTable();
         }
@@ -1494,7 +1558,7 @@
             
             input.addEventListener('blur', function() {
                 this.readOnly = true;
-                saveDataToLocalStorage();
+                saveDataToFirebase();
                 updateEmployeeDropdown();
             }, { once: true });
         }
@@ -1522,7 +1586,7 @@
             }
             
             row.remove();
-            saveDataToLocalStorage();
+            saveDataToFirebase();
             generateOutputTable();
             generateOvertimeTable();
             updateEmployeeDropdown();
@@ -1535,7 +1599,7 @@
             
             if (newValue !== null) {
                 remarksData[key] = newValue;
-                saveDataToLocalStorage();
+                saveDataToFirebase();
                 generateOutputTable();
             }
         }
@@ -1549,7 +1613,8 @@
             const field = input.classList[0].replace(/-/g, '');
             overtimeData[key][field] = input.value;
             
-            localStorage.setItem('overtimeData', JSON.stringify(overtimeData));
+            // Simpan ke Firebase
+            database.ref('overtimeData/' + key).set(overtimeData[key]);
             
             // Jika field yang disimpan adalah rkppic, update rekap lembur
             if (field === 'rkppic') {
@@ -1741,7 +1806,10 @@
                 role
             };
             users.push(newUser);
-            localStorage.setItem('users', JSON.stringify(users));
+            
+            // Simpan ke Firebase
+            database.ref('users/' + newUser.id).set(newUser);
+            
             displayUsers();
             alert('User successfully added!');
         }
@@ -1779,7 +1847,10 @@
                 users[userIndex].username = username;
                 users[userIndex].password = password;
                 users[userIndex].role = role;
-                localStorage.setItem('users', JSON.stringify(users));
+                
+                // Simpan ke Firebase
+                database.ref('users/' + id).set(users[userIndex]);
+                
                 displayUsers();
                 
                 const editUserModal = bootstrap.Modal.getInstance(document.getElementById('editUserModal'));
@@ -1797,7 +1868,10 @@
             
             if (confirm('Are you sure you want to delete this user?')) {
                 users = users.filter(u => u.id !== id);
-                localStorage.setItem('users', JSON.stringify(users));
+                
+                // Hapus dari Firebase
+                database.ref('users/' + id).remove();
+                
                 displayUsers();
                 alert('User successfully deleted!');
             }
@@ -1819,7 +1893,10 @@
             const userIndex = users.findIndex(u => u.id === currentUser.id);
             if (userIndex !== -1) {
                 users[userIndex].password = newPassword;
-                localStorage.setItem('users', JSON.stringify(users));
+                
+                // Simpan ke Firebase
+                database.ref('users/' + currentUser.id).set(users[userIndex]);
+                
                 alert('Password successfully changed!');
                 return true;
             }
@@ -1839,7 +1916,7 @@
             cutiData.forEach((cuti, index) => {
                 const startDate = new Date(cuti.startDate);
                 const endDate = new Date(cuti.endDate);
-                const duration = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+                const duration = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1);
                 
                 const row = document.createElement('tr');
                 row.innerHTML = `
@@ -1897,7 +1974,7 @@
                 cutiByEmployee[employeeName].forEach(cuti => {
                     const startDate = new Date(cuti.startDate);
                     const endDate = new Date(cuti.endDate);
-                    const duration = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+                    const duration = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1);
                     totalCutiDays += duration;
                 });
                 
@@ -1908,7 +1985,7 @@
                 cutiByEmployee[employeeName].forEach(cuti => {
                     const startDate = new Date(cuti.startDate);
                     const endDate = new Date(cuti.endDate);
-                    const duration = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+                    const duration = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1);
                     
                     const row = document.createElement('tr');
                     row.innerHTML = `
@@ -1946,7 +2023,10 @@
                 endDate
             };
             cutiData.push(newCuti);
-            localStorage.setItem('cutiData', JSON.stringify(cutiData));
+            
+            // Simpan ke Firebase
+            database.ref('cutiData/' + newCuti.id).set(newCuti);
+            
             displayCuti();
             displayCutiDetail();
             alert('Leave data successfully added!');
@@ -1959,7 +2039,10 @@
         function deleteCuti(id) {
             if (confirm('Are you sure you want to delete this leave data?')) {
                 cutiData = cutiData.filter(c => c.id !== id);
-                localStorage.setItem('cutiData', JSON.stringify(cutiData));
+                
+                // Hapus dari Firebase
+                database.ref('cutiData/' + id).remove();
+                
                 displayCuti();
                 displayCutiDetail();
                 alert('Leave data successfully deleted!');
@@ -2003,7 +2086,7 @@
                 });
             });
             
-            saveDataToLocalStorage();
+            saveDataToFirebase();
         }
 
         // Fungsi untuk mengupdate rekap lembur
@@ -2059,8 +2142,8 @@
                 rekapLemburData.push(overtimeByEmployee[employeeName]);
             }
             
-            // Save to localStorage
-            localStorage.setItem('rekapLemburData', JSON.stringify(rekapLemburData));
+            // Save to Firebase
+            database.ref('rekapLemburData').set(rekapLemburData);
             
             // Update display if rekap lembur tab is active
             if (currentTab === 'rekap-lembur') {
@@ -2111,16 +2194,18 @@
                 <td><input type="text" class="form-control" id="totalProject${rowCount}"></td>
                 <td><input type="text" class="form-control total-plant" data-row="${rowCount}" id="totalPlant${rowCount}"></td>
                 <td>
-                    <select class="form-select plant-name" data-row="${rowCount}" id="plantName${rowCount}" disabled>
-                        <option value="">Select Plant</option>
-                        <option value="Denpasar2">Denpasar2</option>
-                        <option value="Gianyar">Gianyar</option>
-                        <option value="Manyar">Manyar</option>
-                        <option value="Manukan">Manukan</option>
-                        <option value="Kediri">Kediri</option>
-                        <option value="Gempol">Gempol</option>
-                        <option value="Krian">Krian</option>
-                    </select>
+                    <div id="plantNameContainer${rowCount}">
+                        <select class="form-select plant-name" data-row="${rowCount}" id="plantName${rowCount}" disabled>
+                            <option value="">Select Plant</option>
+                            <option value="Denpasar2">Denpasar2</option>
+                            <option value="Gianyar">Gianyar</option>
+                            <option value="Manyar">Manyar</option>
+                            <option value="Manukan">Manukan</option>
+                            <option value="Kediri">Kediri</option>
+                            <option value="Gempol">Gempol</option>
+                            <option value="Krian">Krian</option>
+                        </select>
+                    </div>
                 </td>
                 <td><input type="text" class="form-control" id="volume${rowCount}"></td>
             `;
@@ -2129,14 +2214,58 @@
             
             // Tambahkan event listener untuk Total Plant
             const totalPlantInput = document.getElementById(`totalPlant${rowCount}`);
-            const plantNameSelect = document.getElementById(`plantName${rowCount}`);
+            const plantNameContainer = document.getElementById(`plantNameContainer${rowCount}`);
             
             totalPlantInput.addEventListener('input', function() {
-                if (this.value.trim() !== '') {
-                    plantNameSelect.disabled = false;
+                const totalPlants = parseInt(this.value) || 0;
+                
+                // Kosongkan container
+                plantNameContainer.innerHTML = '';
+                
+                if (totalPlants > 0) {
+                    // Buat dropdown untuk setiap plant
+                    for (let i = 1; i <= totalPlants; i++) {
+                        const select = document.createElement('select');
+                        select.className = 'form-select plant-name mb-2';
+                        select.setAttribute('data-row', rowCount);
+                        select.setAttribute('data-plant-index', i);
+                        select.id = `plantName${rowCount}_${i}`;
+                        
+                        const options = `
+                            <option value="">Select Plant ${i}</option>
+                            <option value="Denpasar2">Denpasar2</option>
+                            <option value="Gianyar">Gianyar</option>
+                            <option value="Manyar">Manyar</option>
+                            <option value="Manukan">Manukan</option>
+                            <option value="Kediri">Kediri</option>
+                            <option value="Gempol">Gempol</option>
+                            <option value="Krian">Krian</option>
+                        `;
+                        
+                        select.innerHTML = options;
+                        plantNameContainer.appendChild(select);
+                    }
                 } else {
-                    plantNameSelect.disabled = true;
-                    plantNameSelect.value = '';
+                    // Jika tidak ada plant, tampilkan dropdown tunggal yang disabled
+                    const select = document.createElement('select');
+                    select.className = 'form-select plant-name';
+                    select.setAttribute('data-row', rowCount);
+                    select.id = `plantName${rowCount}`;
+                    select.disabled = true;
+                    
+                    const options = `
+                        <option value="">Select Plant</option>
+                        <option value="Denpasar2">Denpasar2</option>
+                        <option value="Gianyar">Gianyar</option>
+                        <option value="Manyar">Manyar</option>
+                        <option value="Manukan">Manukan</option>
+                        <option value="Kediri">Kediri</option>
+                        <option value="Gempol">Gempol</option>
+                        <option value="Krian">Krian</option>
+                    `;
+                    
+                    select.innerHTML = options;
+                    plantNameContainer.appendChild(select);
                 }
             });
         }
@@ -2166,20 +2295,31 @@
             
             for (let i = 0; i < rows.length; i++) {
                 const row = rows[i];
-                const totalProject = document.getElementById(`totalProject${i + 1}`).value;
-                const totalPlant = document.getElementById(`totalPlant${i + 1}`).value;
-                const plantName = document.getElementById(`plantName${i + 1}`).value;
-                const volume = document.getElementById(`volume${i + 1}`).value;
+                const rowIndex = i + 1;
+                const totalProject = document.getElementById(`totalProject${rowIndex}`).value;
+                const totalPlant = document.getElementById(`totalPlant${rowIndex}`).value;
+                const volume = document.getElementById(`volume${rowIndex}`).value;
                 
-                if (!totalProject || !totalPlant || !plantName || !volume) {
+                if (!totalProject || !totalPlant || !volume) {
                     alert('All columns in the table must be filled!');
                     return;
+                }
+                
+                // Ambil data plant name
+                const plantNames = [];
+                const totalPlants = parseInt(totalPlant) || 0;
+                
+                for (let j = 1; j <= totalPlants; j++) {
+                    const plantNameSelect = document.getElementById(`plantName${rowIndex}_${j}`);
+                    if (plantNameSelect) {
+                        plantNames.push(plantNameSelect.value);
+                    }
                 }
                 
                 projects.push({
                     totalProject,
                     totalPlant,
-                    plantName,
+                    plantNames,
                     volume
                 });
             }
@@ -2196,7 +2336,9 @@
             };
             
             formRekapLemburData.push(newRekap);
-            localStorage.setItem('formRekapLemburData', JSON.stringify(formRekapLemburData));
+            
+            // Simpan ke Firebase
+            database.ref('formRekapLemburData/' + newRekap.id).set(newRekap);
             
             // Tampilkan data di Overtime Detail
             displayOvertimeDetail(newRekap);
@@ -2216,16 +2358,18 @@
                     <td><input type="text" class="form-control" id="totalProject1"></td>
                     <td><input type="text" class="form-control total-plant" data-row="1" id="totalPlant1"></td>
                     <td>
-                        <select class="form-select plant-name" data-row="1" id="plantName1" disabled>
-                            <option value="">Select Plant</option>
-                            <option value="Denpasar2">Denpasar2</option>
-                            <option value="Gianyar">Gianyar</option>
-                            <option value="Manyar">Manyar</option>
-                            <option value="Manukan">Manukan</option>
-                            <option value="Kediri">Kediri</option>
-                            <option value="Gempol">Gempol</option>
-                            <option value="Krian">Krian</option>
-                        </select>
+                        <div id="plantNameContainer1">
+                            <select class="form-select plant-name" data-row="1" id="plantName1" disabled>
+                                <option value="">Select Plant</option>
+                                <option value="Denpasar2">Denpasar2</option>
+                                <option value="Gianyar">Gianyar</option>
+                                <option value="Manyar">Manyar</option>
+                                <option value="Manukan">Manukan</option>
+                                <option value="Kediri">Kediri</option>
+                                <option value="Gempol">Gempol</option>
+                                <option value="Krian">Krian</option>
+                            </select>
+                        </div>
                     </td>
                     <td><input type="text" class="form-control" id="volume1"></td>
                 </tr>
@@ -2233,14 +2377,58 @@
             
             // Re-add event listener
             const totalPlantInput = document.getElementById('totalPlant1');
-            const plantNameSelect = document.getElementById('plantName1');
+            const plantNameContainer = document.getElementById('plantNameContainer1');
             
             totalPlantInput.addEventListener('input', function() {
-                if (this.value.trim() !== '') {
-                    plantNameSelect.disabled = false;
+                const totalPlants = parseInt(this.value) || 0;
+                
+                // Kosongkan container
+                plantNameContainer.innerHTML = '';
+                
+                if (totalPlants > 0) {
+                    // Buat dropdown untuk setiap plant
+                    for (let i = 1; i <= totalPlants; i++) {
+                        const select = document.createElement('select');
+                        select.className = 'form-select plant-name mb-2';
+                        select.setAttribute('data-row', 1);
+                        select.setAttribute('data-plant-index', i);
+                        select.id = `plantName1_${i}`;
+                        
+                        const options = `
+                            <option value="">Select Plant ${i}</option>
+                            <option value="Denpasar2">Denpasar2</option>
+                            <option value="Gianyar">Gianyar</option>
+                            <option value="Manyar">Manyar</option>
+                            <option value="Manukan">Manukan</option>
+                            <option value="Kediri">Kediri</option>
+                            <option value="Gempol">Gempol</option>
+                            <option value="Krian">Krian</option>
+                        `;
+                        
+                        select.innerHTML = options;
+                        plantNameContainer.appendChild(select);
+                    }
                 } else {
-                    plantNameSelect.disabled = true;
-                    plantNameSelect.value = '';
+                    // Jika tidak ada plant, tampilkan dropdown tunggal yang disabled
+                    const select = document.createElement('select');
+                    select.className = 'form-select plant-name';
+                    select.setAttribute('data-row', 1);
+                    select.id = `plantName1`;
+                    select.disabled = true;
+                    
+                    const options = `
+                        <option value="">Select Plant</option>
+                        <option value="Denpasar2">Denpasar2</option>
+                        <option value="Gianyar">Gianyar</option>
+                        <option value="Manyar">Manyar</option>
+                        <option value="Manukan">Manukan</option>
+                        <option value="Kediri">Kediri</option>
+                        <option value="Gempol">Gempol</option>
+                        <option value="Krian">Krian</option>
+                    `;
+                    
+                    select.innerHTML = options;
+                    plantNameContainer.appendChild(select);
                 }
             });
         }
@@ -2255,43 +2443,265 @@
             
             // Tambahkan data ke tabel
             data.projects.forEach((project, index) => {
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>${overtimeDetailTableBody.children.length + 1}</td>
-                    <td>${data.employeeName}</td>
-                    <td>${data.date}</td>
-                    <td>${data.startTime}</td>
-                    <td>${data.endTime}</td>
-                    <td>${project.totalProject}</td>
-                    <td>${project.totalPlant}</td>
-                    <td>${project.plantName}</td>
-                    <td>${project.volume}</td>
-                    <td>${index === 0 ? data.uraianTugas : ''}</td>
-                `;
-                overtimeDetailTableBody.appendChild(row);
+                // Untuk setiap plant name dalam project
+                project.plantNames.forEach((plantName, plantIndex) => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${overtimeDetailTableBody.children.length + 1}</td>
+                        <td>${data.employeeName}</td>
+                        <td>${data.date}</td>
+                        <td>${data.startTime}</td>
+                        <td>${data.endTime}</td>
+                        <td>${project.totalProject}</td>
+                        <td>${project.totalPlant}</td>
+                        <td>${plantName}</td>
+                        <td>${project.volume}</td>
+                        <td>${index === 0 && plantIndex === 0 ? data.uraianTugas : ''}</td>
+                    `;
+                    overtimeDetailTableBody.appendChild(row);
+                });
+            });
+        }
+
+        // Fungsi untuk menyimpan data ke Firebase
+        function saveDataToFirebase() {
+            absensiData = [];
+            const rows = document.querySelectorAll('#entryTable tbody tr');
+            
+            rows.forEach(row => {
+                const areaInput = row.querySelector('.area-input');
+                const nameInput = row.querySelector('.name-input');
+                const positionInput = row.querySelector('.position-input');
+                
+                if (!areaInput || !nameInput || !positionInput) return;
+                
+                const area = areaInput.value;
+                const name = nameInput.value;
+                const position = positionInput.value;
+                const shifts = {};
+                
+                const shiftInputs = row.querySelectorAll('.shift-input');
+                shiftInputs.forEach((input, index) => {
+                    if (index < dateRange.length) {
+                        const date = dateRange[index];
+                        const dateKey = formatDateForShift(date);
+                        shifts[dateKey] = input.value.toUpperCase();
+                    }
+                });
+                
+                // Hanya tambahkan jika ada nama
+                if (name) {
+                    absensiData.push({ area, name, position, shifts });
+                }
+            });
+            
+            // Simpan ke Firebase
+            database.ref('absensiData').set(absensiData);
+            database.ref('remarksData').set(remarksData);
+            database.ref('dateRange').set({
+                startDate: document.getElementById('startDate').value,
+                endDate: document.getElementById('endDate').value
+            });
+            
+            updateEmployeeDropdown();
+        }
+
+        // Fungsi untuk memuat data dari Firebase
+        function loadDataFromFirebase() {
+            // Tampilkan indikator loading
+            const firebaseStatus = document.getElementById('firebaseStatus');
+            firebaseStatus.className = 'firebase-status firebase-disconnected';
+            firebaseStatus.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span>Loading data from Firebase...</span>';
+            
+            // Muat data absensi
+            database.ref('absensiData').once('value').then(snapshot => {
+                absensiData = snapshot.val() || [];
+                
+                // Muat data absen tabel
+                return database.ref('absenTabelData').once('value');
+            }).then(snapshot => {
+                absenTabelData = snapshot.val() || [];
+                
+                // Muat data overtime
+                return database.ref('overtimeData').once('value');
+            }).then(snapshot => {
+                overtimeData = snapshot.val() || {};
+                
+                // Muat data remarks
+                return database.ref('remarksData').once('value');
+            }).then(snapshot => {
+                remarksData = snapshot.val() || {};
+                
+                // Muat data date range
+                return database.ref('dateRange').once('value');
+            }).then(snapshot => {
+                const dateRangeData = snapshot.val();
+                if (dateRangeData) {
+                    document.getElementById('startDate').value = dateRangeData.startDate;
+                    document.getElementById('endDate').value = dateRangeData.endDate;
+                }
+                
+                // Muat data cuti
+                return database.ref('cutiData').once('value');
+            }).then(snapshot => {
+                cutiData = snapshot.val() || [];
+                
+                // Muat data rekap lembur
+                return database.ref('rekapLemburData').once('value');
+            }).then(snapshot => {
+                rekapLemburData = snapshot.val() || [];
+                
+                // Muat data form rekap lembur
+                return database.ref('formRekapLemburData').once('value');
+            }).then(snapshot => {
+                const formData = snapshot.val();
+                formRekapLemburData = formData ? Object.values(formData) : [];
+                
+                // Muat data users
+                return database.ref('users').once('value');
+            }).then(snapshot => {
+                const usersData = snapshot.val();
+                users = usersData ? Object.values(usersData) : defaultUsers;
+                
+                // Update status Firebase
+                firebaseStatus.className = 'firebase-status firebase-connected';
+                firebaseStatus.innerHTML = '<i class="fas fa-check-circle"></i><span>Connected to Firebase</span>';
+                
+                // Setup real-time listeners
+                setupRealtimeListeners();
+                
+                // Update UI jika sudah login
+                if (currentUser) {
+                    updateEmployeeDropdown();
+                    displayUsers();
+                    displayCuti();
+                    displayCutiDetail();
+                    displayRekapLembur();
+                    
+                    if (currentTab === 'absen-tabel') {
+                        generateAbsenTabelTable();
+                    }
+                }
+            }).catch(error => {
+                console.error('Error loading data from Firebase:', error);
+                firebaseStatus.className = 'firebase-status firebase-disconnected';
+                firebaseStatus.innerHTML = '<i class="fas fa-exclamation-triangle"></i><span>Failed to connect to Firebase</span>';
+            });
+        }
+
+        // Fungsi untuk setup real-time listeners
+        function setupRealtimeListeners() {
+            // Listener untuk data absensi
+            database.ref('absensiData').on('value', snapshot => {
+                absensiData = snapshot.val() || [];
+                
+                // Update UI jika diperlukan
+                if (currentUser && (currentTab === 'entry' || currentTab === 'output' || currentTab === 'overtime')) {
+                    updateEntryTable();
+                    generateOutputTable();
+                    generateOvertimeTable();
+                }
+            });
+            
+            // Listener untuk data absen tabel
+            database.ref('absenTabelData').on('value', snapshot => {
+                absenTabelData = snapshot.val() || [];
+                
+                // Update UI jika diperlukan
+                if (currentUser && currentTab === 'absen-tabel') {
+                    generateAbsenTabelTable();
+                }
+            });
+            
+            // Listener untuk data overtime
+            database.ref('overtimeData').on('value', snapshot => {
+                overtimeData = snapshot.val() || {};
+                
+                // Update UI jika diperlukan
+                if (currentUser && currentTab === 'overtime') {
+                    generateOvertimeTable();
+                }
+            });
+            
+            // Listener untuk data remarks
+            database.ref('remarksData').on('value', snapshot => {
+                remarksData = snapshot.val() || {};
+                
+                // Update UI jika diperlukan
+                if (currentUser && currentTab === 'output') {
+                    generateOutputTable();
+                }
+            });
+            
+            // Listener untuk data cuti
+            database.ref('cutiData').on('value', snapshot => {
+                cutiData = snapshot.val() || [];
+                
+                // Update UI jika diperlukan
+                if (currentUser) {
+                    if (currentTab === 'cuti') {
+                        displayCuti();
+                    }
+                    if (currentTab === 'cuti-detail') {
+                        displayCutiDetail();
+                    }
+                    
+                    // Update absensi dengan data cuti
+                    updateAbsensiWithCuti();
+                }
+            });
+            
+            // Listener untuk data rekap lembur
+            database.ref('rekapLemburData').on('value', snapshot => {
+                rekapLemburData = snapshot.val() || [];
+                
+                // Update UI jika diperlukan
+                if (currentUser && currentTab === 'rekap-lembur') {
+                    displayRekapLembur();
+                }
+            });
+            
+            // Listener untuk data form rekap lembur
+            database.ref('formRekapLemburData').on('value', snapshot => {
+                const formData = snapshot.val();
+                formRekapLemburData = formData ? Object.values(formData) : [];
+                
+                // Update UI jika diperlukan
+                if (currentUser && currentTab === 'form-rekap-lembur') {
+                    // Tampilkan data overtime detail jika ada
+                    const overtimeDetailContainer = document.getElementById('overtimeDetailContainer');
+                    if (formRekapLemburData.length > 0) {
+                        overtimeDetailContainer.style.display = 'block';
+                        
+                        // Kosongkan tabel dan tambahkan data terbaru
+                        const overtimeDetailTableBody = document.getElementById('overtimeDetailTableBody');
+                        overtimeDetailTableBody.innerHTML = '';
+                        
+                        // Tampilkan hanya data untuk user yang sedang login
+                        const userFormData = formRekapLemburData.filter(data => data.employeeName === currentUser.username);
+                        userFormData.forEach(data => {
+                            displayOvertimeDetail(data);
+                        });
+                    }
+                }
+            });
+            
+            // Listener untuk data users
+            database.ref('users').on('value', snapshot => {
+                const usersData = snapshot.val();
+                users = usersData ? Object.values(usersData) : defaultUsers;
+                
+                // Update UI jika diperlukan
+                if (currentUser && currentTab === 'setting') {
+                    displayUsers();
+                }
             });
         }
 
         // Inisialisasi aplikasi
         document.addEventListener('DOMContentLoaded', function() {
-            // Load data dari localStorage
-            loadDataFromLocalStorage();
-            
-            // Inisialisasi data pengguna
-            const savedUsers = JSON.parse(localStorage.getItem('users'));
-            users = savedUsers || defaultUsers;
-            
-            // Inisialisasi data cuti
-            const savedCutiData = JSON.parse(localStorage.getItem('cutiData'));
-            cutiData = savedCutiData || [];
-            
-            // Inisialisasi data rekap lembur
-            const savedRekapLemburData = JSON.parse(localStorage.getItem('rekapLemburData'));
-            rekapLemburData = savedRekapLemburData || [];
-            
-            // Inisialisasi data form rekap lembur
-            const savedFormRekapLemburData = JSON.parse(localStorage.getItem('formRekapLemburData'));
-            formRekapLemburData = savedFormRekapLemburData || [];
+            // Load data dari Firebase
+            loadDataFromFirebase();
             
             // Setup login
             document.getElementById('loginBtn').addEventListener('click', function() {
@@ -2417,29 +2827,14 @@
             // Setup simpan form rekap lembur
             document.getElementById('saveRekapLembur').addEventListener('click', saveFormRekapLembur);
             
-            // Setup event listener untuk Total Plant pada form rekap lembur
-            document.addEventListener('input', function(e) {
-                if (e.target.classList.contains('total-plant')) {
-                    const row = e.target.getAttribute('data-row');
-                    const plantNameSelect = document.getElementById(`plantName${row}`);
-                    
-                    if (e.target.value.trim() !== '') {
-                        plantNameSelect.disabled = false;
-                    } else {
-                        plantNameSelect.disabled = true;
-                        plantNameSelect.value = '';
-                    }
-                }
-            });
-            
             // Event listeners lainnya
             document.getElementById('applyHeaderSize').addEventListener('click', applyHeaderSize);
             document.getElementById('applyFilter').addEventListener('click', applyFilterHandler);
             document.getElementById('saveData').addEventListener('click', function() {
-                saveDataToLocalStorage();
+                saveDataToFirebase();
                 // Simpan data ke absenTabelData juga
                 absenTabelData = [...absenTabelData, ...absensiData];
-                localStorage.setItem('absenTabelData', JSON.stringify(absenTabelData));
+                database.ref('absenTabelData').set(absenTabelData);
                 alert('Data successfully saved!');
                 
                 // Update attendance table if admin is logged in
@@ -2598,19 +2993,22 @@
                 const wsData = [header];
                 
                 rekap.projects.forEach((project, projectIndex) => {
-                    const rowData = [
-                        projectIndex + 1,
-                        rekap.employeeName,
-                        rekap.date,
-                        rekap.startTime,
-                        rekap.endTime,
-                        project.totalProject,
-                        project.totalPlant,
-                        project.plantName,
-                        project.volume,
-                        projectIndex === 0 ? rekap.uraianTugas : '' // Hanya tampilkan uraian tugas di baris pertama
-                    ];
-                    wsData.push(rowData);
+                    // Untuk setiap plant name dalam project
+                    project.plantNames.forEach((plantName, plantIndex) => {
+                        const rowData = [
+                            wsData.length,
+                            rekap.employeeName,
+                            rekap.date,
+                            rekap.startTime,
+                            rekap.endTime,
+                            project.totalProject,
+                            project.totalPlant,
+                            plantName,
+                            project.volume,
+                            projectIndex === 0 && plantIndex === 0 ? rekap.uraianTugas : '' // Hanya tampilkan uraian tugas di baris pertama
+                        ];
+                        wsData.push(rowData);
+                    });
                 });
                 
                 const ws = XLSX.utils.aoa_to_sheet(wsData);
@@ -2747,6 +3145,22 @@
                     // Jika tab form-rekap-lembur, setup form
                     if (tabName === 'form-rekap-lembur') {
                         setupFormRekapLembur();
+                        
+                        // Tampilkan data overtime detail jika ada
+                        const overtimeDetailContainer = document.getElementById('overtimeDetailContainer');
+                        if (formRekapLemburData.length > 0) {
+                            overtimeDetailContainer.style.display = 'block';
+                            
+                            // Kosongkan tabel dan tambahkan data terbaru
+                            const overtimeDetailTableBody = document.getElementById('overtimeDetailTableBody');
+                            overtimeDetailTableBody.innerHTML = '';
+                            
+                            // Tampilkan hanya data untuk user yang sedang login
+                            const userFormData = formRekapLemburData.filter(data => data.employeeName === currentUser.username);
+                            userFormData.forEach(data => {
+                                displayOvertimeDetail(data);
+                            });
+                        }
                     }
                     
                     // Jika tab cuti-detail, tampilkan data cuti detail
@@ -2792,14 +3206,58 @@
             
             // Setup event listener for the first row
             const totalPlantInput = document.getElementById('totalPlant1');
-            const plantNameSelect = document.getElementById('plantName1');
+            const plantNameContainer = document.getElementById('plantNameContainer1');
             
             totalPlantInput.addEventListener('input', function() {
-                if (this.value.trim() !== '') {
-                    plantNameSelect.disabled = false;
+                const totalPlants = parseInt(this.value) || 0;
+                
+                // Kosongkan container
+                plantNameContainer.innerHTML = '';
+                
+                if (totalPlants > 0) {
+                    // Buat dropdown untuk setiap plant
+                    for (let i = 1; i <= totalPlants; i++) {
+                        const select = document.createElement('select');
+                        select.className = 'form-select plant-name mb-2';
+                        select.setAttribute('data-row', 1);
+                        select.setAttribute('data-plant-index', i);
+                        select.id = `plantName1_${i}`;
+                        
+                        const options = `
+                            <option value="">Select Plant ${i}</option>
+                            <option value="Denpasar2">Denpasar2</option>
+                            <option value="Gianyar">Gianyar</option>
+                            <option value="Manyar">Manyar</option>
+                            <option value="Manukan">Manukan</option>
+                            <option value="Kediri">Kediri</option>
+                            <option value="Gempol">Gempol</option>
+                            <option value="Krian">Krian</option>
+                        `;
+                        
+                        select.innerHTML = options;
+                        plantNameContainer.appendChild(select);
+                    }
                 } else {
-                    plantNameSelect.disabled = true;
-                    plantNameSelect.value = '';
+                    // Jika tidak ada plant, tampilkan dropdown tunggal yang disabled
+                    const select = document.createElement('select');
+                    select.className = 'form-select plant-name';
+                    select.setAttribute('data-row', 1);
+                    select.id = `plantName1`;
+                    select.disabled = true;
+                    
+                    const options = `
+                        <option value="">Select Plant</option>
+                        <option value="Denpasar2">Denpasar2</option>
+                        <option value="Gianyar">Gianyar</option>
+                        <option value="Manyar">Manyar</option>
+                        <option value="Manukan">Manukan</option>
+                        <option value="Kediri">Kediri</option>
+                        <option value="Gempol">Gempol</option>
+                        <option value="Krian">Krian</option>
+                    `;
+                    
+                    select.innerHTML = options;
+                    plantNameContainer.appendChild(select);
                 }
             });
         }
@@ -2909,11 +3367,15 @@
             }, 100);
         }
 
-        // Fungsi untuk generate tabel absen-tabel
+        // Fungsi untuk generate tabel absen-tabel - DIPERBAIKI
         function generateAbsenTabelTable() {
             const absenTabelTable = document.querySelector('#absenTabelTable');
             const thead = absenTabelTable.querySelector('thead tr');
             const tbody = absenTabelTable.querySelector('tbody');
+            
+            // Kosongkan tabel terlebih dahulu
+            thead.innerHTML = '';
+            tbody.innerHTML = '';
             
             let headerHTML = '<th>Area</th><th>Name</th><th>Position</th>';
             dateRange.forEach(date => {
@@ -2921,8 +3383,6 @@
             });
             headerHTML += '<th>Action</th>';
             thead.innerHTML = headerHTML;
-            
-            tbody.innerHTML = '';
             
             // Gabungkan data dari absensiData dan absenTabelData
             const allData = [...absenTabelData];
@@ -3141,79 +3601,6 @@
                     }
                 });
             });
-        }
-
-        // Fungsi untuk menyimpan data ke localStorage - DIPERBAIKI
-        function saveDataToLocalStorage() {
-            absensiData = [];
-            const rows = document.querySelectorAll('#entryTable tbody tr');
-            
-            rows.forEach(row => {
-                const areaInput = row.querySelector('.area-input');
-                const nameInput = row.querySelector('.name-input');
-                const positionInput = row.querySelector('.position-input');
-                
-                if (!areaInput || !nameInput || !positionInput) return;
-                
-                const area = areaInput.value;
-                const name = nameInput.value;
-                const position = positionInput.value;
-                const shifts = {};
-                
-                const shiftInputs = row.querySelectorAll('.shift-input');
-                shiftInputs.forEach((input, index) => {
-                    if (index < dateRange.length) {
-                        const date = dateRange[index];
-                        const dateKey = formatDateForShift(date);
-                        shifts[dateKey] = input.value.toUpperCase();
-                    }
-                });
-                
-                // Hanya tambahkan jika ada nama
-                if (name) {
-                    absensiData.push({ area, name, position, shifts });
-                }
-            });
-            
-            localStorage.setItem('absensiData', JSON.stringify(absensiData));
-            localStorage.setItem('overtimeData', JSON.stringify(overtimeData));
-            localStorage.setItem('remarksData', JSON.stringify(remarksData));
-            localStorage.setItem('dateRange', JSON.stringify({
-                startDate: document.getElementById('startDate').value,
-                endDate: document.getElementById('endDate').value
-            }));
-            
-            updateEmployeeDropdown();
-        }
-
-        // Fungsi untuk memuat data dari localStorage
-        function loadDataFromLocalStorage() {
-            const savedAbsensiData = JSON.parse(localStorage.getItem('absensiData'));
-            const savedAbsenTabelData = JSON.parse(localStorage.getItem('absenTabelData'));
-            const savedOvertimeData = JSON.parse(localStorage.getItem('overtimeData'));
-            const savedRemarksData = JSON.parse(localStorage.getItem('remarksData'));
-            const savedDateRange = JSON.parse(localStorage.getItem('dateRange'));
-            
-            if (savedDateRange) {
-                document.getElementById('startDate').value = savedDateRange.startDate;
-                document.getElementById('endDate').value = savedDateRange.endDate;
-            }
-            
-            if (savedAbsensiData) {
-                absensiData = savedAbsensiData;
-            }
-            
-            if (savedAbsenTabelData) {
-                absenTabelData = savedAbsenTabelData;
-            }
-            
-            if (savedOvertimeData) {
-                overtimeData = savedOvertimeData;
-            }
-            
-            if (savedRemarksData) {
-                remarksData = savedRemarksData;
-            }
         }
     </script>
 </body>

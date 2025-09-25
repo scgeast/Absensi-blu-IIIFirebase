@@ -9,7 +9,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <!-- Tambahkan Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
     <style>
         :root {
             --primary-color: #2a2d43;
@@ -1463,7 +1463,7 @@
 
         // Inisialisasi Firebase
         firebase.initializeApp(firebaseConfig);
-        const database = firebase.database();
+        const db = firebase.firestore();
 
         // Data matrik untuk shift
         const shiftMatrix = {
@@ -1545,7 +1545,7 @@
             else if (value === "C") td.classList.add("shift-C");
             else if (value === "O") td.classList.add("shift-O");
 
-            saveDataToFirebase();
+            saveDataToFirestore();
             generateOutputTable();
             generateOvertimeTable();
         }
@@ -1558,7 +1558,7 @@
             
             input.addEventListener('blur', function() {
                 this.readOnly = true;
-                saveDataToFirebase();
+                saveDataToFirestore();
                 updateEmployeeDropdown();
             }, { once: true });
         }
@@ -1586,7 +1586,7 @@
             }
             
             row.remove();
-            saveDataToFirebase();
+            saveDataToFirestore();
             generateOutputTable();
             generateOvertimeTable();
             updateEmployeeDropdown();
@@ -1599,7 +1599,7 @@
             
             if (newValue !== null) {
                 remarksData[key] = newValue;
-                saveDataToFirebase();
+                saveDataToFirestore();
                 generateOutputTable();
             }
         }
@@ -1613,8 +1613,8 @@
             const field = input.classList[0].replace(/-/g, '');
             overtimeData[key][field] = input.value;
             
-            // Simpan ke Firebase
-            database.ref('overtimeData/' + key).set(overtimeData[key]);
+            // Simpan ke Firestore
+            db.collection('overtimeData').doc(key).set(overtimeData[key]);
             
             // Jika field yang disimpan adalah rkppic, update rekap lembur
             if (field === 'rkppic') {
@@ -1807,8 +1807,8 @@
             };
             users.push(newUser);
             
-            // Simpan ke Firebase
-            database.ref('users/' + newUser.id).set(newUser);
+            // Simpan ke Firestore
+            db.collection('users').doc(newUser.id.toString()).set(newUser);
             
             displayUsers();
             alert('User successfully added!');
@@ -1848,8 +1848,8 @@
                 users[userIndex].password = password;
                 users[userIndex].role = role;
                 
-                // Simpan ke Firebase
-                database.ref('users/' + id).set(users[userIndex]);
+                // Simpan ke Firestore
+                db.collection('users').doc(id.toString()).set(users[userIndex]);
                 
                 displayUsers();
                 
@@ -1869,8 +1869,8 @@
             if (confirm('Are you sure you want to delete this user?')) {
                 users = users.filter(u => u.id !== id);
                 
-                // Hapus dari Firebase
-                database.ref('users/' + id).remove();
+                // Hapus dari Firestore
+                db.collection('users').doc(id.toString()).delete();
                 
                 displayUsers();
                 alert('User successfully deleted!');
@@ -1894,8 +1894,8 @@
             if (userIndex !== -1) {
                 users[userIndex].password = newPassword;
                 
-                // Simpan ke Firebase
-                database.ref('users/' + currentUser.id).set(users[userIndex]);
+                // Simpan ke Firestore
+                db.collection('users').doc(currentUser.id.toString()).set(users[userIndex]);
                 
                 alert('Password successfully changed!');
                 return true;
@@ -1916,7 +1916,7 @@
             cutiData.forEach((cuti, index) => {
                 const startDate = new Date(cuti.startDate);
                 const endDate = new Date(cuti.endDate);
-                const duration = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1);
+                const duration = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
                 
                 const row = document.createElement('tr');
                 row.innerHTML = `
@@ -2024,8 +2024,8 @@
             };
             cutiData.push(newCuti);
             
-            // Simpan ke Firebase
-            database.ref('cutiData/' + newCuti.id).set(newCuti);
+            // Simpan ke Firestore
+            db.collection('cutiData').doc(newCuti.id.toString()).set(newCuti);
             
             displayCuti();
             displayCutiDetail();
@@ -2040,8 +2040,8 @@
             if (confirm('Are you sure you want to delete this leave data?')) {
                 cutiData = cutiData.filter(c => c.id !== id);
                 
-                // Hapus dari Firebase
-                database.ref('cutiData/' + id).remove();
+                // Hapus dari Firestore
+                db.collection('cutiData').doc(id.toString()).delete();
                 
                 displayCuti();
                 displayCutiDetail();
@@ -2086,7 +2086,7 @@
                 });
             });
             
-            saveDataToFirebase();
+            saveDataToFirestore();
         }
 
         // Fungsi untuk mengupdate rekap lembur
@@ -2142,8 +2142,10 @@
                 rekapLemburData.push(overtimeByEmployee[employeeName]);
             }
             
-            // Save to Firebase
-            database.ref('rekapLemburData').set(rekapLemburData);
+            // Save to Firestore
+            rekapLemburData.forEach((rekap, index) => {
+                db.collection('rekapLemburData').doc(rekap.name).set(rekap);
+            });
             
             // Update display if rekap lembur tab is active
             if (currentTab === 'rekap-lembur') {
@@ -2337,8 +2339,8 @@
             
             formRekapLemburData.push(newRekap);
             
-            // Simpan ke Firebase
-            database.ref('formRekapLemburData/' + newRekap.id).set(newRekap);
+            // Simpan ke Firestore
+            db.collection('formRekapLemburData').doc(newRekap.id.toString()).set(newRekap);
             
             // Tampilkan data di Overtime Detail
             displayOvertimeDetail(newRekap);
@@ -2463,8 +2465,8 @@
             });
         }
 
-        // Fungsi untuk menyimpan data ke Firebase
-        function saveDataToFirebase() {
+        // Fungsi untuk menyimpan data ke Firestore
+        function saveDataToFirestore() {
             absensiData = [];
             const rows = document.querySelectorAll('#entryTable tbody tr');
             
@@ -2495,77 +2497,139 @@
                 }
             });
             
-            // Simpan ke Firebase
-            database.ref('absensiData').set(absensiData);
-            database.ref('remarksData').set(remarksData);
-            database.ref('dateRange').set({
-                startDate: document.getElementById('startDate').value,
-                endDate: document.getElementById('endDate').value
-            });
+            // Simpan ke Firestore
+            const batch = db.batch();
             
-            updateEmployeeDropdown();
+            // Hapus semua dokumen absensiData terlebih dahulu
+            db.collection('absensiData').get().then(snapshot => {
+                snapshot.docs.forEach(doc => {
+                    batch.delete(doc.ref);
+                });
+                
+                // Tambahkan dokumen baru
+                absensiData.forEach((data, index) => {
+                    const docRef = db.collection('absensiData').doc(`attendance_${index}`);
+                    batch.set(docRef, data);
+                });
+                
+                // Simpan remarksData
+                for (const key in remarksData) {
+                    const docRef = db.collection('remarksData').doc(key);
+                    batch.set(docRef, { value: remarksData[key] });
+                }
+                
+                // Simpan dateRange
+                const dateRangeRef = db.collection('settings').doc('dateRange');
+                batch.set(dateRangeRef, {
+                    startDate: document.getElementById('startDate').value,
+                    endDate: document.getElementById('endDate').value
+                });
+                
+                // Eksekusi batch
+                return batch.commit();
+            }).then(() => {
+                console.log('Data successfully saved to Firestore');
+                updateEmployeeDropdown();
+            }).catch(error => {
+                console.error('Error saving data to Firestore:', error);
+            });
         }
 
-        // Fungsi untuk memuat data dari Firebase
-        function loadDataFromFirebase() {
+        // Fungsi untuk memuat data dari Firestore
+        function loadDataFromFirestore() {
             // Tampilkan indikator loading
             const firebaseStatus = document.getElementById('firebaseStatus');
             firebaseStatus.className = 'firebase-status firebase-disconnected';
-            firebaseStatus.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span>Loading data from Firebase...</span>';
+            firebaseStatus.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span>Loading data from Firestore...</span>';
             
             // Muat data absensi
-            database.ref('absensiData').once('value').then(snapshot => {
-                absensiData = snapshot.val() || [];
+            db.collection('absensiData').get().then(snapshot => {
+                absensiData = [];
+                snapshot.forEach(doc => {
+                    absensiData.push(doc.data());
+                });
                 
                 // Muat data absen tabel
-                return database.ref('absenTabelData').once('value');
+                return db.collection('absenTabelData').get();
             }).then(snapshot => {
-                absenTabelData = snapshot.val() || [];
+                absenTabelData = [];
+                snapshot.forEach(doc => {
+                    absenTabelData.push(doc.data());
+                });
                 
                 // Muat data overtime
-                return database.ref('overtimeData').once('value');
+                return db.collection('overtimeData').get();
             }).then(snapshot => {
-                overtimeData = snapshot.val() || {};
+                overtimeData = {};
+                snapshot.forEach(doc => {
+                    overtimeData[doc.id] = doc.data();
+                });
                 
                 // Muat data remarks
-                return database.ref('remarksData').once('value');
+                return db.collection('remarksData').get();
             }).then(snapshot => {
-                remarksData = snapshot.val() || {};
+                remarksData = {};
+                snapshot.forEach(doc => {
+                    remarksData[doc.id] = doc.data().value;
+                });
                 
                 // Muat data date range
-                return database.ref('dateRange').once('value');
-            }).then(snapshot => {
-                const dateRangeData = snapshot.val();
-                if (dateRangeData) {
+                return db.collection('settings').doc('dateRange').get();
+            }).then(doc => {
+                if (doc.exists) {
+                    const dateRangeData = doc.data();
                     document.getElementById('startDate').value = dateRangeData.startDate;
                     document.getElementById('endDate').value = dateRangeData.endDate;
                 }
                 
                 // Muat data cuti
-                return database.ref('cutiData').once('value');
+                return db.collection('cutiData').get();
             }).then(snapshot => {
-                cutiData = snapshot.val() || [];
+                cutiData = [];
+                snapshot.forEach(doc => {
+                    cutiData.push(doc.data());
+                });
                 
                 // Muat data rekap lembur
-                return database.ref('rekapLemburData').once('value');
+                return db.collection('rekapLemburData').get();
             }).then(snapshot => {
-                rekapLemburData = snapshot.val() || [];
+                rekapLemburData = [];
+                snapshot.forEach(doc => {
+                    rekapLemburData.push(doc.data());
+                });
                 
                 // Muat data form rekap lembur
-                return database.ref('formRekapLemburData').once('value');
+                return db.collection('formRekapLemburData').get();
             }).then(snapshot => {
-                const formData = snapshot.val();
-                formRekapLemburData = formData ? Object.values(formData) : [];
+                formRekapLemburData = [];
+                snapshot.forEach(doc => {
+                    formRekapLemburData.push(doc.data());
+                });
                 
                 // Muat data users
-                return database.ref('users').once('value');
+                return db.collection('users').get();
             }).then(snapshot => {
-                const usersData = snapshot.val();
-                users = usersData ? Object.values(usersData) : defaultUsers;
+                users = [];
+                snapshot.forEach(doc => {
+                    users.push(doc.data());
+                });
                 
-                // Update status Firebase
+                if (users.length === 0) {
+                    // Jika tidak ada users di Firestore, gunakan defaultUsers
+                    users = [...defaultUsers];
+                    
+                    // Simpan defaultUsers ke Firestore
+                    const batch = db.batch();
+                    users.forEach(user => {
+                        const docRef = db.collection('users').doc(user.id.toString());
+                        batch.set(docRef, user);
+                    });
+                    batch.commit();
+                }
+                
+                // Update status Firestore
                 firebaseStatus.className = 'firebase-status firebase-connected';
-                firebaseStatus.innerHTML = '<i class="fas fa-check-circle"></i><span>Connected to Firebase</span>';
+                firebaseStatus.innerHTML = '<i class="fas fa-check-circle"></i><span>Connected to Firestore</span>';
                 
                 // Setup real-time listeners
                 setupRealtimeListeners();
@@ -2583,17 +2647,20 @@
                     }
                 }
             }).catch(error => {
-                console.error('Error loading data from Firebase:', error);
+                console.error('Error loading data from Firestore:', error);
                 firebaseStatus.className = 'firebase-status firebase-disconnected';
-                firebaseStatus.innerHTML = '<i class="fas fa-exclamation-triangle"></i><span>Failed to connect to Firebase</span>';
+                firebaseStatus.innerHTML = '<i class="fas fa-exclamation-triangle"></i><span>Failed to connect to Firestore</span>';
             });
         }
 
         // Fungsi untuk setup real-time listeners
         function setupRealtimeListeners() {
             // Listener untuk data absensi
-            database.ref('absensiData').on('value', snapshot => {
-                absensiData = snapshot.val() || [];
+            db.collection('absensiData').onSnapshot(snapshot => {
+                absensiData = [];
+                snapshot.forEach(doc => {
+                    absensiData.push(doc.data());
+                });
                 
                 // Update UI jika diperlukan
                 if (currentUser && (currentTab === 'entry' || currentTab === 'output' || currentTab === 'overtime')) {
@@ -2604,8 +2671,11 @@
             });
             
             // Listener untuk data absen tabel
-            database.ref('absenTabelData').on('value', snapshot => {
-                absenTabelData = snapshot.val() || [];
+            db.collection('absenTabelData').onSnapshot(snapshot => {
+                absenTabelData = [];
+                snapshot.forEach(doc => {
+                    absenTabelData.push(doc.data());
+                });
                 
                 // Update UI jika diperlukan
                 if (currentUser && currentTab === 'absen-tabel') {
@@ -2614,8 +2684,11 @@
             });
             
             // Listener untuk data overtime
-            database.ref('overtimeData').on('value', snapshot => {
-                overtimeData = snapshot.val() || {};
+            db.collection('overtimeData').onSnapshot(snapshot => {
+                overtimeData = {};
+                snapshot.forEach(doc => {
+                    overtimeData[doc.id] = doc.data();
+                });
                 
                 // Update UI jika diperlukan
                 if (currentUser && currentTab === 'overtime') {
@@ -2624,8 +2697,11 @@
             });
             
             // Listener untuk data remarks
-            database.ref('remarksData').on('value', snapshot => {
-                remarksData = snapshot.val() || {};
+            db.collection('remarksData').onSnapshot(snapshot => {
+                remarksData = {};
+                snapshot.forEach(doc => {
+                    remarksData[doc.id] = doc.data().value;
+                });
                 
                 // Update UI jika diperlukan
                 if (currentUser && currentTab === 'output') {
@@ -2634,8 +2710,11 @@
             });
             
             // Listener untuk data cuti
-            database.ref('cutiData').on('value', snapshot => {
-                cutiData = snapshot.val() || [];
+            db.collection('cutiData').onSnapshot(snapshot => {
+                cutiData = [];
+                snapshot.forEach(doc => {
+                    cutiData.push(doc.data());
+                });
                 
                 // Update UI jika diperlukan
                 if (currentUser) {
@@ -2652,8 +2731,11 @@
             });
             
             // Listener untuk data rekap lembur
-            database.ref('rekapLemburData').on('value', snapshot => {
-                rekapLemburData = snapshot.val() || [];
+            db.collection('rekapLemburData').onSnapshot(snapshot => {
+                rekapLemburData = [];
+                snapshot.forEach(doc => {
+                    rekapLemburData.push(doc.data());
+                });
                 
                 // Update UI jika diperlukan
                 if (currentUser && currentTab === 'rekap-lembur') {
@@ -2662,9 +2744,11 @@
             });
             
             // Listener untuk data form rekap lembur
-            database.ref('formRekapLemburData').on('value', snapshot => {
-                const formData = snapshot.val();
-                formRekapLemburData = formData ? Object.values(formData) : [];
+            db.collection('formRekapLemburData').onSnapshot(snapshot => {
+                formRekapLemburData = [];
+                snapshot.forEach(doc => {
+                    formRekapLemburData.push(doc.data());
+                });
                 
                 // Update UI jika diperlukan
                 if (currentUser && currentTab === 'form-rekap-lembur') {
@@ -2687,9 +2771,11 @@
             });
             
             // Listener untuk data users
-            database.ref('users').on('value', snapshot => {
-                const usersData = snapshot.val();
-                users = usersData ? Object.values(usersData) : defaultUsers;
+            db.collection('users').onSnapshot(snapshot => {
+                users = [];
+                snapshot.forEach(doc => {
+                    users.push(doc.data());
+                });
                 
                 // Update UI jika diperlukan
                 if (currentUser && currentTab === 'setting') {
@@ -2700,8 +2786,8 @@
 
         // Inisialisasi aplikasi
         document.addEventListener('DOMContentLoaded', function() {
-            // Load data dari Firebase
-            loadDataFromFirebase();
+            // Load data dari Firestore
+            loadDataFromFirestore();
             
             // Setup login
             document.getElementById('loginBtn').addEventListener('click', function() {
@@ -2831,16 +2917,27 @@
             document.getElementById('applyHeaderSize').addEventListener('click', applyHeaderSize);
             document.getElementById('applyFilter').addEventListener('click', applyFilterHandler);
             document.getElementById('saveData').addEventListener('click', function() {
-                saveDataToFirebase();
+                saveDataToFirestore();
                 // Simpan data ke absenTabelData juga
+                const batch = db.batch();
                 absenTabelData = [...absenTabelData, ...absensiData];
-                database.ref('absenTabelData').set(absenTabelData);
-                alert('Data successfully saved!');
                 
-                // Update attendance table if admin is logged in
-                if (currentUser && currentUser.role === 'admin') {
-                    generateAbsenTabelTable();
-                }
+                absenTabelData.forEach((data, index) => {
+                    const docRef = db.collection('absenTabelData').doc(`attendance_${index}`);
+                    batch.set(docRef, data);
+                });
+                
+                batch.commit().then(() => {
+                    alert('Data successfully saved!');
+                    
+                    // Update attendance table if admin is logged in
+                    if (currentUser && currentUser.role === 'admin') {
+                        generateAbsenTabelTable();
+                    }
+                }).catch(error => {
+                    console.error('Error saving data to Firestore:', error);
+                    alert('Error saving data. Please try again.');
+                });
             });
             
             document.getElementById('exportExcel').addEventListener('click', function() {

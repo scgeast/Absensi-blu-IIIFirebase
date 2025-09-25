@@ -7,6 +7,12 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+    
     <style>
         :root {
             --primary-color: #2a2d43;
@@ -701,6 +707,34 @@
             font-weight: bold;
         }
 
+        /* Loading Spinner */
+        .spinner-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 3000;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
         /* Responsive Styles */
         @media (max-width: 768px) {
             .sidebar {
@@ -722,22 +756,27 @@
     </style>
 </head>
 <body>
+    <!-- Loading Spinner -->
+    <div class="spinner-container" id="loadingSpinner" style="display: none;">
+        <div class="spinner"></div>
+    </div>
+
     <!-- Login Screen -->
     <div class="login-container" id="loginContainer">
         <div class="login-form">
             <h2 class="login-title">ATTENDANCE CREW CDC EAST</h2>
             <div class="mb-3">
-                <label for="username" class="form-label">Username</label>
-                <input type="text" class="form-control" id="username" placeholder="Enter username">
+                <label for="email" class="form-label">Email</label>
+                <input type="email" class="form-control" id="email" placeholder="Enter email">
             </div>
             <div class="mb-3">
                 <label for="password" class="form-label">Password</label>
                 <input type="password" class="form-control" id="password" placeholder="Enter password">
             </div>
-            <div class="login-error" id="loginError">Username or password is incorrect!</div>
+            <div class="login-error" id="loginError">Email or password is incorrect!</div>
             <button class="btn btn-futuristic w-100" id="loginBtn">Login</button>
             <div class="mt-3 text-center">
-                <small class="text-muted">Default login: admin/admin123 or user/user123</small>
+                <small class="text-muted">Use your registered email and password</small>
             </div>
         </div>
     </div>
@@ -1285,8 +1324,7 @@
                             <table class="user-table">
                                 <thead>
                                     <tr>
-                                        <th>Username</th>
-                                        <th>Password</th>
+                                        <th>Email</th>
                                         <th>Role</th>
                                         <th>Action</th>
                                     </tr>
@@ -1312,8 +1350,8 @@
                 </div>
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label for="newUsername" class="form-label">Username</label>
-                        <input type="text" class="form-control" id="newUsername">
+                        <label for="newUserEmail" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="newUserEmail">
                     </div>
                     <div class="mb-3">
                         <label for="newUserPassword" class="form-label">Password</label>
@@ -1346,12 +1384,8 @@
                 <div class="modal-body">
                     <input type="hidden" id="editUserId">
                     <div class="mb-3">
-                        <label for="editUsername" class="form-label">Username</label>
-                        <input type="text" class="form-control" id="editUsername">
-                    </div>
-                    <div class="mb-3">
-                        <label for="editUserPassword" class="form-label">Password</label>
-                        <input type="password" class="form-control" id="editUserPassword">
+                        <label for="editUserEmail" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="editUserEmail" readonly>
                     </div>
                     <div class="mb-3">
                         <label for="editUserRole" class="form-label">Role</label>
@@ -1401,6 +1435,20 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        // Initialize Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyCs_65P_SLx529UwLcQO8cF69yD1yLOgKY",
+            authDomain: "blueiiifirebase.firebaseapp.com",
+            projectId: "blueiiifirebase",
+            storageBucket: "blueiiifirebase.firebasestorage.app",
+            messagingSenderId: "194236727932",
+            appId: "1:194236727932:web:6b10d6302d5c56ebac3ff9"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
         // Data matrik untuk shift
         const shiftMatrix = {
             "Dispatcher": {
@@ -1430,12 +1478,6 @@
             { area: "CDC East", name: "Drajat Triono", position: "Dispatcher" },
             { area: "CDC East", name: "Wiyanto", position: "Dispatcher" },
             { area: "CDC East", name: "Nur Fauziah", position: "Booking" }
-        ];
-
-        // Data pengguna default
-        const defaultUsers = [
-            { id: 1, username: "admin", password: "admin123", role: "admin" },
-            { id: 2, username: "user", password: "user123", role: "user" }
         ];
 
         // Variabel global untuk menyimpan data
@@ -1481,7 +1523,7 @@
             else if (value === "C") td.classList.add("shift-C");
             else if (value === "O") td.classList.add("shift-O");
 
-            saveDataToLocalStorage();
+            saveDataToFirestore();
             generateOutputTable();
             generateOvertimeTable();
         }
@@ -1494,7 +1536,7 @@
             
             input.addEventListener('blur', function() {
                 this.readOnly = true;
-                saveDataToLocalStorage();
+                saveDataToFirestore();
                 updateEmployeeDropdown();
             }, { once: true });
         }
@@ -1522,7 +1564,7 @@
             }
             
             row.remove();
-            saveDataToLocalStorage();
+            saveDataToFirestore();
             generateOutputTable();
             generateOvertimeTable();
             updateEmployeeDropdown();
@@ -1535,7 +1577,7 @@
             
             if (newValue !== null) {
                 remarksData[key] = newValue;
-                saveDataToLocalStorage();
+                saveDataToFirestore();
                 generateOutputTable();
             }
         }
@@ -1549,12 +1591,13 @@
             const field = input.classList[0].replace(/-/g, '');
             overtimeData[key][field] = input.value;
             
-            localStorage.setItem('overtimeData', JSON.stringify(overtimeData));
-            
             // Jika field yang disimpan adalah rkppic, update rekap lembur
             if (field === 'rkppic') {
                 updateRekapLembur();
             }
+            
+            // Simpan ke Firestore
+            saveDataToFirestore();
         }
 
         // Fungsi untuk menghitung overtime
@@ -1621,29 +1664,89 @@
             saveOvertimeData(key, rmcShiftOutInput);
         }
 
-        // Fungsi untuk login
-        function login(username, password) {
-            const user = users.find(u => u.username === username && u.password === password);
-            if (user) {
-                currentUser = user;
-                document.getElementById('loginContainer').style.display = 'none';
-                document.getElementById('sidebar').style.display = 'block';
-                document.getElementById('userPasswordSection').style.display = 'block';
-                document.getElementById('mainContent').style.display = 'block';
-                document.querySelector('.futuristic-header').style.display = 'block';
-                
-                // Tampilkan nama user yang login di header
-                document.querySelector('.header-subtitle').innerHTML += ` | Logged in as: ${user.username} (${user.role})`;
-                
-                // Setup menu berdasarkan role
-                setupMenuByRole(user.role);
-                
-                // Setup filter berdasarkan role
-                setupFilterByRole(user.role);
-                
-                return true;
-            }
-            return false;
+        // Fungsi untuk login dengan Firebase
+        function login(email, password) {
+            showLoading(true);
+            
+            auth.signInWithEmailAndPassword(email, password)
+                .then((userCredential) => {
+                    // Login berhasil
+                    const user = userCredential.user;
+                    currentUser = {
+                        uid: user.uid,
+                        email: user.email
+                    };
+                    
+                    // Dapatkan data user dari Firestore
+                    return db.collection('users').doc(user.uid).get();
+                })
+                .then((doc) => {
+                    if (doc.exists) {
+                        const userData = doc.data();
+                        currentUser.role = userData.role;
+                        currentUser.name = userData.name;
+                    } else {
+                        // Jika data user tidak ada, buat data default
+                        currentUser.role = "user";
+                        currentUser.name = currentUser.email.split('@')[0];
+                        
+                        // Simpan data user baru ke Firestore
+                        db.collection('users').doc(currentUser.uid).set({
+                            email: currentUser.email,
+                            role: currentUser.role,
+                            name: currentUser.name,
+                            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                    }
+                    
+                    // Tampilkan aplikasi
+                    document.getElementById('loginContainer').style.display = 'none';
+                    document.getElementById('sidebar').style.display = 'block';
+                    document.getElementById('userPasswordSection').style.display = 'block';
+                    document.getElementById('mainContent').style.display = 'block';
+                    document.querySelector('.futuristic-header').style.display = 'block';
+                    
+                    // Tampilkan nama user yang login di header
+                    document.querySelector('.header-subtitle').innerHTML += ` | Logged in as: ${currentUser.name} (${currentUser.role})`;
+                    
+                    // Setup menu berdasarkan role
+                    setupMenuByRole(currentUser.role);
+                    
+                    // Setup filter berdasarkan role
+                    setupFilterByRole(currentUser.role);
+                    
+                    // Load data dari Firestore
+                    loadDataFromFirestore();
+                    
+                    showLoading(false);
+                })
+                .catch((error) => {
+                    // Handle Errors
+                    const errorCode = error.code;
+                    const errorMessage = error.message;
+                    
+                    document.getElementById('loginError').textContent = errorMessage;
+                    document.getElementById('loginError').style.display = 'block';
+                    
+                    showLoading(false);
+                });
+        }
+
+        // Fungsi untuk logout
+        function logout() {
+            auth.signOut().then(() => {
+                currentUser = null;
+                document.getElementById('loginContainer').style.display = 'flex';
+                document.getElementById('sidebar').style.display = 'none';
+                document.getElementById('userPasswordSection').style.display = 'none';
+                document.getElementById('mainContent').style.display = 'none';
+                document.querySelector('.futuristic-header').style.display = 'none';
+                document.getElementById('email').value = '';
+                document.getElementById('password').value = '';
+                document.getElementById('loginError').style.display = 'none';
+            }).catch((error) => {
+                console.error('Logout error:', error);
+            });
         }
 
         // Fungsi untuk setup menu berdasarkan role
@@ -1689,19 +1792,6 @@
             }
         }
 
-        // Fungsi untuk logout
-        function logout() {
-            currentUser = null;
-            document.getElementById('loginContainer').style.display = 'flex';
-            document.getElementById('sidebar').style.display = 'none';
-            document.getElementById('userPasswordSection').style.display = 'none';
-            document.getElementById('mainContent').style.display = 'none';
-            document.querySelector('.futuristic-header').style.display = 'none';
-            document.getElementById('username').value = '';
-            document.getElementById('password').value = '';
-            document.getElementById('loginError').style.display = 'none';
-        }
-
         // Fungsi untuk menampilkan data pengguna
         function displayUsers() {
             const userTableBody = document.getElementById('userTableBody');
@@ -1710,14 +1800,13 @@
             users.forEach(user => {
                 const row = document.createElement('tr');
                 row.innerHTML = `
-                    <td>${user.username}</td>
-                    <td>${user.password}</td>
+                    <td>${user.email}</td>
                     <td>${user.role}</td>
                     <td>
-                        <button class="btn-edit" onclick="editUser(${user.id})">
+                        <button class="btn-edit" onclick="editUser('${user.uid}')">
                             <i class="fas fa-edit"></i> Edit
                         </button>
-                        <button class="btn-delete" onclick="deleteUser(${user.id})" ${user.id === currentUser.id ? 'disabled' : ''}>
+                        <button class="btn-delete" onclick="deleteUser('${user.uid}')" ${user.uid === currentUser.uid ? 'disabled' : ''}>
                             <i class="fas fa-trash"></i> Delete
                         </button>
                     </td>
@@ -1727,32 +1816,52 @@
         }
 
         // Fungsi untuk menambah pengguna
-        function addUser(username, password, role) {
-            // Cek apakah username sudah ada
-            if (users.find(u => u.username === username)) {
-                alert('Username already exists!');
-                return;
-            }
+        function addUser(email, password, role, name) {
+            showLoading(true);
             
-            const newUser = {
-                id: users.length > 0 ? Math.max(...users.map(u => u.id)) + 1 : 1,
-                username,
-                password,
-                role
-            };
-            users.push(newUser);
-            localStorage.setItem('users', JSON.stringify(users));
-            displayUsers();
-            alert('User successfully added!');
+            auth.createUserWithEmailAndPassword(email, password)
+                .then((userCredential) => {
+                    const user = userCredential.user;
+                    
+                    // Simpan data user ke Firestore
+                    return db.collection('users').doc(user.uid).set({
+                        email: email,
+                        role: role,
+                        name: name,
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                })
+                .then(() => {
+                    // Load ulang data users
+                    return loadUsersFromFirestore();
+                })
+                .then(() => {
+                    displayUsers();
+                    showLoading(false);
+                    alert('User successfully added!');
+                    
+                    // Reset form
+                    document.getElementById('newUserEmail').value = '';
+                    document.getElementById('newUserPassword').value = '';
+                    
+                    const addUserModal = bootstrap.Modal.getInstance(document.getElementById('addUserModal'));
+                    addUserModal.hide();
+                })
+                .catch((error) => {
+                    const errorCode = error.code;
+                    const errorMessage = error.message;
+                    
+                    alert('Error: ' + errorMessage);
+                    showLoading(false);
+                });
         }
 
         // Fungsi untuk mengedit pengguna
-        function editUser(id) {
-            const user = users.find(u => u.id === id);
+        function editUser(uid) {
+            const user = users.find(u => u.uid === uid);
             if (user) {
-                document.getElementById('editUserId').value = user.id;
-                document.getElementById('editUsername').value = user.username;
-                document.getElementById('editUserPassword').value = user.password;
+                document.getElementById('editUserId').value = user.uid;
+                document.getElementById('editUserEmail').value = user.email;
                 document.getElementById('editUserRole').value = user.role;
                 
                 const editUserModal = new bootstrap.Modal(document.getElementById('editUserModal'));
@@ -1762,44 +1871,74 @@
 
         // Fungsi untuk mengupdate pengguna
         function updateUser() {
-            const id = parseInt(document.getElementById('editUserId').value);
-            const username = document.getElementById('editUsername').value;
-            const password = document.getElementById('editUserPassword').value;
+            const uid = document.getElementById('editUserId').value;
             const role = document.getElementById('editUserRole').value;
             
-            // Cek apakah username sudah ada (kecuali untuk user yang sedang diedit)
-            const existingUser = users.find(u => u.username === username && u.id !== id);
-            if (existingUser) {
-                alert('Username already exists!');
-                return;
-            }
+            showLoading(true);
             
-            const userIndex = users.findIndex(u => u.id === id);
-            if (userIndex !== -1) {
-                users[userIndex].username = username;
-                users[userIndex].password = password;
-                users[userIndex].role = role;
-                localStorage.setItem('users', JSON.stringify(users));
+            // Update data user di Firestore
+            db.collection('users').doc(uid).update({
+                role: role
+            })
+            .then(() => {
+                // Load ulang data users
+                return loadUsersFromFirestore();
+            })
+            .then(() => {
                 displayUsers();
+                showLoading(false);
                 
                 const editUserModal = bootstrap.Modal.getInstance(document.getElementById('editUserModal'));
                 editUserModal.hide();
                 alert('User successfully updated!');
-            }
+            })
+            .catch((error) => {
+                console.error('Error updating user:', error);
+                alert('Error updating user: ' + error.message);
+                showLoading(false);
+            });
         }
 
         // Fungsi untuk menghapus pengguna
-        function deleteUser(id) {
-            if (id === currentUser.id) {
+        function deleteUser(uid) {
+            if (uid === currentUser.uid) {
                 alert('Cannot delete the currently logged in account!');
                 return;
             }
             
             if (confirm('Are you sure you want to delete this user?')) {
-                users = users.filter(u => u.id !== id);
-                localStorage.setItem('users', JSON.stringify(users));
-                displayUsers();
-                alert('User successfully deleted!');
+                showLoading(true);
+                
+                // Hapus user dari Firebase Authentication
+                const user = auth.currentUser;
+                const credential = firebase.auth.EmailAuthProvider.credential(
+                    user.email, 
+                    prompt('Enter your password to confirm deletion:')
+                );
+                
+                user.reauthenticateWithCredential(credential)
+                    .then(() => {
+                        // Hapus user dari Firebase Authentication
+                        return auth.deleteUser(uid);
+                    })
+                    .then(() => {
+                        // Hapus data user dari Firestore
+                        return db.collection('users').doc(uid).delete();
+                    })
+                    .then(() => {
+                        // Load ulang data users
+                        return loadUsersFromFirestore();
+                    })
+                    .then(() => {
+                        displayUsers();
+                        showLoading(false);
+                        alert('User successfully deleted!');
+                    })
+                    .catch((error) => {
+                        console.error('Error deleting user:', error);
+                        alert('Error deleting user: ' + error.message);
+                        showLoading(false);
+                    });
             }
         }
 
@@ -1810,20 +1949,31 @@
                 return false;
             }
             
-            if (currentUser.password !== currentPassword) {
-                alert('Current password is incorrect!');
-                return false;
-            }
+            showLoading(true);
             
-            currentUser.password = newPassword;
-            const userIndex = users.findIndex(u => u.id === currentUser.id);
-            if (userIndex !== -1) {
-                users[userIndex].password = newPassword;
-                localStorage.setItem('users', JSON.stringify(users));
-                alert('Password successfully changed!');
-                return true;
-            }
-            return false;
+            const user = auth.currentUser;
+            const credential = firebase.auth.EmailAuthProvider.credential(
+                user.email, 
+                currentPassword
+            );
+            
+            // Re-authenticate user
+            user.reauthenticateWithCredential(credential)
+                .then(() => {
+                    // Update password
+                    return user.updatePassword(newPassword);
+                })
+                .then(() => {
+                    showLoading(false);
+                    alert('Password successfully changed!');
+                    return true;
+                })
+                .catch((error) => {
+                    console.error('Error changing password:', error);
+                    alert('Error changing password: ' + error.message);
+                    showLoading(false);
+                    return false;
+                });
         }
 
         // Fungsi untuk menampilkan data cuti
@@ -1849,7 +1999,7 @@
                     <td>${formatDate(endDate)}</td>
                     <td>${duration}</td>
                     <td>
-                        <button class="btn-delete" onclick="deleteCuti(${cuti.id})">
+                        <button class="btn-delete" onclick="deleteCuti('${cuti.id}')">
                             <i class="fas fa-trash"></i> Delete
                         </button>
                     </td>
@@ -1866,7 +2016,7 @@
             // Filter data untuk user yang sedang login
             let filteredCutiData = cutiData;
             if (currentUser && currentUser.role === 'user') {
-                filteredCutiData = cutiData.filter(cuti => cuti.employeeName === currentUser.username);
+                filteredCutiData = cutiData.filter(cuti => cuti.employeeName === currentUser.name);
             }
             
             if (filteredCutiData.length === 0) {
@@ -1939,33 +2089,60 @@
                 return;
             }
             
+            showLoading(true);
+            
             const newCuti = {
-                id: cutiData.length > 0 ? Math.max(...cutiData.map(c => c.id)) + 1 : 1,
                 employeeName,
                 startDate,
-                endDate
+                endDate,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
             };
-            cutiData.push(newCuti);
-            localStorage.setItem('cutiData', JSON.stringify(cutiData));
-            displayCuti();
-            displayCutiDetail();
-            alert('Leave data successfully added!');
             
-            // Update tabel absensi dengan data cuti
-            updateAbsensiWithCuti();
+            // Simpan ke Firestore
+            db.collection('cuti').add(newCuti)
+                .then((docRef) => {
+                    newCuti.id = docRef.id;
+                    cutiData.push(newCuti);
+                    
+                    displayCuti();
+                    displayCutiDetail();
+                    showLoading(false);
+                    alert('Leave data successfully added!');
+                    
+                    // Update tabel absensi dengan data cuti
+                    updateAbsensiWithCuti();
+                })
+                .catch((error) => {
+                    console.error('Error adding leave data:', error);
+                    alert('Error adding leave data: ' + error.message);
+                    showLoading(false);
+                });
         }
 
         // Fungsi untuk menghapus cuti
         function deleteCuti(id) {
             if (confirm('Are you sure you want to delete this leave data?')) {
-                cutiData = cutiData.filter(c => c.id !== id);
-                localStorage.setItem('cutiData', JSON.stringify(cutiData));
-                displayCuti();
-                displayCutiDetail();
-                alert('Leave data successfully deleted!');
+                showLoading(true);
                 
-                // Update tabel absensi setelah menghapus cuti
-                updateAbsensiWithCuti();
+                // Hapus dari Firestore
+                db.collection('cuti').doc(id).delete()
+                    .then(() => {
+                        // Hapus dari array lokal
+                        cutiData = cutiData.filter(c => c.id !== id);
+                        
+                        displayCuti();
+                        displayCutiDetail();
+                        showLoading(false);
+                        alert('Leave data successfully deleted!');
+                        
+                        // Update tabel absensi setelah menghapus cuti
+                        updateAbsensiWithCuti();
+                    })
+                    .catch((error) => {
+                        console.error('Error deleting leave data:', error);
+                        alert('Error deleting leave data: ' + error.message);
+                        showLoading(false);
+                    });
             }
         }
 
@@ -2003,7 +2180,7 @@
                 });
             });
             
-            saveDataToLocalStorage();
+            saveDataToFirestore();
         }
 
         // Fungsi untuk mengupdate rekap lembur
@@ -2058,9 +2235,6 @@
             for (const employeeName in overtimeByEmployee) {
                 rekapLemburData.push(overtimeByEmployee[employeeName]);
             }
-            
-            // Save to localStorage
-            localStorage.setItem('rekapLemburData', JSON.stringify(rekapLemburData));
             
             // Update display if rekap lembur tab is active
             if (currentTab === 'rekap-lembur') {
@@ -2184,65 +2358,77 @@
                 });
             }
             
+            showLoading(true);
+            
             const newRekap = {
-                id: formRekapLemburData.length > 0 ? Math.max(...formRekapLemburData.map(r => r.id)) + 1 : 1,
                 employeeName,
                 date,
                 startTime,
                 endTime,
                 projects,
                 uraianTugas,
-                createdBy: currentUser.username
+                createdBy: currentUser.name,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
             };
             
-            formRekapLemburData.push(newRekap);
-            localStorage.setItem('formRekapLemburData', JSON.stringify(formRekapLemburData));
-            
-            // Tampilkan data di Overtime Detail
-            displayOvertimeDetail(newRekap);
-            
-            alert('Overtime data successfully saved!');
-            
-            // Reset form
-            document.getElementById('rekapDate').value = '';
-            document.getElementById('rekapStartTime').value = '';
-            document.getElementById('rekapEndTime').value = '';
-            document.getElementById('uraianTugas').value = '';
-            
-            // Reset table
-            tbody.innerHTML = `
-                <tr>
-                    <td>1</td>
-                    <td><input type="text" class="form-control" id="totalProject1"></td>
-                    <td><input type="text" class="form-control total-plant" data-row="1" id="totalPlant1"></td>
-                    <td>
-                        <select class="form-select plant-name" data-row="1" id="plantName1" disabled>
-                            <option value="">Select Plant</option>
-                            <option value="Denpasar2">Denpasar2</option>
-                            <option value="Gianyar">Gianyar</option>
-                            <option value="Manyar">Manyar</option>
-                            <option value="Manukan">Manukan</option>
-                            <option value="Kediri">Kediri</option>
-                            <option value="Gempol">Gempol</option>
-                            <option value="Krian">Krian</option>
-                        </select>
-                    </td>
-                    <td><input type="text" class="form-control" id="volume1"></td>
-                </tr>
-            `;
-            
-            // Re-add event listener
-            const totalPlantInput = document.getElementById('totalPlant1');
-            const plantNameSelect = document.getElementById('plantName1');
-            
-            totalPlantInput.addEventListener('input', function() {
-                if (this.value.trim() !== '') {
-                    plantNameSelect.disabled = false;
-                } else {
-                    plantNameSelect.disabled = true;
-                    plantNameSelect.value = '';
-                }
-            });
+            // Simpan ke Firestore
+            db.collection('formRekapLembur').add(newRekap)
+                .then((docRef) => {
+                    newRekap.id = docRef.id;
+                    formRekapLemburData.push(newRekap);
+                    
+                    // Tampilkan data di Overtime Detail
+                    displayOvertimeDetail(newRekap);
+                    
+                    showLoading(false);
+                    alert('Overtime data successfully saved!');
+                    
+                    // Reset form
+                    document.getElementById('rekapDate').value = '';
+                    document.getElementById('rekapStartTime').value = '';
+                    document.getElementById('rekapEndTime').value = '';
+                    document.getElementById('uraianTugas').value = '';
+                    
+                    // Reset table
+                    tbody.innerHTML = `
+                        <tr>
+                            <td>1</td>
+                            <td><input type="text" class="form-control" id="totalProject1"></td>
+                            <td><input type="text" class="form-control total-plant" data-row="1" id="totalPlant1"></td>
+                            <td>
+                                <select class="form-select plant-name" data-row="1" id="plantName1" disabled>
+                                    <option value="">Select Plant</option>
+                                    <option value="Denpasar2">Denpasar2</option>
+                                    <option value="Gianyar">Gianyar</option>
+                                    <option value="Manyar">Manyar</option>
+                                    <option value="Manukan">Manukan</option>
+                                    <option value="Kediri">Kediri</option>
+                                    <option value="Gempol">Gempol</option>
+                                    <option value="Krian">Krian</option>
+                                </select>
+                            </td>
+                            <td><input type="text" class="form-control" id="volume1"></td>
+                        </tr>
+                    `;
+                    
+                    // Re-add event listener
+                    const totalPlantInput = document.getElementById('totalPlant1');
+                    const plantNameSelect = document.getElementById('plantName1');
+                    
+                    totalPlantInput.addEventListener('input', function() {
+                        if (this.value.trim() !== '') {
+                            plantNameSelect.disabled = false;
+                        } else {
+                            plantNameSelect.disabled = true;
+                            plantNameSelect.value = '';
+                        }
+                    });
+                })
+                .catch((error) => {
+                    console.error('Error saving overtime data:', error);
+                    alert('Error saving overtime data: ' + error.message);
+                    showLoading(false);
+                });
         }
 
         // Fungsi untuk menampilkan Overtime Detail
@@ -2272,39 +2458,113 @@
             });
         }
 
-        // Inisialisasi aplikasi
-        document.addEventListener('DOMContentLoaded', function() {
-            // Load data dari localStorage
-            loadDataFromLocalStorage();
+        // Fungsi untuk menampilkan/menyembunyikan loading spinner
+        function showLoading(show) {
+            document.getElementById('loadingSpinner').style.display = show ? 'flex' : 'none';
+        }
+
+        // Fungsi untuk load data users dari Firestore
+        function loadUsersFromFirestore() {
+            return db.collection('users').get()
+                .then((querySnapshot) => {
+                    users = [];
+                    querySnapshot.forEach((doc) => {
+                        users.push({
+                            uid: doc.id,
+                            ...doc.data()
+                        });
+                    });
+                });
+        }
+
+        // Fungsi untuk load data cuti dari Firestore
+        function loadCutiFromFirestore() {
+            return db.collection('cuti').get()
+                .then((querySnapshot) => {
+                    cutiData = [];
+                    querySnapshot.forEach((doc) => {
+                        cutiData.push({
+                            id: doc.id,
+                            ...doc.data()
+                        });
+                    });
+                });
+        }
+
+        // Fungsi untuk load data form rekap lembur dari Firestore
+        function loadFormRekapLemburFromFirestore() {
+            return db.collection('formRekapLembur').get()
+                .then((querySnapshot) => {
+                    formRekapLemburData = [];
+                    querySnapshot.forEach((doc) => {
+                        formRekapLemburData.push({
+                            id: doc.id,
+                            ...doc.data()
+                        });
+                    });
+                });
+        }
+
+        // Fungsi untuk load data dari Firestore
+        function loadDataFromFirestore() {
+            showLoading(true);
             
-            // Inisialisasi data pengguna
-            const savedUsers = JSON.parse(localStorage.getItem('users'));
-            users = savedUsers || defaultUsers;
-            
-            // Inisialisasi data cuti
-            const savedCutiData = JSON.parse(localStorage.getItem('cutiData'));
-            cutiData = savedCutiData || [];
-            
-            // Inisialisasi data rekap lembur
-            const savedRekapLemburData = JSON.parse(localStorage.getItem('rekapLemburData'));
-            rekapLemburData = savedRekapLemburData || [];
-            
-            // Inisialisasi data form rekap lembur
-            const savedFormRekapLemburData = JSON.parse(localStorage.getItem('formRekapLemburData'));
-            formRekapLemburData = savedFormRekapLemburData || [];
-            
-            // Setup login
-            document.getElementById('loginBtn').addEventListener('click', function() {
-                const username = document.getElementById('username').value;
-                const password = document.getElementById('password').value;
-                
-                if (!username || !password) {
-                    alert('Username and password must be filled!');
-                    return;
-                }
-                
-                if (login(username, password)) {
-                    // Setup aplikasi setelah login berhasil
+            // Load data absensi
+            db.collection('absensi').get()
+                .then((querySnapshot) => {
+                    absensiData = [];
+                    querySnapshot.forEach((doc) => {
+                        absensiData.push({
+                            id: doc.id,
+                            ...doc.data()
+                        });
+                    });
+                    
+                    // Load data absen tabel
+                    return db.collection('absenTabel').get();
+                })
+                .then((querySnapshot) => {
+                    absenTabelData = [];
+                    querySnapshot.forEach((doc) => {
+                        absenTabelData.push({
+                            id: doc.id,
+                            ...doc.data()
+                        });
+                    });
+                    
+                    // Load data overtime
+                    return db.collection('overtime').get();
+                })
+                .then((querySnapshot) => {
+                    overtimeData = {};
+                    querySnapshot.forEach((doc) => {
+                        const data = doc.data();
+                        overtimeData[data.key] = data;
+                    });
+                    
+                    // Load data remarks
+                    return db.collection('remarks').get();
+                })
+                .then((querySnapshot) => {
+                    remarksData = {};
+                    querySnapshot.forEach((doc) => {
+                        const data = doc.data();
+                        remarksData[data.key] = data.value;
+                    });
+                    
+                    // Load data users
+                    return loadUsersFromFirestore();
+                })
+                .then(() => {
+                    // Load data cuti
+                    return loadCutiFromFirestore();
+                })
+                .then(() => {
+                    // Load data form rekap lembur
+                    return loadFormRekapLemburFromFirestore();
+                })
+                .then(() => {
+                    // Setup aplikasi setelah load data
                     const today = new Date();
                     const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
                     
@@ -2331,182 +2591,100 @@
                         // For admin, set first tab in Main folder as active
                         document.querySelector('[data-tab="entry"]').click();
                     }
-                } else {
-                    document.getElementById('loginError').style.display = 'block';
-                }
-            });
-            
-            // Enter key untuk login
-            document.getElementById('password').addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') {
-                    document.getElementById('loginBtn').click();
-                }
-            });
-            
-            // Setup logout
-            document.getElementById('logoutBtn').addEventListener('click', logout);
-            
-            // Setup tambah pengguna
-            document.getElementById('saveUserBtn').addEventListener('click', function() {
-                const username = document.getElementById('newUsername').value;
-                const password = document.getElementById('newUserPassword').value;
-                const role = document.getElementById('newUserRole').value;
-                
-                if (username && password) {
-                    addUser(username, password, role);
-                    document.getElementById('newUsername').value = '';
-                    document.getElementById('newUserPassword').value = '';
                     
-                    const addUserModal = bootstrap.Modal.getInstance(document.getElementById('addUserModal'));
-                    addUserModal.hide();
-                } else {
-                    alert('Username and password must be filled!');
-                }
-            });
+                    showLoading(false);
+                })
+                .catch((error) => {
+                    console.error('Error loading data from Firestore:', error);
+                    alert('Error loading data: ' + error.message);
+                    showLoading(false);
+                });
+        }
+
+        // Fungsi untuk menyimpan data ke Firestore
+        function saveDataToFirestore() {
+            absensiData = [];
+            const rows = document.querySelectorAll('#entryTable tbody tr');
             
-            // Setup update pengguna
-            document.getElementById('updateUserBtn').addEventListener('click', updateUser);
-            
-            // Setup ubah password (admin)
-            document.getElementById('changePasswordBtn').addEventListener('click', function() {
-                const currentPassword = document.getElementById('currentPassword').value;
-                const newPassword = document.getElementById('newPassword').value;
-                const confirmPassword = document.getElementById('confirmPassword').value;
+            rows.forEach(row => {
+                const areaInput = row.querySelector('.area-input');
+                const nameInput = row.querySelector('.name-input');
+                const positionInput = row.querySelector('.position-input');
                 
-                if (changePassword(currentPassword, newPassword, confirmPassword)) {
-                    document.getElementById('currentPassword').value = '';
-                    document.getElementById('newPassword').value = '';
-                    document.getElementById('confirmPassword').value = '';
-                }
-            });
-            
-            // Setup ubah password (user)
-            document.getElementById('userChangePasswordBtn').addEventListener('click', function() {
-                const currentPassword = document.getElementById('userCurrentPassword').value;
-                const newPassword = document.getElementById('userNewPassword').value;
-                const confirmPassword = document.getElementById('userConfirmPassword').value;
+                if (!areaInput || !nameInput || !positionInput) return;
                 
-                if (changePassword(currentPassword, newPassword, confirmPassword)) {
-                    document.getElementById('userCurrentPassword').value = '';
-                    document.getElementById('userNewPassword').value = '';
-                    document.getElementById('userConfirmPassword').value = '';
-                    
-                    const changePasswordModal = bootstrap.Modal.getInstance(document.getElementById('changePasswordModal'));
-                    changePasswordModal.hide();
-                }
-            });
-            
-            // Setup tombol ganti password di sidebar (user)
-            document.getElementById('changePasswordSidebarBtn').addEventListener('click', function() {
-                const changePasswordModal = new bootstrap.Modal(document.getElementById('changePasswordModal'));
-                changePasswordModal.show();
-            });
-            
-            // Setup tambah cuti
-            document.getElementById('addCuti').addEventListener('click', function() {
-                const employeeName = document.getElementById('cutiEmployee').value;
-                const startDate = document.getElementById('cutiStartDate').value;
-                const endDate = document.getElementById('cutiEndDate').value;
+                const area = areaInput.value;
+                const name = nameInput.value;
+                const position = positionInput.value;
+                const shifts = {};
                 
-                addCuti(employeeName, startDate, endDate);
-            });
-            
-            // Setup tambah baris rekap lembur
-            document.getElementById('addRekapRow').addEventListener('click', addRekapLemburRow);
-            
-            // Setup simpan form rekap lembur
-            document.getElementById('saveRekapLembur').addEventListener('click', saveFormRekapLembur);
-            
-            // Setup event listener untuk Total Plant pada form rekap lembur
-            document.addEventListener('input', function(e) {
-                if (e.target.classList.contains('total-plant')) {
-                    const row = e.target.getAttribute('data-row');
-                    const plantNameSelect = document.getElementById(`plantName${row}`);
-                    
-                    if (e.target.value.trim() !== '') {
-                        plantNameSelect.disabled = false;
-                    } else {
-                        plantNameSelect.disabled = true;
-                        plantNameSelect.value = '';
+                const shiftInputs = row.querySelectorAll('.shift-input');
+                shiftInputs.forEach((input, index) => {
+                    if (index < dateRange.length) {
+                        const date = dateRange[index];
+                        const dateKey = formatDateForShift(date);
+                        shifts[dateKey] = input.value.toUpperCase();
                     }
-                }
-            });
-            
-            // Event listeners lainnya
-            document.getElementById('applyHeaderSize').addEventListener('click', applyHeaderSize);
-            document.getElementById('applyFilter').addEventListener('click', applyFilterHandler);
-            document.getElementById('saveData').addEventListener('click', function() {
-                saveDataToLocalStorage();
-                // Simpan data ke absenTabelData juga
-                absenTabelData = [...absenTabelData, ...absensiData];
-                localStorage.setItem('absenTabelData', JSON.stringify(absenTabelData));
-                alert('Data successfully saved!');
-                
-                // Update attendance table if admin is logged in
-                if (currentUser && currentUser.role === 'admin') {
-                    generateAbsenTabelTable();
-                }
-            });
-            
-            document.getElementById('exportExcel').addEventListener('click', function() {
-                let table, filename;
-                
-                if (currentTab === 'entry') {
-                    table = document.getElementById('entryTable');
-                    filename = "Attendance_Entry_Data.xlsx";
-                } else if (currentTab === 'output') {
-                    table = document.getElementById('outputTable');
-                    filename = "Attendance_Output_Data.xlsx";
-                } else if (currentTab === 'overtime') {
-                    // Untuk export overtime, kita perlu membuat tabel khusus
-                    exportOvertimeToExcel();
-                    return;
-                } else if (currentTab === 'absen-tabel') {
-                    table = document.getElementById('absenTabelTable');
-                    filename = "Attendance_Table_Data.xlsx";
-                } else if (currentTab === 'cuti') {
-                    table = document.getElementById('cutiTable');
-                    filename = "Leave_Data.xlsx";
-                } else if (currentTab === 'cuti-detail') {
-                    table = document.getElementById('cutiDetailTable');
-                    filename = "Leave_Detail_Data.xlsx";
-                } else if (currentTab === 'form-rekap-lembur') {
-                    // Untuk export form rekap lembur, kita perlu membuat tabel khusus
-                    exportFormRekapLemburToExcel();
-                    return;
-                }
-                
-                if (table) {
-                    const wb = XLSX.utils.book_new();
-                    const ws = XLSX.utils.table_to_sheet(table);
-                    XLSX.utils.book_append_sheet(wb, ws, "Attendance Data");
-                    XLSX.writeFile(wb, filename);
-                }
-            });
-            
-            document.getElementById('addRow').addEventListener('click', function() {
-                const tbody = document.querySelector('#entryTable tbody');
-                const newRow = document.createElement('tr');
-                
-                let rowHTML = `
-                    <td><input type="text" class="area-input read-only-input" readonly ondblclick="makeEditable(this)"></td>
-                    <td><input type="text" class="name-input read-only-input" readonly ondblclick="makeEditable(this)"></td>
-                    <td><input type="text" class="position-input read-only-input" readonly ondblclick="makeEditable(this)"></td>
-                `;
-                
-                dateRange.forEach(() => {
-                    rowHTML += '<td><input type="text" class="shift-input" onchange="updateShiftColor(this)"></td>';
                 });
                 
-                rowHTML += '<td><button class="btn-delete" onclick="deleteRow(this)"><i class="fas fa-trash"></i></button></td>';
-                
-                newRow.innerHTML = rowHTML;
-                tbody.appendChild(newRow);
-                
-                initializeShiftColors();
-                addArrowNavigation();
+                // Hanya tambahkan jika ada nama
+                if (name) {
+                    absensiData.push({ area, name, position, shifts });
+                }
             });
-        });
+            
+            // Simpan data absensi ke Firestore
+            const batch = db.batch();
+            
+            // Hapus semua data absensi lama
+            db.collection('absensi').get().then((querySnapshot) => {
+                querySnapshot.forEach((doc) => {
+                    batch.delete(doc.ref);
+                });
+                
+                // Tambahkan data absensi baru
+                absensiData.forEach((data) => {
+                    const docRef = db.collection('absensi').doc();
+                    batch.set(docRef, data);
+                });
+                
+                // Simpan data overtime
+                for (const key in overtimeData) {
+                    const docRef = db.collection('overtime').doc(key);
+                    batch.set(docRef, {
+                        key: key,
+                        ...overtimeData[key]
+                    });
+                }
+                
+                // Simpan data remarks
+                for (const key in remarksData) {
+                    const docRef = db.collection('remarks').doc(key);
+                    batch.set(docRef, {
+                        key: key,
+                        value: remarksData[key]
+                    });
+                }
+                
+                // Simpan date range
+                const dateRangeRef = db.collection('settings').doc('dateRange');
+                batch.set(dateRangeRef, {
+                    startDate: document.getElementById('startDate').value,
+                    endDate: document.getElementById('endDate').value
+                });
+                
+                // Eksekusi batch
+                return batch.commit();
+            })
+            .then(() => {
+                console.log('Data successfully saved to Firestore');
+                updateEmployeeDropdown();
+            })
+            .catch((error) => {
+                console.error('Error saving data to Firestore:', error);
+                alert('Error saving data: ' + error.message);
+            });
+        }
 
         // Fungsi untuk mengisi dropdown karyawan untuk cuti
         function populateCutiEmployeeDropdown() {
@@ -2581,7 +2759,7 @@
             const wb = XLSX.utils.book_new();
             
             // Filter data berdasarkan user yang sedang login
-            const userRekapData = formRekapLemburData.filter(rekap => rekap.employeeName === currentUser.username);
+            const userRekapData = formRekapLemburData.filter(rekap => rekap.employeeName === currentUser.name);
             
             if (userRekapData.length === 0) {
                 alert('No overtime data available for this user!');
@@ -2617,7 +2795,7 @@
                 XLSX.utils.book_append_sheet(wb, ws, `Overtime ${rekapIndex + 1}`);
             });
             
-            XLSX.writeFile(wb, `Overtime_Form_Data_${currentUser.username}.xlsx`);
+            XLSX.writeFile(wb, `Overtime_Form_Data_${currentUser.name}.xlsx`);
         }
 
         // Handler untuk menerapkan filter
@@ -2781,7 +2959,7 @@
         function setupFormRekapLembur() {
             // Set employee name based on current user
             const employeeNameInput = document.getElementById('rekapEmployeeName');
-            employeeNameInput.value = currentUser.username;
+            employeeNameInput.value = currentUser.name;
             
             // Set default date to today
             const dateInput = document.getElementById('rekapDate');
@@ -2876,7 +3054,7 @@
             addArrowNavigation();
         }
 
-        // Fungsi untuk mengupdate body tabel entry - DIPERBAIKI
+        // Fungsi untuk mengupdate body tabel entry
         function updateEntryTableBody() {
             const tbody = document.querySelector('#entryTable tbody');
             tbody.innerHTML = '';
@@ -3143,78 +3321,212 @@
             });
         }
 
-        // Fungsi untuk menyimpan data ke localStorage - DIPERBAIKI
-        function saveDataToLocalStorage() {
-            absensiData = [];
-            const rows = document.querySelectorAll('#entryTable tbody tr');
+        // Inisialisasi aplikasi
+        document.addEventListener('DOMContentLoaded', function() {
+            // Setup login
+            document.getElementById('loginBtn').addEventListener('click', function() {
+                const email = document.getElementById('email').value;
+                const password = document.getElementById('password').value;
+                
+                if (!email || !password) {
+                    alert('Email and password must be filled!');
+                    return;
+                }
+                
+                login(email, password);
+            });
             
-            rows.forEach(row => {
-                const areaInput = row.querySelector('.area-input');
-                const nameInput = row.querySelector('.name-input');
-                const positionInput = row.querySelector('.position-input');
-                
-                if (!areaInput || !nameInput || !positionInput) return;
-                
-                const area = areaInput.value;
-                const name = nameInput.value;
-                const position = positionInput.value;
-                const shifts = {};
-                
-                const shiftInputs = row.querySelectorAll('.shift-input');
-                shiftInputs.forEach((input, index) => {
-                    if (index < dateRange.length) {
-                        const date = dateRange[index];
-                        const dateKey = formatDateForShift(date);
-                        shifts[dateKey] = input.value.toUpperCase();
-                    }
-                });
-                
-                // Hanya tambahkan jika ada nama
-                if (name) {
-                    absensiData.push({ area, name, position, shifts });
+            // Enter key untuk login
+            document.getElementById('password').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    document.getElementById('loginBtn').click();
                 }
             });
             
-            localStorage.setItem('absensiData', JSON.stringify(absensiData));
-            localStorage.setItem('overtimeData', JSON.stringify(overtimeData));
-            localStorage.setItem('remarksData', JSON.stringify(remarksData));
-            localStorage.setItem('dateRange', JSON.stringify({
-                startDate: document.getElementById('startDate').value,
-                endDate: document.getElementById('endDate').value
-            }));
+            // Setup logout
+            document.getElementById('logoutBtn').addEventListener('click', logout);
             
-            updateEmployeeDropdown();
-        }
-
-        // Fungsi untuk memuat data dari localStorage
-        function loadDataFromLocalStorage() {
-            const savedAbsensiData = JSON.parse(localStorage.getItem('absensiData'));
-            const savedAbsenTabelData = JSON.parse(localStorage.getItem('absenTabelData'));
-            const savedOvertimeData = JSON.parse(localStorage.getItem('overtimeData'));
-            const savedRemarksData = JSON.parse(localStorage.getItem('remarksData'));
-            const savedDateRange = JSON.parse(localStorage.getItem('dateRange'));
+            // Setup tambah pengguna
+            document.getElementById('saveUserBtn').addEventListener('click', function() {
+                const email = document.getElementById('newUserEmail').value;
+                const password = document.getElementById('newUserPassword').value;
+                const role = document.getElementById('newUserRole').value;
+                const name = email.split('@')[0]; // Default name dari email
+                
+                if (email && password) {
+                    addUser(email, password, role, name);
+                } else {
+                    alert('Email and password must be filled!');
+                }
+            });
             
-            if (savedDateRange) {
-                document.getElementById('startDate').value = savedDateRange.startDate;
-                document.getElementById('endDate').value = savedDateRange.endDate;
-            }
+            // Setup update pengguna
+            document.getElementById('updateUserBtn').addEventListener('click', updateUser);
             
-            if (savedAbsensiData) {
-                absensiData = savedAbsensiData;
-            }
+            // Setup ubah password (admin)
+            document.getElementById('changePasswordBtn').addEventListener('click', function() {
+                const currentPassword = document.getElementById('currentPassword').value;
+                const newPassword = document.getElementById('newPassword').value;
+                const confirmPassword = document.getElementById('confirmPassword').value;
+                
+                if (changePassword(currentPassword, newPassword, confirmPassword)) {
+                    document.getElementById('currentPassword').value = '';
+                    document.getElementById('newPassword').value = '';
+                    document.getElementById('confirmPassword').value = '';
+                }
+            });
             
-            if (savedAbsenTabelData) {
-                absenTabelData = savedAbsenTabelData;
-            }
+            // Setup ubah password (user)
+            document.getElementById('userChangePasswordBtn').addEventListener('click', function() {
+                const currentPassword = document.getElementById('userCurrentPassword').value;
+                const newPassword = document.getElementById('userNewPassword').value;
+                const confirmPassword = document.getElementById('userConfirmPassword').value;
+                
+                if (changePassword(currentPassword, newPassword, confirmPassword)) {
+                    document.getElementById('userCurrentPassword').value = '';
+                    document.getElementById('userNewPassword').value = '';
+                    document.getElementById('userConfirmPassword').value = '';
+                    
+                    const changePasswordModal = bootstrap.Modal.getInstance(document.getElementById('changePasswordModal'));
+                    changePasswordModal.hide();
+                }
+            });
             
-            if (savedOvertimeData) {
-                overtimeData = savedOvertimeData;
-            }
+            // Setup tombol ganti password di sidebar (user)
+            document.getElementById('changePasswordSidebarBtn').addEventListener('click', function() {
+                const changePasswordModal = new bootstrap.Modal(document.getElementById('changePasswordModal'));
+                changePasswordModal.show();
+            });
             
-            if (savedRemarksData) {
-                remarksData = savedRemarksData;
-            }
-        }
+            // Setup tambah cuti
+            document.getElementById('addCuti').addEventListener('click', function() {
+                const employeeName = document.getElementById('cutiEmployee').value;
+                const startDate = document.getElementById('cutiStartDate').value;
+                const endDate = document.getElementById('cutiEndDate').value;
+                
+                addCuti(employeeName, startDate, endDate);
+            });
+            
+            // Setup tambah baris rekap lembur
+            document.getElementById('addRekapRow').addEventListener('click', addRekapLemburRow);
+            
+            // Setup simpan form rekap lembur
+            document.getElementById('saveRekapLembur').addEventListener('click', saveFormRekapLembur);
+            
+            // Setup event listener untuk Total Plant pada form rekap lembur
+            document.addEventListener('input', function(e) {
+                if (e.target.classList.contains('total-plant')) {
+                    const row = e.target.getAttribute('data-row');
+                    const plantNameSelect = document.getElementById(`plantName${row}`);
+                    
+                    if (e.target.value.trim() !== '') {
+                        plantNameSelect.disabled = false;
+                    } else {
+                        plantNameSelect.disabled = true;
+                        plantNameSelect.value = '';
+                    }
+                }
+            });
+            
+            // Event listeners lainnya
+            document.getElementById('applyHeaderSize').addEventListener('click', applyHeaderSize);
+            document.getElementById('applyFilter').addEventListener('click', applyFilterHandler);
+            document.getElementById('saveData').addEventListener('click', function() {
+                saveDataToFirestore();
+                // Simpan data ke absenTabelData juga
+                absenTabelData = [...absenTabelData, ...absensiData];
+                
+                // Simpan ke Firestore
+                const batch = db.batch();
+                
+                // Hapus semua data absen tabel lama
+                db.collection('absenTabel').get().then((querySnapshot) => {
+                    querySnapshot.forEach((doc) => {
+                        batch.delete(doc.ref);
+                    });
+                    
+                    // Tambahkan data absen tabel baru
+                    absenTabelData.forEach((data) => {
+                        const docRef = db.collection('absenTabel').doc();
+                        batch.set(docRef, data);
+                    });
+                    
+                    // Eksekusi batch
+                    return batch.commit();
+                })
+                .then(() => {
+                    alert('Data successfully saved!');
+                    
+                    // Update attendance table if admin is logged in
+                    if (currentUser && currentUser.role === 'admin') {
+                        generateAbsenTabelTable();
+                    }
+                })
+                .catch((error) => {
+                    console.error('Error saving data to Firestore:', error);
+                    alert('Error saving data: ' + error.message);
+                });
+            });
+            
+            document.getElementById('exportExcel').addEventListener('click', function() {
+                let table, filename;
+                
+                if (currentTab === 'entry') {
+                    table = document.getElementById('entryTable');
+                    filename = "Attendance_Entry_Data.xlsx";
+                } else if (currentTab === 'output') {
+                    table = document.getElementById('outputTable');
+                    filename = "Attendance_Output_Data.xlsx";
+                } else if (currentTab === 'overtime') {
+                    // Untuk export overtime, kita perlu membuat tabel khusus
+                    exportOvertimeToExcel();
+                    return;
+                } else if (currentTab === 'absen-tabel') {
+                    table = document.getElementById('absenTabelTable');
+                    filename = "Attendance_Table_Data.xlsx";
+                } else if (currentTab === 'cuti') {
+                    table = document.getElementById('cutiTable');
+                    filename = "Leave_Data.xlsx";
+                } else if (currentTab === 'cuti-detail') {
+                    table = document.getElementById('cutiDetailTable');
+                    filename = "Leave_Detail_Data.xlsx";
+                } else if (currentTab === 'form-rekap-lembur') {
+                    // Untuk export form rekap lembur, kita perlu membuat tabel khusus
+                    exportFormRekapLemburToExcel();
+                    return;
+                }
+                
+                if (table) {
+                    const wb = XLSX.utils.book_new();
+                    const ws = XLSX.utils.table_to_sheet(table);
+                    XLSX.utils.book_append_sheet(wb, ws, "Attendance Data");
+                    XLSX.writeFile(wb, filename);
+                }
+            });
+            
+            document.getElementById('addRow').addEventListener('click', function() {
+                const tbody = document.querySelector('#entryTable tbody');
+                const newRow = document.createElement('tr');
+                
+                let rowHTML = `
+                    <td><input type="text" class="area-input read-only-input" readonly ondblclick="makeEditable(this)"></td>
+                    <td><input type="text" class="name-input read-only-input" readonly ondblclick="makeEditable(this)"></td>
+                    <td><input type="text" class="position-input read-only-input" readonly ondblclick="makeEditable(this)"></td>
+                `;
+                
+                dateRange.forEach(() => {
+                    rowHTML += '<td><input type="text" class="shift-input" onchange="updateShiftColor(this)"></td>';
+                });
+                
+                rowHTML += '<td><button class="btn-delete" onclick="deleteRow(this)"><i class="fas fa-trash"></i></button></td>';
+                
+                newRow.innerHTML = rowHTML;
+                tbody.appendChild(newRow);
+                
+                initializeShiftColors();
+                addArrowNavigation();
+            });
+        });
     </script>
 </body>
 </html>

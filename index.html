@@ -63,6 +63,19 @@
             display: none;
         }
 
+        .form-control {
+            border-radius: 5px;
+            border: 1px solid #ced4da;
+            padding: 10px 15px;
+            font-size: 1rem;
+            transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+        }
+
+        .form-control:focus {
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 0.25rem rgba(123, 137, 201, 0.25);
+        }
+
         /* Header Styles */
         .futuristic-header {
             background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
@@ -500,8 +513,7 @@
             justify-content: space-between;
         }
 
-        .active;
-            align-items: center, .collapsible:hover {
+        .active, .collapsible:hover {
             background-color: #e2e3e5;
         }
 
@@ -611,25 +623,61 @@
         }
 
         .cuti-detail-table th {
-            background-color: #f8f9fa;
+            background-color: var(--secondary-color);
+            color: white;
             font-weight: bold;
         }
 
-        /* Rekap Lembur Styles */
-        .rekap-lebur-table {
+        /* Rekap Lembur Form Styles */
+        .rekap-lembur-form {
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .rekap-lembur-form .form-group {
+            margin-bottom: 15px;
+        }
+
+        .rekap-lembur-form label {
+            font-weight: 600;
+            margin-bottom: 5px;
+            display: block;
+        }
+
+        .rekap-lembur-form .form-control {
+            border-radius: 5px;
+            border: 1px solid #ced4da;
+            padding: 8px 12px;
+        }
+
+        .rekap-lembur-form .time-inputs {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .rekap-lembur-form .time-inputs .form-control {
+            flex: 1;
+        }
+
+        .rekap-lembur-table {
             width: 100%;
             border-collapse: collapse;
             margin-top: 15px;
         }
 
-        .rekap-lebur-table th, .rekap-lebur-table td {
+        .rekap-lembur-table th, .rekap-lembur-table td {
             padding: 10px;
             text-align: left;
-            border-bottom: 1px solid #ddd;
+            border: 1px solid #ddd;
         }
 
-        .rekap-lebur-table th {
-            background-color: #f8f9fa;
+        .rekap-lembur-table th {
+            background-color: var(--secondary-color);
+            color: white;
             font-weight: bold;
         }
 
@@ -698,9 +746,9 @@
                         </a>
                     </li>
                     <li>
-                        <a href="#" data-tab="rekap-lembur">
+                        <a href="#" data-tab="form-rekap-lembur">
                             <i class="fas fa-calculator"></i>
-                            <span>Rekap Lembur</span>
+                            <span>Form Rekap Lembur</span>
                         </a>
                     </li>
                     <li>
@@ -1062,30 +1110,85 @@
                     </div>
                 </div>
 
-                <!-- Rekap Lembur Tab -->
-                <div class="tab-pane fade" id="rekap-lembur" role="tabpanel">
-                    <button type="button" class="collapsible">Rekap Lembur Karyawan</button>
+                <!-- Form Rekap Lembur Tab -->
+                <div class="tab-pane fade" id="form-rekap-lembur" role="tabpanel">
+                    <button type="button" class="collapsible">Form Rekap Lembur</button>
                     <div class="collapsible-content">
-                        <p>Rekapitulasi lembur karyawan berdasarkan periode tertentu.</p>
+                        <p>Isi form rekap lembur untuk mencatat kegiatan lembur Anda.</p>
                     </div>
 
-                    <div class="table-responsive">
-                        <table class="rekap-lebur-table" id="rekapLemburTable">
-                            <thead>
-                                <tr>
-                                    <th>No</th>
-                                    <th>Nama Karyawan</th>
-                                    <th>Area</th>
-                                    <th>Position</th>
-                                    <th>Total Lembur</th>
-                                    <th>RKP PIC</th>
-                                    <th>Uraian Tugas</th>
-                                </tr>
-                            </thead>
-                            <tbody id="rekapLemburTableBody">
-                                <!-- Data akan diisi oleh JavaScript -->
-                            </tbody>
-                        </table>
+                    <div class="rekap-lembur-form">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="rekapEmployeeName">Employee Name</label>
+                                    <input type="text" class="form-control" id="rekapEmployeeName" readonly>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="rekapDate">Date</label>
+                                    <input type="date" class="form-control" id="rekapDate">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Time Range</label>
+                            <div class="time-inputs">
+                                <input type="time" class="form-control" id="rekapStartTime" placeholder="Start Time">
+                                <span>-</span>
+                                <input type="time" class="form-control" id="rekapEndTime" placeholder="End Time">
+                            </div>
+                        </div>
+                        
+                        <div class="table-responsive">
+                            <table class="rekap-lembur-table" id="rekapLemburTable">
+                                <thead>
+                                    <tr>
+                                        <th>No</th>
+                                        <th>Total Project</th>
+                                        <th>Total Plant</th>
+                                        <th>Plant Name</th>
+                                        <th>Volume (m3)</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="rekapLemburTableBody">
+                                    <tr>
+                                        <td>1</td>
+                                        <td><input type="text" class="form-control" id="totalProject1"></td>
+                                        <td><input type="text" class="form-control total-plant" data-row="1" id="totalPlant1"></td>
+                                        <td>
+                                            <select class="form-select plant-name" data-row="1" id="plantName1" disabled>
+                                                <option value="">Pilih Plant</option>
+                                                <option value="Denpasar2">Denpasar2</option>
+                                                <option value="Gianyar">Gianyar</option>
+                                                <option value="Manyar">Manyar</option>
+                                                <option value="Manukan">Manukan</option>
+                                                <option value="Kediri">Kediri</option>
+                                                <option value="Gempol">Gempol</option>
+                                                <option value="Krian">Krian</option>
+                                            </select>
+                                        </td>
+                                        <td><input type="text" class="form-control" id="volume1"></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="uraianTugas">Uraian Tugas</label>
+                            <textarea class="form-control" id="uraianTugas" rows="3" placeholder="Deskripsikan uraian tugas lembur Anda..."></textarea>
+                        </div>
+                        
+                        <div class="action-buttons">
+                            <button class="btn btn-futuristic" id="addRekapRow">
+                                <i class="fas fa-plus me-1"></i> Tambah Baris
+                            </button>
+                            <button class="btn btn-futuristic" id="saveRekapLembur">
+                                <i class="fas fa-save me-1"></i> Simpan
+                            </button>
+                        </div>
                     </div>
                 </div>
 
@@ -1284,6 +1387,7 @@
         let cutiData = [];
         let currentUser = null;
         let rekapLemburData = [];
+        let formRekapLemburData = [];
 
         // Fungsi untuk memformat tanggal
         function formatDate(date) {
@@ -1909,6 +2013,148 @@
             });
         }
 
+        // Fungsi untuk menambah baris pada form rekap lembur
+        function addRekapLemburRow() {
+            const tbody = document.getElementById('rekapLemburTableBody');
+            const rowCount = tbody.children.length + 1;
+            
+            const newRow = document.createElement('tr');
+            newRow.innerHTML = `
+                <td>${rowCount}</td>
+                <td><input type="text" class="form-control" id="totalProject${rowCount}"></td>
+                <td><input type="text" class="form-control total-plant" data-row="${rowCount}" id="totalPlant${rowCount}"></td>
+                <td>
+                    <select class="form-select plant-name" data-row="${rowCount}" id="plantName${rowCount}" disabled>
+                        <option value="">Pilih Plant</option>
+                        <option value="Denpasar2">Denpasar2</option>
+                        <option value="Gianyar">Gianyar</option>
+                        <option value="Manyar">Manyar</option>
+                        <option value="Manukan">Manukan</option>
+                        <option value="Kediri">Kediri</option>
+                        <option value="Gempol">Gempol</option>
+                        <option value="Krian">Krian</option>
+                    </select>
+                </td>
+                <td><input type="text" class="form-control" id="volume${rowCount}"></td>
+            `;
+            
+            tbody.appendChild(newRow);
+            
+            // Tambahkan event listener untuk Total Plant
+            const totalPlantInput = document.getElementById(`totalPlant${rowCount}`);
+            const plantNameSelect = document.getElementById(`plantName${rowCount}`);
+            
+            totalPlantInput.addEventListener('input', function() {
+                if (this.value.trim() !== '') {
+                    plantNameSelect.disabled = false;
+                } else {
+                    plantNameSelect.disabled = true;
+                    plantNameSelect.value = '';
+                }
+            });
+        }
+
+        // Fungsi untuk menyimpan form rekap lembur
+        function saveFormRekapLembur() {
+            const employeeName = document.getElementById('rekapEmployeeName').value;
+            const date = document.getElementById('rekapDate').value;
+            const startTime = document.getElementById('rekapStartTime').value;
+            const endTime = document.getElementById('rekapEndTime').value;
+            const uraianTugas = document.getElementById('uraianTugas').value;
+            
+            if (!employeeName || !date || !startTime || !endTime) {
+                alert('Semua field wajib diisi!');
+                return;
+            }
+            
+            const tbody = document.getElementById('rekapLemburTableBody');
+            const rows = tbody.children;
+            
+            if (rows.length === 0) {
+                alert('Tambahkan minimal satu baris data!');
+                return;
+            }
+            
+            const projects = [];
+            
+            for (let i = 0; i < rows.length; i++) {
+                const row = rows[i];
+                const totalProject = document.getElementById(`totalProject${i + 1}`).value;
+                const totalPlant = document.getElementById(`totalPlant${i + 1}`).value;
+                const plantName = document.getElementById(`plantName${i + 1}`).value;
+                const volume = document.getElementById(`volume${i + 1}`).value;
+                
+                if (!totalProject || !totalPlant || !plantName || !volume) {
+                    alert('Semua kolom pada tabel harus diisi!');
+                    return;
+                }
+                
+                projects.push({
+                    totalProject,
+                    totalPlant,
+                    plantName,
+                    volume
+                });
+            }
+            
+            const newRekap = {
+                id: formRekapLemburData.length > 0 ? Math.max(...formRekapLemburData.map(r => r.id)) + 1 : 1,
+                employeeName,
+                date,
+                startTime,
+                endTime,
+                projects,
+                uraianTugas,
+                createdBy: currentUser.username
+            };
+            
+            formRekapLemburData.push(newRekap);
+            localStorage.setItem('formRekapLemburData', JSON.stringify(formRekapLemburData));
+            
+            alert('Data rekap lembur berhasil disimpan!');
+            
+            // Reset form
+            document.getElementById('rekapDate').value = '';
+            document.getElementById('rekapStartTime').value = '';
+            document.getElementById('rekapEndTime').value = '';
+            document.getElementById('uraianTugas').value = '';
+            
+            // Reset table
+            tbody.innerHTML = `
+                <tr>
+                    <td>1</td>
+                    <td><input type="text" class="form-control" id="totalProject1"></td>
+                    <td><input type="text" class="form-control total-plant" data-row="1" id="totalPlant1"></td>
+                    <td>
+                        <select class="form-select plant-name" data-row="1" id="plantName1" disabled>
+                            <option value="">Pilih Plant</option>
+                            <option value="Denpasar2">Denpasar2</option>
+                            <option value="Gianyar">Gianyar</option>
+                            <option value="Manyar">Manyar</option>
+                            <option value="Manukan">Manukan</option>
+                            <option value="Kediri">Kediri</option>
+                            <option value="Gempol">Gempol</option>
+                            <option value="Krian">Krian</option>
+                        </select>
+                    </td>
+                    <td><input type="text" class="form-control" id="volume1"></td>
+                </tr>
+            `;
+            
+            // Re-add event listener
+            const totalPlantInput = document.getElementById('totalPlant1');
+            const plantNameSelect = document.getElementById('plantName1');
+            
+            totalPlantInput.addEventListener('input', function() {
+                if (this.value.trim() !== '') {
+                    plantNameSelect.disabled = false;
+                } else {
+                    plantNameSelect.disabled = true;
+                    plantNameSelect.value = '';
+                }
+            });
+        }
+
         // Inisialisasi aplikasi
         document.addEventListener('DOMContentLoaded', function() {
             // Load data dari localStorage
@@ -1925,6 +2171,10 @@
             // Inisialisasi data rekap lembur
             const savedRekapLemburData = JSON.parse(localStorage.getItem('rekapLemburData'));
             rekapLemburData = savedRekapLemburData || [];
+            
+            // Inisialisasi data form rekap lembur
+            const savedFormRekapLemburData = JSON.parse(localStorage.getItem('formRekapLemburData'));
+            formRekapLemburData = savedFormRekapLemburData || [];
             
             // Setup login
             document.getElementById('loginBtn').addEventListener('click', function() {
@@ -2044,6 +2294,27 @@
                 addCuti(employeeName, startDate, endDate);
             });
             
+            // Setup tambah baris rekap lembur
+            document.getElementById('addRekapRow').addEventListener('click', addRekapLemburRow);
+            
+            // Setup simpan form rekap lembur
+            document.getElementById('saveRekapLembur').addEventListener('click', saveFormRekapLembur);
+            
+            // Setup event listener untuk Total Plant pada form rekap lembur
+            document.addEventListener('input', function(e) {
+                if (e.target.classList.contains('total-plant')) {
+                    const row = e.target.getAttribute('data-row');
+                    const plantNameSelect = document.getElementById(`plantName${row}`);
+                    
+                    if (e.target.value.trim() !== '') {
+                        plantNameSelect.disabled = false;
+                    } else {
+                        plantNameSelect.disabled = true;
+                        plantNameSelect.value = '';
+                    }
+                }
+            });
+            
             // Event listeners lainnya
             document.getElementById('applyHeaderSize').addEventListener('click', applyHeaderSize);
             document.getElementById('applyFilter').addEventListener('click', applyFilterHandler);
@@ -2077,9 +2348,10 @@
                 } else if (currentTab === 'cuti-detail') {
                     table = document.getElementById('cutiDetailTable');
                     filename = "Data_Cuti_Detail.xlsx";
-                } else if (currentTab === 'rekap-lembur') {
-                    table = document.getElementById('rekapLemburTable');
-                    filename = "Data_Rekap_Lembur.xlsx";
+                } else if (currentTab === 'form-rekap-lembur') {
+                    // Untuk export form rekap lembur, kita perlu membuat tabel khusus
+                    exportFormRekapLemburToExcel();
+                    return;
                 }
                 
                 if (table) {
@@ -2180,6 +2452,50 @@
             const ws = XLSX.utils.aoa_to_sheet(overtimeDataToExport);
             XLSX.utils.book_append_sheet(wb, ws, "Perhitungan Lembur");
             XLSX.writeFile(wb, "Data_Overtime_Absensi.xlsx");
+        }
+
+        // Fungsi khusus untuk export data form rekap lembur ke Excel
+        function exportFormRekapLemburToExcel() {
+            const wb = XLSX.utils.book_new();
+            
+            // Filter data berdasarkan user yang sedang login
+            const userRekapData = formRekapLemburData.filter(rekap => rekap.employeeName === currentUser.username);
+            
+            if (userRekapData.length === 0) {
+                alert('Tidak ada data rekap lembur untuk user ini!');
+                return;
+            }
+            
+            // Header
+            const header = [
+                "No", "Employee Name", "Date", "Start Time", "End Time", 
+                "Total Project", "Total Plant", "Plant Name", "Volume (m3)", "Uraian Tugas"
+            ];
+            
+            userRekapData.forEach((rekap, rekapIndex) => {
+                const wsData = [header];
+                
+                rekap.projects.forEach((project, projectIndex) => {
+                    const rowData = [
+                        projectIndex + 1,
+                        rekap.employeeName,
+                        rekap.date,
+                        rekap.startTime,
+                        rekap.endTime,
+                        project.totalProject,
+                        project.totalPlant,
+                        project.plantName,
+                        project.volume,
+                        projectIndex === 0 ? rekap.uraianTugas : '' // Hanya tampilkan uraian tugas di baris pertama
+                    ];
+                    wsData.push(rowData);
+                });
+                
+                const ws = XLSX.utils.aoa_to_sheet(wsData);
+                XLSX.utils.book_append_sheet(wb, ws, `Rekap Lembur ${rekapIndex + 1}`);
+            });
+            
+            XLSX.writeFile(wb, `Data_Form_Rekap_Lembur_${currentUser.username}.xlsx`);
         }
 
         // Handler untuk menerapkan filter
@@ -2306,6 +2622,11 @@
                         generateAbsenTabelTable();
                     }
                     
+                    // Jika tab form-rekap-lembur, setup form
+                    if (tabName === 'form-rekap-lembur') {
+                        setupFormRekapLembur();
+                    }
+                    
                     // Jika tab cuti-detail, tampilkan data cuti detail
                     if (tabName === 'cuti-detail') {
                         displayCutiDetail();
@@ -2332,6 +2653,33 @@
             if (currentUser && currentUser.role === 'admin') {
                 document.getElementById('mainFolder').classList.add('expanded');
             }
+        }
+
+        // Fungsi untuk setup form rekap lembur
+        function setupFormRekapLembur() {
+            // Set employee name based on current user
+            const employeeNameInput = document.getElementById('rekapEmployeeName');
+            employeeNameInput.value = currentUser.username;
+            
+            // Set default date to today
+            const dateInput = document.getElementById('rekapDate');
+            if (!dateInput.value) {
+                const today = new Date();
+                dateInput.valueAsDate = today;
+            }
+            
+            // Setup event listener for the first row
+            const totalPlantInput = document.getElementById('totalPlant1');
+            const plantNameSelect = document.getElementById('plantName1');
+            
+            totalPlantInput.addEventListener('input', function() {
+                if (this.value.trim() !== '') {
+                    plantNameSelect.disabled = false;
+                } else {
+                    plantNameSelect.disabled = true;
+                    plantNameSelect.value = '';
+                }
+            });
         }
 
         // Fungsi untuk update dropdown nama karyawan

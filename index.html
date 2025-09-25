@@ -207,6 +207,42 @@
             display: inline;
         }
 
+        .sidebar-folder {
+            margin-bottom: 10px;
+        }
+
+        .sidebar-folder-header {
+            display: flex;
+            align-items: center;
+            padding: 10px 15px;
+            color: var(--text-color);
+            cursor: pointer;
+            font-weight: bold;
+            transition: background-color 0.3s;
+        }
+
+        .sidebar-folder-header:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .sidebar-folder-header i {
+            margin-right: 10px;
+            transition: transform 0.3s;
+        }
+
+        .sidebar-folder.expanded .sidebar-folder-header i {
+            transform: rotate(90deg);
+        }
+
+        .sidebar-folder-content {
+            display: none;
+            padding-left: 25px;
+        }
+
+        .sidebar-folder.expanded .sidebar-folder-content {
+            display: block;
+        }
+
         .main-content {
             margin-left: var(--sidebar-collapsed-width);
             transition: margin-left 0.3s;
@@ -216,6 +252,61 @@
 
         .main-content.expanded {
             margin-left: var(--sidebar-width);
+        }
+
+        /* User Password Section */
+        .user-password-section {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: var(--sidebar-collapsed-width);
+            background-color: rgba(0, 0, 0, 0.2);
+            padding: 15px;
+            transition: width 0.3s;
+            z-index: 1001;
+            display: none;
+        }
+
+        .sidebar.expanded + .user-password-section {
+            width: var(--sidebar-width);
+        }
+
+        .user-password-section.expanded {
+            width: var(--sidebar-width);
+        }
+
+        .user-password-btn {
+            width: 100%;
+            background: none;
+            border: 1px solid var(--text-color);
+            color: var(--text-color);
+            padding: 8px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .user-password-btn:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .user-password-btn i {
+            margin-right: 0;
+        }
+
+        .user-password-section.expanded .user-password-btn i {
+            margin-right: 8px;
+        }
+
+        .user-password-section.expanded .user-password-btn span {
+            display: inline;
+        }
+
+        .user-password-btn span {
+            display: none;
         }
 
         /* Filter Section */
@@ -407,10 +498,10 @@
             margin-bottom: 10px;
             display: flex;
             justify-content: space-between;
-            align-items: center;
         }
 
-        .active, .collapsible:hover {
+        .active;
+            align-items: center, .collapsible:hover {
             background-color: #e2e3e5;
         }
 
@@ -506,6 +597,42 @@
             border-radius: 5px;
         }
 
+        /* Cuti Detail Styles */
+        .cuti-detail-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        .cuti-detail-table th, .cuti-detail-table td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .cuti-detail-table th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+        }
+
+        /* Rekap Lembur Styles */
+        .rekap-lebur-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        .rekap-lebur-table th, .rekap-lebur-table td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .rekap-lebur-table th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+        }
+
         /* Responsive Styles */
         @media (max-width: 768px) {
             .sidebar {
@@ -518,6 +645,10 @@
             
             .futuristic-header {
                 margin-left: var(--sidebar-collapsed-width);
+            }
+            
+            .user-password-section {
+                width: var(--sidebar-collapsed-width);
             }
         }
     </style>
@@ -551,37 +682,75 @@
                 <i class="fas fa-bars"></i>
             </button>
         </div>
+        
+        <!-- General Folder (User & Admin) -->
+        <div class="sidebar-folder" id="generalFolder">
+            <div class="sidebar-folder-header">
+                <i class="fas fa-folder"></i>
+                <span>General</span>
+            </div>
+            <div class="sidebar-folder-content">
+                <ul class="sidebar-menu">
+                    <li>
+                        <a href="#" data-tab="absen-tabel">
+                            <i class="fas fa-table"></i>
+                            <span>Absen Tabel</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" data-tab="rekap-lembur">
+                            <i class="fas fa-calculator"></i>
+                            <span>Rekap Lembur</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" data-tab="cuti-detail">
+                            <i class="fas fa-calendar-alt"></i>
+                            <span>Cuti Detail</span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        
+        <!-- Main Folder (Admin Only) -->
+        <div class="sidebar-folder" id="mainFolder">
+            <div class="sidebar-folder-header">
+                <i class="fas fa-folder"></i>
+                <span>Main</span>
+            </div>
+            <div class="sidebar-folder-content">
+                <ul class="sidebar-menu">
+                    <li>
+                        <a href="#" data-tab="entry">
+                            <i class="fas fa-pen-to-square"></i>
+                            <span>Entry Absensi</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" data-tab="output">
+                            <i class="fas fa-file-export"></i>
+                            <span>Output Absen</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" data-tab="overtime">
+                            <i class="fas fa-calculator"></i>
+                            <span>Perhitungan Lembur</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" data-tab="cuti">
+                            <i class="fas fa-calendar-alt"></i>
+                            <span>Manajemen Cuti</span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        
+        <!-- Settings Menu (Admin Only) -->
         <ul class="sidebar-menu">
-            <li>
-                <a href="#" class="active" data-tab="entry">
-                    <i class="fas fa-pen-to-square"></i>
-                    <span>Entry Absensi</span>
-                </a>
-            </li>
-            <li>
-                <a href="#" data-tab="output">
-                    <i class="fas fa-file-export"></i>
-                    <span>Output Absen</span>
-                </a>
-            </li>
-            <li>
-                <a href="#" data-tab="overtime">
-                    <i class="fas fa-calculator"></i>
-                    <span>Perhitungan Lembur</span>
-                </a>
-            </li>
-            <li>
-                <a href="#" data-tab="absen-tabel">
-                    <i class="fas fa-table"></i>
-                    <span>Absen Tabel</span>
-                </a>
-            </li>
-            <li>
-                <a href="#" data-tab="cuti">
-                    <i class="fas fa-calendar-alt"></i>
-                    <span>Manajemen Cuti</span>
-                </a>
-            </li>
             <li>
                 <a href="#" data-tab="setting">
                     <i class="fas fa-cog"></i>
@@ -595,6 +764,14 @@
                 </a>
             </li>
         </ul>
+    </div>
+
+    <!-- User Password Section -->
+    <div class="user-password-section" id="userPasswordSection">
+        <button class="user-password-btn" id="changePasswordSidebarBtn">
+            <i class="fas fa-key"></i>
+            <span>Ganti Password</span>
+        </button>
     </div>
 
     <!-- Header -->
@@ -639,7 +816,7 @@
             <!-- Tab Content -->
             <div class="tab-content" id="absensiTabContent">
                 <!-- Entry Tab -->
-                <div class="tab-pane fade show active" id="entry" role="tabpanel">
+                <div class="tab-pane fade" id="entry" role="tabpanel">
                     <button type="button" class="collapsible">Form Entry Absensi</button>
                     <div class="collapsible-content">
                         <p>Masukkan kode shift (1, 2, 3, 11, 22, C, O) untuk mengisi sel dan melihat warna sesuai jenis shift.</p>
@@ -857,6 +1034,61 @@
                     </div>
                 </div>
 
+                <!-- Cuti Detail Tab -->
+                <div class="tab-pane fade" id="cuti-detail" role="tabpanel">
+                    <button type="button" class="collapsible">Detail Cuti Karyawan</button>
+                    <div class="collapsible-content">
+                        <p>Detail data cuti karyawan yang telah disimpan.</p>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="cuti-detail-table" id="cutiDetailTable">
+                            <thead>
+                                <tr>
+                                    <th>No</th>
+                                    <th>Nama Karyawan</th>
+                                    <th>Area</th>
+                                    <th>Position</th>
+                                    <th>Tanggal Mulai</th>
+                                    <th>Tanggal Selesai</th>
+                                    <th>Durasi (Hari)</th>
+                                    <th>Sisa Cuti</th>
+                                </tr>
+                            </thead>
+                            <tbody id="cutiDetailTableBody">
+                                <!-- Data akan diisi oleh JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Rekap Lembur Tab -->
+                <div class="tab-pane fade" id="rekap-lembur" role="tabpanel">
+                    <button type="button" class="collapsible">Rekap Lembur Karyawan</button>
+                    <div class="collapsible-content">
+                        <p>Rekapitulasi lembur karyawan berdasarkan periode tertentu.</p>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="rekap-lebur-table" id="rekapLemburTable">
+                            <thead>
+                                <tr>
+                                    <th>No</th>
+                                    <th>Nama Karyawan</th>
+                                    <th>Area</th>
+                                    <th>Position</th>
+                                    <th>Total Lembur</th>
+                                    <th>RKP PIC</th>
+                                    <th>Uraian Tugas</th>
+                                </tr>
+                            </thead>
+                            <tbody id="rekapLemburTableBody">
+                                <!-- Data akan diisi oleh JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
                 <!-- Setting Tab -->
                 <div class="tab-pane fade" id="setting" role="tabpanel">
                     <button type="button" class="collapsible">Pengaturan Sistem</button>
@@ -972,6 +1204,36 @@
         </div>
     </div>
 
+    <!-- Modal untuk Ganti Password (User) -->
+    <div class="modal fade" id="changePasswordModal" tabindex="-1" aria-labelledby="changePasswordModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="changePasswordModalLabel">Ganti Password</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="userCurrentPassword" class="form-label">Password Saat Ini</label>
+                        <input type="password" class="form-control" id="userCurrentPassword">
+                    </div>
+                    <div class="mb-3">
+                        <label for="userNewPassword" class="form-label">Password Baru</label>
+                        <input type="password" class="form-control" id="userNewPassword">
+                    </div>
+                    <div class="mb-3">
+                        <label for="userConfirmPassword" class="form-label">Konfirmasi Password Baru</label>
+                        <input type="password" class="form-control" id="userConfirmPassword">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="button" class="btn btn-futuristic" id="userChangePasswordBtn">Ubah Password</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         // Data matrik untuk shift
@@ -1021,6 +1283,7 @@
         let users = [];
         let cutiData = [];
         let currentUser = null;
+        let rekapLemburData = [];
 
         // Fungsi untuk memformat tanggal
         function formatDate(date) {
@@ -1121,6 +1384,11 @@
             overtimeData[key][field] = input.value;
             
             localStorage.setItem('overtimeData', JSON.stringify(overtimeData));
+            
+            // Jika field yang disimpan adalah rkppic, update rekap lembur
+            if (field === 'rkppic') {
+                updateRekapLembur();
+            }
         }
 
         // Fungsi untuk menghitung overtime
@@ -1194,15 +1462,50 @@
                 currentUser = user;
                 document.getElementById('loginContainer').style.display = 'none';
                 document.getElementById('sidebar').style.display = 'block';
+                document.getElementById('userPasswordSection').style.display = 'block';
                 document.getElementById('mainContent').style.display = 'block';
                 document.querySelector('.futuristic-header').style.display = 'block';
                 
                 // Tampilkan nama user yang login di header
                 document.querySelector('.header-subtitle').innerHTML += ` | Login sebagai: ${user.username} (${user.role})`;
                 
+                // Setup menu berdasarkan role
+                setupMenuByRole(user.role);
+                
                 return true;
             }
             return false;
+        }
+
+        // Fungsi untuk setup menu berdasarkan role
+        function setupMenuByRole(role) {
+            // Sembunyikan semua menu terlebih dahulu
+            document.querySelectorAll('.sidebar-menu a').forEach(menu => {
+                menu.style.display = 'none';
+            });
+            
+            document.querySelectorAll('.sidebar-folder').forEach(folder => {
+                folder.style.display = 'none';
+            });
+            
+            // Tampilkan menu General untuk semua role
+            document.getElementById('generalFolder').style.display = 'block';
+            document.querySelectorAll('#generalFolder .sidebar-menu a').forEach(menu => {
+                menu.style.display = 'flex';
+            });
+            
+            // Tampilkan menu Main dan Pengaturan hanya untuk admin
+            if (role === 'admin') {
+                document.getElementById('mainFolder').style.display = 'block';
+                document.querySelectorAll('#mainFolder .sidebar-menu a').forEach(menu => {
+                    menu.style.display = 'flex';
+                });
+                
+                document.querySelector('[data-tab="setting"]').style.display = 'flex';
+            }
+            
+            // Tampilkan menu logout untuk semua role
+            document.getElementById('logoutBtn').style.display = 'flex';
         }
 
         // Fungsi untuk logout
@@ -1210,6 +1513,7 @@
             currentUser = null;
             document.getElementById('loginContainer').style.display = 'flex';
             document.getElementById('sidebar').style.display = 'none';
+            document.getElementById('userPasswordSection').style.display = 'none';
             document.getElementById('mainContent').style.display = 'none';
             document.querySelector('.futuristic-header').style.display = 'none';
             document.getElementById('username').value = '';
@@ -1369,6 +1673,69 @@
             });
         }
 
+        // Fungsi untuk menampilkan data cuti detail
+        function displayCutiDetail() {
+            const cutiDetailTableBody = document.getElementById('cutiDetailTableBody');
+            cutiDetailTableBody.innerHTML = '';
+            
+            if (cutiData.length === 0) {
+                cutiDetailTableBody.innerHTML = '<tr><td colspan="8" class="text-center">Tidak ada data cuti</td></tr>';
+                return;
+            }
+            
+            // Group cuti data by employee
+            const cutiByEmployee = {};
+            cutiData.forEach(cuti => {
+                if (!cutiByEmployee[cuti.employeeName]) {
+                    cutiByEmployee[cuti.employeeName] = [];
+                }
+                cutiByEmployee[cuti.employeeName].push(cuti);
+            });
+            
+            // Get employee data
+            const employees = [...absensiData, ...initialEmployees];
+            
+            let index = 1;
+            for (const employeeName in cutiByEmployee) {
+                const employee = employees.find(emp => emp.name === employeeName);
+                const area = employee ? employee.area : '-';
+                const position = employee ? employee.position : '-';
+                
+                // Calculate total cuti days
+                let totalCutiDays = 0;
+                cutiByEmployee[employeeName].forEach(cuti => {
+                    const startDate = new Date(cuti.startDate);
+                    const endDate = new Date(cuti.endDate);
+                    const duration = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+                    totalCutiDays += duration;
+                });
+                
+                // Calculate remaining cuti days (assuming 12 days per year)
+                const remainingCutiDays = Math.max(0, 12 - totalCutiDays);
+                
+                // Create rows for each cuti period
+                cutiByEmployee[employeeName].forEach(cuti => {
+                    const startDate = new Date(cuti.startDate);
+                    const endDate = new Date(cuti.endDate);
+                    const duration = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+                    
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${index}</td>
+                        <td>${employeeName}</td>
+                        <td>${area}</td>
+                        <td>${position}</td>
+                        <td>${formatDate(startDate)}</td>
+                        <td>${formatDate(endDate)}</td>
+                        <td>${duration}</td>
+                        <td>${remainingCutiDays}</td>
+                    `;
+                    cutiDetailTableBody.appendChild(row);
+                    index++;
+                });
+            }
+        }
+
         // Fungsi untuk menambah cuti
         function addCuti(employeeName, startDate, endDate) {
             if (!employeeName || !startDate || !endDate) {
@@ -1390,6 +1757,7 @@
             cutiData.push(newCuti);
             localStorage.setItem('cutiData', JSON.stringify(cutiData));
             displayCuti();
+            displayCutiDetail();
             alert('Data cuti berhasil ditambahkan!');
             
             // Update tabel absensi dengan data cuti
@@ -1402,6 +1770,7 @@
                 cutiData = cutiData.filter(c => c.id !== id);
                 localStorage.setItem('cutiData', JSON.stringify(cutiData));
                 displayCuti();
+                displayCutiDetail();
                 alert('Data cuti berhasil dihapus!');
                 
                 // Update tabel absensi setelah menghapus cuti
@@ -1446,6 +1815,100 @@
             saveDataToLocalStorage();
         }
 
+        // Fungsi untuk mengupdate rekap lembur
+        function updateRekapLembur() {
+            rekapLemburData = [];
+            
+            // Group overtime data by employee
+            const overtimeByEmployee = {};
+            
+            for (const key in overtimeData) {
+                const overtime = overtimeData[key];
+                if (overtime.rkppic) {
+                    const keyParts = key.split('-');
+                    const employeeName = keyParts[0];
+                    const position = keyParts[1];
+                    const dateStr = keyParts[2] + '-' + keyParts[3] + '-' + keyParts[4];
+                    
+                    if (!overtimeByEmployee[employeeName]) {
+                        overtimeByEmployee[employeeName] = {
+                            name: employeeName,
+                            position: position,
+                            totalOvertime: '00:00',
+                            rkppic: overtime.rkppic,
+                            remarks: overtime.remarks || '',
+                            dates: []
+                        };
+                    }
+                    
+                    // Add overtime hours
+                    if (overtime.overtime) {
+                        const [hours, minutes] = overtime.overtime.split(':').map(Number);
+                        const [totalHours, totalMinutes] = overtimeByEmployee[employeeName].totalOvertime.split(':').map(Number);
+                        
+                        let newHours = totalHours + hours;
+                        let newMinutes = totalMinutes + minutes;
+                        
+                        if (newMinutes >= 60) {
+                            newHours += Math.floor(newMinutes / 60);
+                            newMinutes = newMinutes % 60;
+                        }
+                        
+                        overtimeByEmployee[employeeName].totalOvertime = 
+                            `${String(newHours).padStart(2, '0')}:${String(newMinutes).padStart(2, '0')}`;
+                    }
+                    
+                    // Add date
+                    overtimeByEmployee[employeeName].dates.push(dateStr);
+                }
+            }
+            
+            // Convert to array
+            for (const employeeName in overtimeByEmployee) {
+                rekapLemburData.push(overtimeByEmployee[employeeName]);
+            }
+            
+            // Save to localStorage
+            localStorage.setItem('rekapLemburData', JSON.stringify(rekapLemburData));
+            
+            // Update display if rekap lembur tab is active
+            if (currentTab === 'rekap-lembur') {
+                displayRekapLembur();
+            }
+        }
+
+        // Fungsi untuk menampilkan data rekap lembur
+        function displayRekapLembur() {
+            const rekapLemburTableBody = document.getElementById('rekapLemburTableBody');
+            rekapLemburTableBody.innerHTML = '';
+            
+            if (rekapLemburData.length === 0) {
+                rekapLemburTableBody.innerHTML = '<tr><td colspan="7" class="text-center">Tidak ada data rekap lembur</td></tr>';
+                return;
+            }
+            
+            // Get employee data
+            const employees = [...absensiData, ...initialEmployees];
+            
+            rekapLemburData.forEach((rekap, index) => {
+                const employee = employees.find(emp => emp.name === rekap.name);
+                const area = employee ? employee.area : '-';
+                const position = employee ? employee.position : '-';
+                
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${index + 1}</td>
+                    <td>${rekap.name}</td>
+                    <td>${area}</td>
+                    <td>${position}</td>
+                    <td>${rekap.totalOvertime}</td>
+                    <td>${rekap.rkppic}</td>
+                    <td>${rekap.remarks}</td>
+                `;
+                rekapLemburTableBody.appendChild(row);
+            });
+        }
+
         // Inisialisasi aplikasi
         document.addEventListener('DOMContentLoaded', function() {
             // Load data dari localStorage
@@ -1458,6 +1921,10 @@
             // Inisialisasi data cuti
             const savedCutiData = JSON.parse(localStorage.getItem('cutiData'));
             cutiData = savedCutiData || [];
+            
+            // Inisialisasi data rekap lembur
+            const savedRekapLemburData = JSON.parse(localStorage.getItem('rekapLemburData'));
+            rekapLemburData = savedRekapLemburData || [];
             
             // Setup login
             document.getElementById('loginBtn').addEventListener('click', function() {
@@ -1483,9 +1950,20 @@
                     initSidebar();
                     displayUsers();
                     displayCuti();
+                    displayCutiDetail();
+                    displayRekapLembur();
                     
                     // Populate dropdown karyawan untuk cuti
                     populateCutiEmployeeDropdown();
+                    
+                    // Set active tab based on role
+                    if (currentUser.role === 'user') {
+                        // For user, set first tab in General folder as active
+                        document.querySelector('[data-tab="absen-tabel"]').click();
+                    } else {
+                        // For admin, set first tab in Main folder as active
+                        document.querySelector('[data-tab="entry"]').click();
+                    }
                 } else {
                     document.getElementById('loginError').style.display = 'block';
                 }
@@ -1522,7 +2000,7 @@
             // Setup update pengguna
             document.getElementById('updateUserBtn').addEventListener('click', updateUser);
             
-            // Setup ubah password
+            // Setup ubah password (admin)
             document.getElementById('changePasswordBtn').addEventListener('click', function() {
                 const currentPassword = document.getElementById('currentPassword').value;
                 const newPassword = document.getElementById('newPassword').value;
@@ -1533,6 +2011,28 @@
                     document.getElementById('newPassword').value = '';
                     document.getElementById('confirmPassword').value = '';
                 }
+            });
+            
+            // Setup ubah password (user)
+            document.getElementById('userChangePasswordBtn').addEventListener('click', function() {
+                const currentPassword = document.getElementById('userCurrentPassword').value;
+                const newPassword = document.getElementById('userNewPassword').value;
+                const confirmPassword = document.getElementById('userConfirmPassword').value;
+                
+                if (changePassword(currentPassword, newPassword, confirmPassword)) {
+                    document.getElementById('userCurrentPassword').value = '';
+                    document.getElementById('userNewPassword').value = '';
+                    document.getElementById('userConfirmPassword').value = '';
+                    
+                    const changePasswordModal = bootstrap.Modal.getInstance(document.getElementById('changePasswordModal'));
+                    changePasswordModal.hide();
+                }
+            });
+            
+            // Setup tombol ganti password di sidebar (user)
+            document.getElementById('changePasswordSidebarBtn').addEventListener('click', function() {
+                const changePasswordModal = new bootstrap.Modal(document.getElementById('changePasswordModal'));
+                changePasswordModal.show();
             });
             
             // Setup tambah cuti
@@ -1574,6 +2074,12 @@
                 } else if (currentTab === 'cuti') {
                     table = document.getElementById('cutiTable');
                     filename = "Data_Cuti.xlsx";
+                } else if (currentTab === 'cuti-detail') {
+                    table = document.getElementById('cutiDetailTable');
+                    filename = "Data_Cuti_Detail.xlsx";
+                } else if (currentTab === 'rekap-lembur') {
+                    table = document.getElementById('rekapLemburTable');
+                    filename = "Data_Rekap_Lembur.xlsx";
                 }
                 
                 if (table) {
@@ -1755,14 +2261,25 @@
             const sidebar = document.getElementById('sidebar');
             const mainContent = document.getElementById('mainContent');
             const header = document.querySelector('.futuristic-header');
+            const userPasswordSection = document.getElementById('userPasswordSection');
             const sidebarToggle = document.getElementById('sidebarToggle');
             const menuItems = document.querySelectorAll('.sidebar-menu a');
+            const folderHeaders = document.querySelectorAll('.sidebar-folder-header');
             
             // Toggle sidebar
             sidebarToggle.addEventListener('click', function() {
                 sidebar.classList.toggle('expanded');
                 mainContent.classList.toggle('expanded');
                 document.body.classList.toggle('header-expanded');
+                userPasswordSection.classList.toggle('expanded');
+            });
+            
+            // Toggle folder
+            folderHeaders.forEach(header => {
+                header.addEventListener('click', function() {
+                    const folder = this.parentElement;
+                    folder.classList.toggle('expanded');
+                });
             });
             
             // Menu item click
@@ -1789,12 +2306,32 @@
                         generateAbsenTabelTable();
                     }
                     
+                    // Jika tab cuti-detail, tampilkan data cuti detail
+                    if (tabName === 'cuti-detail') {
+                        displayCutiDetail();
+                    }
+                    
+                    // Jika tab rekap-lembur, tampilkan data rekap lembur
+                    if (tabName === 'rekap-lembur') {
+                        displayRekapLembur();
+                    }
+                    
                     // Jika tab cuti, populate dropdown karyawan
                     if (tabName === 'cuti') {
                         populateCutiEmployeeDropdown();
                     }
                 });
             });
+            
+            // Expand General folder by default for user
+            if (currentUser && currentUser.role === 'user') {
+                document.getElementById('generalFolder').classList.add('expanded');
+            }
+            
+            // Expand Main folder by default for admin
+            if (currentUser && currentUser.role === 'admin') {
+                document.getElementById('mainFolder').classList.add('expanded');
+            }
         }
 
         // Fungsi untuk update dropdown nama karyawan

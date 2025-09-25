@@ -853,7 +853,7 @@
     <!-- Main Content -->
     <div class="main-content" id="mainContent">
         <div class="container mt-4">
-            <div class="filter-section">
+            <div class="filter-section" id="filterSection">
                 <div class="row">
                     <div class="col-md-4 mb-2">
                         <label for="dateRange" class="form-label">Date Range</label>
@@ -863,7 +863,7 @@
                             <input type="date" class="form-control" id="endDate">
                         </div>
                     </div>
-                    <div class="col-md-4 mb-2">
+                    <div class="col-md-4 mb-2" id="employeeFilterContainer">
                         <label for="employeeName" class="form-label">Employee Name</label>
                         <select class="form-select" id="employeeName">
                             <option value="all">Select All</option>
@@ -1213,7 +1213,7 @@
 
                     <!-- Overtime Detail Table -->
                     <div class="table-responsive" id="overtimeDetailContainer" style="display: none;">
-                        <h5>Overtime Detail</h5>
+                        <h5>Detail Overtime</h5>
                         <table class="overtime-detail-table" id="overtimeDetailTable">
                             <thead>
                                 <tr>
@@ -1638,6 +1638,9 @@
                 // Setup menu berdasarkan role
                 setupMenuByRole(user.role);
                 
+                // Setup filter berdasarkan role
+                setupFilterByRole(user.role);
+                
                 return true;
             }
             return false;
@@ -1672,6 +1675,18 @@
             
             // Tampilkan menu logout untuk semua role
             document.getElementById('logoutBtn').style.display = 'flex';
+        }
+
+        // Fungsi untuk setup filter berdasarkan role
+        function setupFilterByRole(role) {
+            const employeeFilterContainer = document.getElementById('employeeFilterContainer');
+            
+            // Sembunyikan filter Employee Name untuk user biasa
+            if (role === 'user') {
+                employeeFilterContainer.style.display = 'none';
+            } else {
+                employeeFilterContainer.style.display = 'block';
+            }
         }
 
         // Fungsi untuk logout
@@ -1848,14 +1863,20 @@
             const cutiDetailTableBody = document.getElementById('cutiDetailTableBody');
             cutiDetailTableBody.innerHTML = '';
             
-            if (cutiData.length === 0) {
+            // Filter data untuk user yang sedang login
+            let filteredCutiData = cutiData;
+            if (currentUser && currentUser.role === 'user') {
+                filteredCutiData = cutiData.filter(cuti => cuti.employeeName === currentUser.username);
+            }
+            
+            if (filteredCutiData.length === 0) {
                 cutiDetailTableBody.innerHTML = '<tr><td colspan="8" class="text-center">No leave data available</td></tr>';
                 return;
             }
             
             // Group cuti data by employee
             const cutiByEmployee = {};
-            cutiData.forEach(cuti => {
+            filteredCutiData.forEach(cuti => {
                 if (!cutiByEmployee[cuti.employeeName]) {
                     cutiByEmployee[cuti.employeeName] = [];
                 }
@@ -2420,6 +2441,11 @@
                 absenTabelData = [...absenTabelData, ...absensiData];
                 localStorage.setItem('absenTabelData', JSON.stringify(absenTabelData));
                 alert('Data successfully saved!');
+                
+                // Update attendance table if admin is logged in
+                if (currentUser && currentUser.role === 'admin') {
+                    generateAbsenTabelTable();
+                }
             });
             
             document.getElementById('exportExcel').addEventListener('click', function() {

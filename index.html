@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Program Absensi Karyawan</title>
+    <title>Attendance Crew CDC East</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -54,6 +54,7 @@
             margin-bottom: 20px;
             color: var(--primary-color);
             font-weight: bold;
+            font-size: 1.5rem;
         }
 
         .login-error {
@@ -597,7 +598,8 @@
         }
 
         .user-table th {
-            background-color: #f8f9fa;
+            background-color: var(--secondary-color);
+            color: white;
             font-weight: bold;
         }
 
@@ -681,6 +683,24 @@
             font-weight: bold;
         }
 
+        .overtime-detail-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .overtime-detail-table th, .overtime-detail-table td {
+            padding: 10px;
+            text-align: left;
+            border: 1px solid #ddd;
+        }
+
+        .overtime-detail-table th {
+            background-color: var(--secondary-color);
+            color: white;
+            font-weight: bold;
+        }
+
         /* Responsive Styles */
         @media (max-width: 768px) {
             .sidebar {
@@ -705,19 +725,19 @@
     <!-- Login Screen -->
     <div class="login-container" id="loginContainer">
         <div class="login-form">
-            <h2 class="login-title">Sistem Absensi Karyawan</h2>
+            <h2 class="login-title">ATTENDANCE CREW CDC EAST</h2>
             <div class="mb-3">
                 <label for="username" class="form-label">Username</label>
-                <input type="text" class="form-control" id="username" placeholder="Masukkan username">
+                <input type="text" class="form-control" id="username" placeholder="Enter username">
             </div>
             <div class="mb-3">
                 <label for="password" class="form-label">Password</label>
-                <input type="password" class="form-control" id="password" placeholder="Masukkan password">
+                <input type="password" class="form-control" id="password" placeholder="Enter password">
             </div>
-            <div class="login-error" id="loginError">Username atau password salah!</div>
+            <div class="login-error" id="loginError">Username or password is incorrect!</div>
             <button class="btn btn-futuristic w-100" id="loginBtn">Login</button>
             <div class="mt-3 text-center">
-                <small class="text-muted">Default login: admin/admin123 atau user/user123</small>
+                <small class="text-muted">Default login: admin/admin123 or user/user123</small>
             </div>
         </div>
     </div>
@@ -725,7 +745,7 @@
     <!-- Sidebar -->
     <div class="sidebar" id="sidebar">
         <div class="sidebar-header">
-            <h3>Menu Absensi</h3>
+            <h3>Attendance Menu</h3>
             <button class="sidebar-toggle" id="sidebarToggle">
                 <i class="fas fa-bars"></i>
             </button>
@@ -742,19 +762,19 @@
                     <li>
                         <a href="#" data-tab="absen-tabel">
                             <i class="fas fa-table"></i>
-                            <span>Absen Tabel</span>
+                            <span>Attendance Table</span>
                         </a>
                     </li>
                     <li>
                         <a href="#" data-tab="form-rekap-lembur">
                             <i class="fas fa-calculator"></i>
-                            <span>Form Rekap Lembur</span>
+                            <span>Overtime Form</span>
                         </a>
                     </li>
                     <li>
                         <a href="#" data-tab="cuti-detail">
                             <i class="fas fa-calendar-alt"></i>
-                            <span>Cuti Detail</span>
+                            <span>Leave Detail</span>
                         </a>
                     </li>
                 </ul>
@@ -772,25 +792,25 @@
                     <li>
                         <a href="#" data-tab="entry">
                             <i class="fas fa-pen-to-square"></i>
-                            <span>Entry Absensi</span>
+                            <span>Attendance Entry</span>
                         </a>
                     </li>
                     <li>
                         <a href="#" data-tab="output">
                             <i class="fas fa-file-export"></i>
-                            <span>Output Absen</span>
+                            <span>Attendance Output</span>
                         </a>
                     </li>
                     <li>
                         <a href="#" data-tab="overtime">
                             <i class="fas fa-calculator"></i>
-                            <span>Perhitungan Lembur</span>
+                            <span>Overtime Calculation</span>
                         </a>
                     </li>
                     <li>
                         <a href="#" data-tab="cuti">
                             <i class="fas fa-calendar-alt"></i>
-                            <span>Manajemen Cuti</span>
+                            <span>Leave Management</span>
                         </a>
                     </li>
                 </ul>
@@ -802,7 +822,7 @@
             <li>
                 <a href="#" data-tab="setting">
                     <i class="fas fa-cog"></i>
-                    <span>Pengaturan</span>
+                    <span>Settings</span>
                 </a>
             </li>
             <li>
@@ -818,15 +838,15 @@
     <div class="user-password-section" id="userPasswordSection">
         <button class="user-password-btn" id="changePasswordSidebarBtn">
             <i class="fas fa-key"></i>
-            <span>Ganti Password</span>
+            <span>Change Password</span>
         </button>
     </div>
 
     <!-- Header -->
     <header class="futuristic-header">
         <div class="container">
-            <h1 class="header-title text-center">Sistem Absensi Karyawan</h1>
-            <p class="header-subtitle text-center">Manajemen Kehadiran Modern dan Efisien</p>
+            <h1 class="header-title text-center">ATTENDANCE CREW CDC EAST</h1>
+            <p class="header-subtitle text-center">Modern and Efficient Attendance Management</p>
         </div>
     </header>
 
@@ -836,23 +856,23 @@
             <div class="filter-section">
                 <div class="row">
                     <div class="col-md-4 mb-2">
-                        <label for="dateRange" class="form-label">Range Tanggal</label>
+                        <label for="dateRange" class="form-label">Date Range</label>
                         <div class="input-group">
                             <input type="date" class="form-control" id="startDate">
-                            <span class="input-group-text">s/d</span>
+                            <span class="input-group-text">to</span>
                             <input type="date" class="form-control" id="endDate">
                         </div>
                     </div>
                     <div class="col-md-4 mb-2">
-                        <label for="employeeName" class="form-label">Nama Karyawan</label>
+                        <label for="employeeName" class="form-label">Employee Name</label>
                         <select class="form-select" id="employeeName">
                             <option value="all">Select All</option>
-                            <!-- Opsi akan diisi oleh JavaScript -->
+                            <!-- Options will be filled by JavaScript -->
                         </select>
                     </div>
                     <div class="col-md-4 d-flex align-items-end mb-2">
                         <button class="btn btn-futuristic me-2" id="applyFilter">
-                            <i class="fas fa-filter me-1"></i> Terapkan Filter
+                            <i class="fas fa-filter me-1"></i> Apply Filter
                         </button>
                         <button class="btn btn-futuristic" id="exportExcel">
                             <i class="fas fa-file-excel me-1"></i> Export Excel
@@ -865,34 +885,34 @@
             <div class="tab-content" id="absensiTabContent">
                 <!-- Entry Tab -->
                 <div class="tab-pane fade" id="entry" role="tabpanel">
-                    <button type="button" class="collapsible">Form Entry Absensi</button>
+                    <button type="button" class="collapsible">Attendance Entry Form</button>
                     <div class="collapsible-content">
-                        <p>Masukkan kode shift (1, 2, 3, 11, 22, C, O) untuk mengisi sel dan melihat warna sesuai jenis shift.</p>
+                        <p>Enter shift code (1, 2, 3, 11, 22, C, O) to fill cells and see colors according to shift type.</p>
 
                         <div class="legend">
                             <div class="legend-item shift-1">
                                 <div class="legend-color" style="background-color: #4CAF50;"></div>
-                                <span>Pagi (1)</span>
+                                <span>Morning (1)</span>
                             </div>
                             <div class="legend-item shift-2">
                                 <div class="legend-color" style="background-color: #FFC107;"></div>
-                                <span>Siang (2)</span>
+                                <span>Afternoon (2)</span>
                             </div>
                             <div class="legend-item shift-3">
                                 <div class="legend-color" style="background-color: #2196F3;"></div>
-                                <span>Malam (3)</span>
+                                <span>Night (3)</span>
                             </div>
                             <div class="legend-item shift-11">
                                 <div class="legend-color" style="background-color: #8BC34A;"></div>
-                                <span>Pjk Pagi (11)</span>
+                                <span>Morning Part (11)</span>
                             </div>
                             <div class="legend-item shift-22">
                                 <div class="legend-color" style="background-color: #FF9800;"></div>
-                                <span>Pjk Siang (22)</span>
+                                <span>Afternoon Part (22)</span>
                             </div>
                             <div class="legend-item shift-C">
                                 <div class="legend-color" style="background-color: #9E9E9E;"></div>
-                                <span>Cuti (C)</span>
+                                <span>Leave (C)</span>
                             </div>
                             <div class="legend-item shift-O">
                                 <div class="legend-color" style="background-color: #F44336;"></div>
@@ -902,15 +922,15 @@
 
                         <div class="header-controls">
                             <div class="header-control-group">
-                                <span class="header-control-label">Lebar Header:</span>
+                                <span class="header-control-label">Header Width:</span>
                                 <input type="number" id="headerWidth" class="header-control-input" placeholder="px" min="60" max="150" value="90">
                             </div>
                             <div class="header-control-group">
-                                <span class="header-control-label">Tinggi Header:</span>
+                                <span class="header-control-label">Header Height:</span>
                                 <input type="number" id="headerHeight" class="header-control-input" placeholder="px" min="30" max="60" value="35">
                             </div>
                             <button class="btn btn-futuristic" id="applyHeaderSize">
-                                <i class="fas fa-check me-1"></i> Terapkan
+                                <i class="fas fa-check me-1"></i> Apply
                             </button>
                         </div>
                     </div>
@@ -922,12 +942,12 @@
                                     <th>Area</th>
                                     <th>Name</th>
                                     <th>Position</th>
-                                    <!-- Kolom tanggal akan diisi oleh JavaScript -->
+                                    <!-- Date columns will be filled by JavaScript -->
                                     <th>Action</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <!-- Data akan diisi oleh JavaScript -->
+                                <!-- Data will be filled by JavaScript -->
                             </tbody>
                         </table>
                     </div>
@@ -944,9 +964,9 @@
 
                 <!-- Output Tab -->
                 <div class="tab-pane fade" id="output" role="tabpanel">
-                    <button type="button" class="collapsible">Output Data Absensi</button>
+                    <button type="button" class="collapsible">Attendance Output Data</button>
                     <div class="collapsible-content">
-                        <p>Data absensi yang telah diinput akan muncul di sini dengan shift check in/out yang sesuai.</p>
+                        <p>Attendance data that has been input will appear here with appropriate shift check in/out.</p>
                     </div>
 
                     <div class="table-responsive">
@@ -964,7 +984,7 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                <!-- Data akan diisi oleh JavaScript -->
+                                <!-- Data will be filled by JavaScript -->
                             </tbody>
                         </table>
                     </div>
@@ -972,9 +992,9 @@
 
                 <!-- Overtime Tab -->
                 <div class="tab-pane fade" id="overtime" role="tabpanel">
-                    <button type="button" class="collapsible">Perhitungan Lembur</button>
+                    <button type="button" class="collapsible">Overtime Calculation</button>
                     <div class="collapsible-content">
-                        <p>Di sini Anda dapat mengelola perhitungan lembur karyawan.</p>
+                        <p>Here you can manage employee overtime calculation.</p>
                     </div>
 
                     <div class="table-responsive">
@@ -1000,7 +1020,7 @@
                                 </tr>
                             </thead>
                             <tbody id="overtimeTableBody">
-                                <!-- Data akan diisi oleh JavaScript -->
+                                <!-- Data will be filled by JavaScript -->
                             </tbody>
                         </table>
                     </div>
@@ -1008,9 +1028,9 @@
 
                 <!-- Absen Tabel Tab -->
                 <div class="tab-pane fade" id="absen-tabel" role="tabpanel">
-                    <button type="button" class="collapsible">Data Absen Tabel</button>
+                    <button type="button" class="collapsible">Attendance Table Data</button>
                     <div class="collapsible-content">
-                        <p>Data absensi yang telah disimpan. Data dapat diedit tetapi tidak dapat dihapus.</p>
+                        <p>Saved attendance data. Data can be edited but cannot be deleted.</p>
                     </div>
 
                     <div class="table-container">
@@ -1020,12 +1040,12 @@
                                     <th>Area</th>
                                     <th>Name</th>
                                     <th>Position</th>
-                                    <!-- Kolom tanggal akan diisi oleh JavaScript -->
+                                    <!-- Date columns will be filled by JavaScript -->
                                     <th>Action</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <!-- Data akan diisi oleh JavaScript -->
+                                <!-- Data will be filled by JavaScript -->
                             </tbody>
                         </table>
                     </div>
@@ -1033,31 +1053,31 @@
 
                 <!-- Cuti Tab -->
                 <div class="tab-pane fade" id="cuti" role="tabpanel">
-                    <button type="button" class="collapsible">Manajemen Cuti</button>
+                    <button type="button" class="collapsible">Leave Management</button>
                     <div class="collapsible-content">
-                        <p>Di sini Anda dapat mengelola data cuti karyawan.</p>
+                        <p>Here you can manage employee leave data.</p>
                     </div>
 
                     <div class="cuti-form">
-                        <h5>Tambah Cuti Karyawan</h5>
+                        <h5>Add Employee Leave</h5>
                         <div class="row">
                             <div class="col-md-4">
-                                <label for="cutiEmployee" class="form-label">Nama Karyawan</label>
+                                <label for="cutiEmployee" class="form-label">Employee Name</label>
                                 <select class="form-select" id="cutiEmployee">
-                                    <!-- Opsi akan diisi oleh JavaScript -->
+                                    <!-- Options will be filled by JavaScript -->
                                 </select>
                             </div>
                             <div class="col-md-3">
-                                <label for="cutiStartDate" class="form-label">Tanggal Mulai</label>
+                                <label for="cutiStartDate" class="form-label">Start Date</label>
                                 <input type="date" class="form-control" id="cutiStartDate">
                             </div>
                             <div class="col-md-3">
-                                <label for="cutiEndDate" class="form-label">Tanggal Selesai</label>
+                                <label for="cutiEndDate" class="form-label">End Date</label>
                                 <input type="date" class="form-control" id="cutiEndDate">
                             </div>
                             <div class="col-md-2 d-flex align-items-end">
                                 <button class="btn btn-futuristic" id="addCuti">
-                                    <i class="fas fa-plus me-1"></i> Tambah
+                                    <i class="fas fa-plus me-1"></i> Add
                                 </button>
                             </div>
                         </div>
@@ -1068,15 +1088,15 @@
                             <thead>
                                 <tr>
                                     <th>No</th>
-                                    <th>Nama Karyawan</th>
-                                    <th>Tanggal Mulai</th>
-                                    <th>Tanggal Selesai</th>
-                                    <th>Durasi (Hari)</th>
+                                    <th>Employee Name</th>
+                                    <th>Start Date</th>
+                                    <th>End Date</th>
+                                    <th>Duration (Days)</th>
                                     <th>Action</th>
                                 </tr>
                             </thead>
                             <tbody id="cutiTableBody">
-                                <!-- Data akan diisi oleh JavaScript -->
+                                <!-- Data will be filled by JavaScript -->
                             </tbody>
                         </table>
                     </div>
@@ -1084,9 +1104,9 @@
 
                 <!-- Cuti Detail Tab -->
                 <div class="tab-pane fade" id="cuti-detail" role="tabpanel">
-                    <button type="button" class="collapsible">Detail Cuti Karyawan</button>
+                    <button type="button" class="collapsible">Employee Leave Details</button>
                     <div class="collapsible-content">
-                        <p>Detail data cuti karyawan yang telah disimpan.</p>
+                        <p>Detailed employee leave data that has been saved.</p>
                     </div>
 
                     <div class="table-responsive">
@@ -1094,17 +1114,17 @@
                             <thead>
                                 <tr>
                                     <th>No</th>
-                                    <th>Nama Karyawan</th>
+                                    <th>Employee Name</th>
                                     <th>Area</th>
                                     <th>Position</th>
-                                    <th>Tanggal Mulai</th>
-                                    <th>Tanggal Selesai</th>
-                                    <th>Durasi (Hari)</th>
-                                    <th>Sisa Cuti</th>
+                                    <th>Start Date</th>
+                                    <th>End Date</th>
+                                    <th>Duration (Days)</th>
+                                    <th>Remaining Leave</th>
                                 </tr>
                             </thead>
                             <tbody id="cutiDetailTableBody">
-                                <!-- Data akan diisi oleh JavaScript -->
+                                <!-- Data will be filled by JavaScript -->
                             </tbody>
                         </table>
                     </div>
@@ -1112,9 +1132,9 @@
 
                 <!-- Form Rekap Lembur Tab -->
                 <div class="tab-pane fade" id="form-rekap-lembur" role="tabpanel">
-                    <button type="button" class="collapsible">Form Rekap Lembur</button>
+                    <button type="button" class="collapsible">Overtime Form</button>
                     <div class="collapsible-content">
-                        <p>Isi form rekap lembur untuk mencatat kegiatan lembur Anda.</p>
+                        <p>Fill in the overtime form to record your overtime activities.</p>
                     </div>
 
                     <div class="rekap-lembur-form">
@@ -1134,7 +1154,7 @@
                         </div>
                         
                         <div class="form-group">
-                            <label>Time Range</label>
+                            <label>Overtime Hours</label>
                             <div class="time-inputs">
                                 <input type="time" class="form-control" id="rekapStartTime" placeholder="Start Time">
                                 <span>-</span>
@@ -1160,7 +1180,7 @@
                                         <td><input type="text" class="form-control total-plant" data-row="1" id="totalPlant1"></td>
                                         <td>
                                             <select class="form-select plant-name" data-row="1" id="plantName1" disabled>
-                                                <option value="">Pilih Plant</option>
+                                                <option value="">Select Plant</option>
                                                 <option value="Denpasar2">Denpasar2</option>
                                                 <option value="Gianyar">Gianyar</option>
                                                 <option value="Manyar">Manyar</option>
@@ -1177,66 +1197,104 @@
                         </div>
                         
                         <div class="form-group">
-                            <label for="uraianTugas">Uraian Tugas</label>
-                            <textarea class="form-control" id="uraianTugas" rows="3" placeholder="Deskripsikan uraian tugas lembur Anda..."></textarea>
+                            <label for="uraianTugas">Task Description</label>
+                            <textarea class="form-control" id="uraianTugas" rows="3" placeholder="Describe your overtime tasks..."></textarea>
                         </div>
                         
                         <div class="action-buttons">
                             <button class="btn btn-futuristic" id="addRekapRow">
-                                <i class="fas fa-plus me-1"></i> Tambah Baris
+                                <i class="fas fa-plus me-1"></i> Add Row
                             </button>
                             <button class="btn btn-futuristic" id="saveRekapLembur">
-                                <i class="fas fa-save me-1"></i> Simpan
+                                <i class="fas fa-save me-1"></i> Save
                             </button>
                         </div>
+                    </div>
+
+                    <!-- Overtime Detail Table -->
+                    <div class="table-responsive" id="overtimeDetailContainer" style="display: none;">
+                        <h5>Overtime Detail</h5>
+                        <table class="overtime-detail-table" id="overtimeDetailTable">
+                            <thead>
+                                <tr>
+                                    <th>No</th>
+                                    <th>Employee Name</th>
+                                    <th>Date</th>
+                                    <th>Start Time</th>
+                                    <th>End Time</th>
+                                    <th>Total Project</th>
+                                    <th>Total Plant</th>
+                                    <th>Plant Name</th>
+                                    <th>Volume (m3)</th>
+                                    <th>Task Description</th>
+                                </tr>
+                            </thead>
+                            <tbody id="overtimeDetailTableBody">
+                                <!-- Data will be filled after saving -->
+                            </tbody>
+                        </table>
                     </div>
                 </div>
 
                 <!-- Setting Tab -->
                 <div class="tab-pane fade" id="setting" role="tabpanel">
-                    <button type="button" class="collapsible">Pengaturan Sistem</button>
+                    <button type="button" class="collapsible">System Settings</button>
                     <div class="collapsible-content">
-                        <p>Di sini Anda dapat mengelola pengguna dan pengaturan sistem.</p>
+                        <p>Here you can manage users and system settings.</p>
                     </div>
 
                     <div class="row">
-                        <div class="col-md-6">
-                            <h5>Manajemen Pengguna</h5>
+                        <div class="col-md-12">
+                            <h5>Change Password</h5>
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label for="currentPassword" class="form-label">Current Password</label>
+                                        <input type="password" class="form-control" id="currentPassword">
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label for="newPassword" class="form-label">New Password</label>
+                                        <input type="password" class="form-control" id="newPassword">
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label for="confirmPassword" class="form-label">Confirm New Password</label>
+                                        <input type="password" class="form-control" id="confirmPassword">
+                                    </div>
+                                </div>
+                            </div>
+                            <button class="btn btn-futuristic" id="changePasswordBtn">
+                                <i class="fas fa-key me-1"></i> Change Password
+                            </button>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <div class="row">
+                        <div class="col-md-12">
+                            <h5>User Management</h5>
                             <div class="mb-3">
                                 <button class="btn btn-futuristic" data-bs-toggle="modal" data-bs-target="#addUserModal">
-                                    <i class="fas fa-user-plus me-1"></i> Tambah Pengguna
+                                    <i class="fas fa-user-plus me-1"></i> Add User
                                 </button>
                             </div>
                             <table class="user-table">
                                 <thead>
                                     <tr>
                                         <th>Username</th>
+                                        <th>Password</th>
                                         <th>Role</th>
-                                        <th>Aksi</th>
+                                        <th>Action</th>
                                     </tr>
                                 </thead>
                                 <tbody id="userTableBody">
-                                    <!-- Data akan diisi oleh JavaScript -->
+                                    <!-- Data will be filled by JavaScript -->
                                 </tbody>
                             </table>
-                        </div>
-                        <div class="col-md-6">
-                            <h5>Ubah Password</h5>
-                            <div class="mb-3">
-                                <label for="currentPassword" class="form-label">Password Saat Ini</label>
-                                <input type="password" class="form-control" id="currentPassword">
-                            </div>
-                            <div class="mb-3">
-                                <label for="newPassword" class="form-label">Password Baru</label>
-                                <input type="password" class="form-control" id="newPassword">
-                            </div>
-                            <div class="mb-3">
-                                <label for="confirmPassword" class="form-label">Konfirmasi Password Baru</label>
-                                <input type="password" class="form-control" id="confirmPassword">
-                            </div>
-                            <button class="btn btn-futuristic" id="changePasswordBtn">
-                                <i class="fas fa-key me-1"></i> Ubah Password
-                            </button>
                         </div>
                     </div>
                 </div>
@@ -1249,7 +1307,7 @@
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="addUserModalLabel">Tambah Pengguna Baru</h5>
+                    <h5 class="modal-title" id="addUserModalLabel">Add New User</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
@@ -1270,8 +1328,8 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-                    <button type="button" class="btn btn-futuristic" id="saveUserBtn">Simpan</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-futuristic" id="saveUserBtn">Save</button>
                 </div>
             </div>
         </div>
@@ -1282,7 +1340,7 @@
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="editUserModalLabel">Edit Pengguna</h5>
+                    <h5 class="modal-title" id="editUserModalLabel">Edit User</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
@@ -1290,6 +1348,10 @@
                     <div class="mb-3">
                         <label for="editUsername" class="form-label">Username</label>
                         <input type="text" class="form-control" id="editUsername">
+                    </div>
+                    <div class="mb-3">
+                        <label for="editUserPassword" class="form-label">Password</label>
+                        <input type="password" class="form-control" id="editUserPassword">
                     </div>
                     <div class="mb-3">
                         <label for="editUserRole" class="form-label">Role</label>
@@ -1300,7 +1362,7 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                     <button type="button" class="btn btn-futuristic" id="updateUserBtn">Update</button>
                 </div>
             </div>
@@ -1312,26 +1374,26 @@
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="changePasswordModalLabel">Ganti Password</h5>
+                    <h5 class="modal-title" id="changePasswordModalLabel">Change Password</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label for="userCurrentPassword" class="form-label">Password Saat Ini</label>
+                        <label for="userCurrentPassword" class="form-label">Current Password</label>
                         <input type="password" class="form-control" id="userCurrentPassword">
                     </div>
                     <div class="mb-3">
-                        <label for="userNewPassword" class="form-label">Password Baru</label>
+                        <label for="userNewPassword" class="form-label">New Password</label>
                         <input type="password" class="form-control" id="userNewPassword">
                     </div>
                     <div class="mb-3">
-                        <label for="userConfirmPassword" class="form-label">Konfirmasi Password Baru</label>
+                        <label for="userConfirmPassword" class="form-label">Confirm New Password</label>
                         <input type="password" class="form-control" id="userConfirmPassword">
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-                    <button type="button" class="btn btn-futuristic" id="userChangePasswordBtn">Ubah Password</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-futuristic" id="userChangePasswordBtn">Change Password</button>
                 </div>
             </div>
         </div>
@@ -1342,21 +1404,21 @@
         // Data matrik untuk shift
         const shiftMatrix = {
             "Dispatcher": {
-                "1": { name: "Pagi", checkIn: "07:00", checkOut: "15:00", hours: "07:00" },
-                "2": { name: "Siang", checkIn: "15:00", checkOut: "23:00", hours: "07:00" },
-                "3": { name: "Malam", checkIn: "23:00", checkOut: "07:00", hours: "08:00" },
-                "11": { name: "Pjk pagi", checkIn: "07:00", checkOut: "12:00", hours: "05:00" },
-                "22": { name: "Pjk Siang", checkIn: "15:00", checkOut: "20:00", hours: "05:00" },
-                "C": { name: "Cuti", checkIn: "", checkOut: "", hours: "" },
+                "1": { name: "Morning", checkIn: "07:00", checkOut: "15:00", hours: "07:00" },
+                "2": { name: "Afternoon", checkIn: "15:00", checkOut: "23:00", hours: "07:00" },
+                "3": { name: "Night", checkIn: "23:00", checkOut: "07:00", hours: "08:00" },
+                "11": { name: "Morning Part", checkIn: "07:00", checkOut: "12:00", hours: "05:00" },
+                "22": { name: "Afternoon Part", checkIn: "15:00", checkOut: "20:00", hours: "05:00" },
+                "C": { name: "Leave", checkIn: "", checkOut: "", hours: "" },
                 "O": { name: "Off", checkIn: "", checkOut: "", hours: "" }
             },
             "Booking": {
-                "1": { name: "Pagi", checkIn: "08:00", checkOut: "16:00", hours: "07:00" },
-                "2": { name: "Siang", checkIn: "16:00", checkOut: "24:00", hours: "08:00" },
-                "3": { name: "Malam", checkIn: "00:00", checkOut: "08:00", hours: "08:00" },
-                "11": { name: "Pjk pagi", checkIn: "08:00", checkOut: "13:00", hours: "05:00" },
-                "22": { name: "Pjk Siang", checkIn: "16:00", checkOut: "21:00", hours: "05:00" },
-                "C": { name: "Cuti", checkIn: "", checkOut: "", hours: "" },
+                "1": { name: "Morning", checkIn: "08:00", checkOut: "16:00", hours: "07:00" },
+                "2": { name: "Afternoon", checkIn: "16:00", checkOut: "24:00", hours: "08:00" },
+                "3": { name: "Night", checkIn: "00:00", checkOut: "08:00", hours: "08:00" },
+                "11": { name: "Morning Part", checkIn: "08:00", checkOut: "13:00", hours: "05:00" },
+                "22": { name: "Afternoon Part", checkIn: "16:00", checkOut: "21:00", hours: "05:00" },
+                "C": { name: "Leave", checkIn: "", checkOut: "", hours: "" },
                 "O": { name: "Off", checkIn: "", checkOut: "", hours: "" }
             }
         };
@@ -1399,7 +1461,7 @@
         }
 
         function formatDateForHeader(date) {
-            const dayNames = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+            const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
             const dayName = dayNames[date.getDay()];
             return `${dayName} ${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()}`;
         }
@@ -1571,7 +1633,7 @@
                 document.querySelector('.futuristic-header').style.display = 'block';
                 
                 // Tampilkan nama user yang login di header
-                document.querySelector('.header-subtitle').innerHTML += ` | Login sebagai: ${user.username} (${user.role})`;
+                document.querySelector('.header-subtitle').innerHTML += ` | Logged in as: ${user.username} (${user.role})`;
                 
                 // Setup menu berdasarkan role
                 setupMenuByRole(user.role);
@@ -1634,13 +1696,14 @@
                 const row = document.createElement('tr');
                 row.innerHTML = `
                     <td>${user.username}</td>
+                    <td>${user.password}</td>
                     <td>${user.role}</td>
                     <td>
                         <button class="btn-edit" onclick="editUser(${user.id})">
                             <i class="fas fa-edit"></i> Edit
                         </button>
                         <button class="btn-delete" onclick="deleteUser(${user.id})" ${user.id === currentUser.id ? 'disabled' : ''}>
-                            <i class="fas fa-trash"></i> Hapus
+                            <i class="fas fa-trash"></i> Delete
                         </button>
                     </td>
                 `;
@@ -1652,7 +1715,7 @@
         function addUser(username, password, role) {
             // Cek apakah username sudah ada
             if (users.find(u => u.username === username)) {
-                alert('Username sudah ada!');
+                alert('Username already exists!');
                 return;
             }
             
@@ -1665,7 +1728,7 @@
             users.push(newUser);
             localStorage.setItem('users', JSON.stringify(users));
             displayUsers();
-            alert('Pengguna berhasil ditambahkan!');
+            alert('User successfully added!');
         }
 
         // Fungsi untuk mengedit pengguna
@@ -1674,6 +1737,7 @@
             if (user) {
                 document.getElementById('editUserId').value = user.id;
                 document.getElementById('editUsername').value = user.username;
+                document.getElementById('editUserPassword').value = user.password;
                 document.getElementById('editUserRole').value = user.role;
                 
                 const editUserModal = new bootstrap.Modal(document.getElementById('editUserModal'));
@@ -1685,52 +1749,54 @@
         function updateUser() {
             const id = parseInt(document.getElementById('editUserId').value);
             const username = document.getElementById('editUsername').value;
+            const password = document.getElementById('editUserPassword').value;
             const role = document.getElementById('editUserRole').value;
             
             // Cek apakah username sudah ada (kecuali untuk user yang sedang diedit)
             const existingUser = users.find(u => u.username === username && u.id !== id);
             if (existingUser) {
-                alert('Username sudah ada!');
+                alert('Username already exists!');
                 return;
             }
             
             const userIndex = users.findIndex(u => u.id === id);
             if (userIndex !== -1) {
                 users[userIndex].username = username;
+                users[userIndex].password = password;
                 users[userIndex].role = role;
                 localStorage.setItem('users', JSON.stringify(users));
                 displayUsers();
                 
                 const editUserModal = bootstrap.Modal.getInstance(document.getElementById('editUserModal'));
                 editUserModal.hide();
-                alert('Pengguna berhasil diupdate!');
+                alert('User successfully updated!');
             }
         }
 
         // Fungsi untuk menghapus pengguna
         function deleteUser(id) {
             if (id === currentUser.id) {
-                alert('Tidak dapat menghapus akun yang sedang login!');
+                alert('Cannot delete the currently logged in account!');
                 return;
             }
             
-            if (confirm('Apakah Anda yakin ingin menghapus pengguna ini?')) {
+            if (confirm('Are you sure you want to delete this user?')) {
                 users = users.filter(u => u.id !== id);
                 localStorage.setItem('users', JSON.stringify(users));
                 displayUsers();
-                alert('Pengguna berhasil dihapus!');
+                alert('User successfully deleted!');
             }
         }
 
         // Fungsi untuk mengubah password
         function changePassword(currentPassword, newPassword, confirmPassword) {
             if (newPassword !== confirmPassword) {
-                alert('Password baru dan konfirmasi password tidak cocok!');
+                alert('New password and confirm password do not match!');
                 return false;
             }
             
             if (currentUser.password !== currentPassword) {
-                alert('Password saat ini salah!');
+                alert('Current password is incorrect!');
                 return false;
             }
             
@@ -1739,7 +1805,7 @@
             if (userIndex !== -1) {
                 users[userIndex].password = newPassword;
                 localStorage.setItem('users', JSON.stringify(users));
-                alert('Password berhasil diubah!');
+                alert('Password successfully changed!');
                 return true;
             }
             return false;
@@ -1751,7 +1817,7 @@
             cutiTableBody.innerHTML = '';
             
             if (cutiData.length === 0) {
-                cutiTableBody.innerHTML = '<tr><td colspan="6" class="text-center">Tidak ada data cuti</td></tr>';
+                cutiTableBody.innerHTML = '<tr><td colspan="6" class="text-center">No leave data available</td></tr>';
                 return;
             }
             
@@ -1769,7 +1835,7 @@
                     <td>${duration}</td>
                     <td>
                         <button class="btn-delete" onclick="deleteCuti(${cuti.id})">
-                            <i class="fas fa-trash"></i> Hapus
+                            <i class="fas fa-trash"></i> Delete
                         </button>
                     </td>
                 `;
@@ -1783,7 +1849,7 @@
             cutiDetailTableBody.innerHTML = '';
             
             if (cutiData.length === 0) {
-                cutiDetailTableBody.innerHTML = '<tr><td colspan="8" class="text-center">Tidak ada data cuti</td></tr>';
+                cutiDetailTableBody.innerHTML = '<tr><td colspan="8" class="text-center">No leave data available</td></tr>';
                 return;
             }
             
@@ -1843,12 +1909,12 @@
         // Fungsi untuk menambah cuti
         function addCuti(employeeName, startDate, endDate) {
             if (!employeeName || !startDate || !endDate) {
-                alert('Semua field harus diisi!');
+                alert('All fields must be filled!');
                 return;
             }
             
             if (new Date(startDate) > new Date(endDate)) {
-                alert('Tanggal mulai tidak boleh lebih besar dari tanggal selesai!');
+                alert('Start date cannot be greater than end date!');
                 return;
             }
             
@@ -1862,7 +1928,7 @@
             localStorage.setItem('cutiData', JSON.stringify(cutiData));
             displayCuti();
             displayCutiDetail();
-            alert('Data cuti berhasil ditambahkan!');
+            alert('Leave data successfully added!');
             
             // Update tabel absensi dengan data cuti
             updateAbsensiWithCuti();
@@ -1870,12 +1936,12 @@
 
         // Fungsi untuk menghapus cuti
         function deleteCuti(id) {
-            if (confirm('Apakah Anda yakin ingin menghapus data cuti ini?')) {
+            if (confirm('Are you sure you want to delete this leave data?')) {
                 cutiData = cutiData.filter(c => c.id !== id);
                 localStorage.setItem('cutiData', JSON.stringify(cutiData));
                 displayCuti();
                 displayCutiDetail();
-                alert('Data cuti berhasil dihapus!');
+                alert('Leave data successfully deleted!');
                 
                 // Update tabel absensi setelah menghapus cuti
                 updateAbsensiWithCuti();
@@ -1987,7 +2053,7 @@
             rekapLemburTableBody.innerHTML = '';
             
             if (rekapLemburData.length === 0) {
-                rekapLemburTableBody.innerHTML = '<tr><td colspan="7" class="text-center">Tidak ada data rekap lembur</td></tr>';
+                rekapLemburTableBody.innerHTML = '<tr><td colspan="7" class="text-center">No overtime recap data available</td></tr>';
                 return;
             }
             
@@ -2025,7 +2091,7 @@
                 <td><input type="text" class="form-control total-plant" data-row="${rowCount}" id="totalPlant${rowCount}"></td>
                 <td>
                     <select class="form-select plant-name" data-row="${rowCount}" id="plantName${rowCount}" disabled>
-                        <option value="">Pilih Plant</option>
+                        <option value="">Select Plant</option>
                         <option value="Denpasar2">Denpasar2</option>
                         <option value="Gianyar">Gianyar</option>
                         <option value="Manyar">Manyar</option>
@@ -2063,7 +2129,7 @@
             const uraianTugas = document.getElementById('uraianTugas').value;
             
             if (!employeeName || !date || !startTime || !endTime) {
-                alert('Semua field wajib diisi!');
+                alert('All required fields must be filled!');
                 return;
             }
             
@@ -2071,7 +2137,7 @@
             const rows = tbody.children;
             
             if (rows.length === 0) {
-                alert('Tambahkan minimal satu baris data!');
+                alert('Add at least one row of data!');
                 return;
             }
             
@@ -2085,7 +2151,7 @@
                 const volume = document.getElementById(`volume${i + 1}`).value;
                 
                 if (!totalProject || !totalPlant || !plantName || !volume) {
-                    alert('Semua kolom pada tabel harus diisi!');
+                    alert('All columns in the table must be filled!');
                     return;
                 }
                 
@@ -2111,7 +2177,10 @@
             formRekapLemburData.push(newRekap);
             localStorage.setItem('formRekapLemburData', JSON.stringify(formRekapLemburData));
             
-            alert('Data rekap lembur berhasil disimpan!');
+            // Tampilkan data di Overtime Detail
+            displayOvertimeDetail(newRekap);
+            
+            alert('Overtime data successfully saved!');
             
             // Reset form
             document.getElementById('rekapDate').value = '';
@@ -2127,7 +2196,7 @@
                     <td><input type="text" class="form-control total-plant" data-row="1" id="totalPlant1"></td>
                     <td>
                         <select class="form-select plant-name" data-row="1" id="plantName1" disabled>
-                            <option value="">Pilih Plant</option>
+                            <option value="">Select Plant</option>
                             <option value="Denpasar2">Denpasar2</option>
                             <option value="Gianyar">Gianyar</option>
                             <option value="Manyar">Manyar</option>
@@ -2152,6 +2221,33 @@
                     plantNameSelect.disabled = true;
                     plantNameSelect.value = '';
                 }
+            });
+        }
+
+        // Fungsi untuk menampilkan Overtime Detail
+        function displayOvertimeDetail(data) {
+            const overtimeDetailContainer = document.getElementById('overtimeDetailContainer');
+            const overtimeDetailTableBody = document.getElementById('overtimeDetailTableBody');
+            
+            // Tampilkan container
+            overtimeDetailContainer.style.display = 'block';
+            
+            // Tambahkan data ke tabel
+            data.projects.forEach((project, index) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${overtimeDetailTableBody.children.length + 1}</td>
+                    <td>${data.employeeName}</td>
+                    <td>${data.date}</td>
+                    <td>${data.startTime}</td>
+                    <td>${data.endTime}</td>
+                    <td>${project.totalProject}</td>
+                    <td>${project.totalPlant}</td>
+                    <td>${project.plantName}</td>
+                    <td>${project.volume}</td>
+                    <td>${index === 0 ? data.uraianTugas : ''}</td>
+                `;
+                overtimeDetailTableBody.appendChild(row);
             });
         }
 
@@ -2182,7 +2278,7 @@
                 const password = document.getElementById('password').value;
                 
                 if (!username || !password) {
-                    alert('Username dan password harus diisi!');
+                    alert('Username and password must be filled!');
                     return;
                 }
                 
@@ -2243,7 +2339,7 @@
                     const addUserModal = bootstrap.Modal.getInstance(document.getElementById('addUserModal'));
                     addUserModal.hide();
                 } else {
-                    alert('Username dan password harus diisi!');
+                    alert('Username and password must be filled!');
                 }
             });
             
@@ -2323,7 +2419,7 @@
                 // Simpan data ke absenTabelData juga
                 absenTabelData = [...absenTabelData, ...absensiData];
                 localStorage.setItem('absenTabelData', JSON.stringify(absenTabelData));
-                alert('Data berhasil disimpan!');
+                alert('Data successfully saved!');
             });
             
             document.getElementById('exportExcel').addEventListener('click', function() {
@@ -2331,23 +2427,23 @@
                 
                 if (currentTab === 'entry') {
                     table = document.getElementById('entryTable');
-                    filename = "Data_Entry_Absensi.xlsx";
+                    filename = "Attendance_Entry_Data.xlsx";
                 } else if (currentTab === 'output') {
                     table = document.getElementById('outputTable');
-                    filename = "Data_Output_Absensi.xlsx";
+                    filename = "Attendance_Output_Data.xlsx";
                 } else if (currentTab === 'overtime') {
                     // Untuk export overtime, kita perlu membuat tabel khusus
                     exportOvertimeToExcel();
                     return;
                 } else if (currentTab === 'absen-tabel') {
                     table = document.getElementById('absenTabelTable');
-                    filename = "Data_Absen_Tabel.xlsx";
+                    filename = "Attendance_Table_Data.xlsx";
                 } else if (currentTab === 'cuti') {
                     table = document.getElementById('cutiTable');
-                    filename = "Data_Cuti.xlsx";
+                    filename = "Leave_Data.xlsx";
                 } else if (currentTab === 'cuti-detail') {
                     table = document.getElementById('cutiDetailTable');
-                    filename = "Data_Cuti_Detail.xlsx";
+                    filename = "Leave_Detail_Data.xlsx";
                 } else if (currentTab === 'form-rekap-lembur') {
                     // Untuk export form rekap lembur, kita perlu membuat tabel khusus
                     exportFormRekapLemburToExcel();
@@ -2357,7 +2453,7 @@
                 if (table) {
                     const wb = XLSX.utils.book_new();
                     const ws = XLSX.utils.table_to_sheet(table);
-                    XLSX.utils.book_append_sheet(wb, ws, "Data Absensi");
+                    XLSX.utils.book_append_sheet(wb, ws, "Attendance Data");
                     XLSX.writeFile(wb, filename);
                 }
             });
@@ -2450,8 +2546,8 @@
             });
             
             const ws = XLSX.utils.aoa_to_sheet(overtimeDataToExport);
-            XLSX.utils.book_append_sheet(wb, ws, "Perhitungan Lembur");
-            XLSX.writeFile(wb, "Data_Overtime_Absensi.xlsx");
+            XLSX.utils.book_append_sheet(wb, ws, "Overtime Calculation");
+            XLSX.writeFile(wb, "Overtime_Attendance_Data.xlsx");
         }
 
         // Fungsi khusus untuk export data form rekap lembur ke Excel
@@ -2462,14 +2558,14 @@
             const userRekapData = formRekapLemburData.filter(rekap => rekap.employeeName === currentUser.username);
             
             if (userRekapData.length === 0) {
-                alert('Tidak ada data rekap lembur untuk user ini!');
+                alert('No overtime data available for this user!');
                 return;
             }
             
             // Header
             const header = [
                 "No", "Employee Name", "Date", "Start Time", "End Time", 
-                "Total Project", "Total Plant", "Plant Name", "Volume (m3)", "Uraian Tugas"
+                "Total Project", "Total Plant", "Plant Name", "Volume (m3)", "Task Description"
             ];
             
             userRekapData.forEach((rekap, rekapIndex) => {
@@ -2492,10 +2588,10 @@
                 });
                 
                 const ws = XLSX.utils.aoa_to_sheet(wsData);
-                XLSX.utils.book_append_sheet(wb, ws, `Rekap Lembur ${rekapIndex + 1}`);
+                XLSX.utils.book_append_sheet(wb, ws, `Overtime ${rekapIndex + 1}`);
             });
             
-            XLSX.writeFile(wb, `Data_Form_Rekap_Lembur_${currentUser.username}.xlsx`);
+            XLSX.writeFile(wb, `Overtime_Form_Data_${currentUser.username}.xlsx`);
         }
 
         // Handler untuk menerapkan filter
@@ -2504,12 +2600,12 @@
             const endDate = new Date(document.getElementById('endDate').value);
             
             if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
-                alert('Tanggal tidak valid. Silakan pilih tanggal yang benar.');
+                alert('Invalid date. Please select the correct date.');
                 return;
             }
             
             if (startDate > endDate) {
-                alert('Tanggal mulai tidak boleh lebih besar dari tanggal akhir.');
+                alert('Start date cannot be greater than end date.');
                 return;
             }
             
@@ -2807,7 +2903,7 @@
             
             if (allData.length === 0) {
                 const row = document.createElement('tr');
-                row.innerHTML = `<td colspan="${dateRange.length + 4}" class="text-center">Tidak ada data absensi</td>`;
+                row.innerHTML = `<td colspan="${dateRange.length + 4}" class="text-center">No attendance data available</td>`;
                 tbody.appendChild(row);
                 return;
             }
@@ -2827,7 +2923,7 @@
                 });
                 
                 // Untuk tab absen-tabel, tombol delete tidak ditampilkan
-                rowHTML += '<td><button class="btn-edit" onclick="alert(\'Data di tab Absen Tabel tidak dapat dihapus\')"><i class="fas fa-lock"></i></button></td>';
+                rowHTML += '<td><button class="btn-edit" onclick="alert(\'Data in Attendance Table cannot be deleted\')"><i class="fas fa-lock"></i></button></td>';
                 
                 row.innerHTML = rowHTML;
                 tbody.appendChild(row);

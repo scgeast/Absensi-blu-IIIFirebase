@@ -456,6 +456,16 @@
             position: relative;
         }
 
+        /* Table action buttons inside the container */
+        .table-action-buttons {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            display: flex;
+            gap: 5px;
+            z-index: 10;
+        }
+
         table {
             width: auto;
             min-width: 100%;
@@ -485,6 +495,12 @@
             font-weight: bold;
             font-size: 0.7rem;
             padding: 4px 4px;
+        }
+
+        /* Special header styling for output table to match overtime calculation */
+        #outputTable th {
+            background-color: var(--secondary-color);
+            color: white;
         }
 
         input[type="text"] {
@@ -801,6 +817,13 @@
             font-weight: bold;
         }
 
+        /* Set column widths for rekap lembur table */
+        .rekap-lembur-table th:nth-child(1) { width: 40px; } /* No */
+        .rekap-lembur-table th:nth-child(2) { width: 120px; } /* Total Project */
+        .rekap-lembur-table th:nth-child(3) { width: 100px; } /* Total Plant */
+        .rekap-lembur-table th:nth-child(4) { width: 150px; } /* Plant Name */
+        .rekap-lembur-table th:nth-child(5) { width: 80px; } /* Volume (m3) */
+
         .overtime-detail-table {
             width: 100%;
             border-collapse: collapse;
@@ -915,24 +938,59 @@
             background-color: #dc3545;
         }
 
-        /* Checkbox group for plant selection */
-        .plant-checkbox-group {
-            max-height: 150px;
+        /* Multi-select dropdown for plant selection */
+        .multi-select {
+            position: relative;
+        }
+
+        .multi-select-trigger {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            background-color: white;
+            cursor: pointer;
+        }
+
+        .multi-select-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            max-height: 200px;
             overflow-y: auto;
             border: 1px solid #ced4da;
             border-radius: 4px;
-            padding: 8px;
             background-color: white;
+            z-index: 1000;
+            display: none;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         }
 
-        .plant-checkbox-item {
+        .multi-select-dropdown.show {
+            display: block;
+        }
+
+        .multi-select-option {
             display: flex;
             align-items: center;
-            margin-bottom: 5px;
+            padding: 8px 12px;
+            cursor: pointer;
         }
 
-        .plant-checkbox-item input[type="checkbox"] {
+        .multi-select-option:hover {
+            background-color: #f8f9fa;
+        }
+
+        .multi-select-option input[type="checkbox"] {
             margin-right: 8px;
+        }
+
+        .multi-select-selected {
+            font-size: 0.8rem;
+            color: #6c757d;
         }
 
         /* Overtime form layout */
@@ -1076,6 +1134,13 @@
                 flex-direction: column;
                 gap: 10px;
             }
+
+            /* Adjust column widths for mobile */
+            .rekap-lembur-table th:nth-child(1) { width: 30px; } /* No */
+            .rekap-lembur-table th:nth-child(2) { width: 80px; } /* Total Project */
+            .rekap-lembur-table th:nth-child(3) { width: 70px; } /* Total Plant */
+            .rekap-lembur-table th:nth-child(4) { width: 100px; } /* Plant Name */
+            .rekap-lembur-table th:nth-child(5) { width: 60px; } /* Volume (m3) */
         }
 
         @media (max-width: 576px) {
@@ -1480,16 +1545,16 @@
                                 <!-- Data will be filled by JavaScript -->
                             </tbody>
                         </table>
-                    </div>
-
-                    <!-- Small action buttons positioned at bottom left -->
-                    <div class="action-buttons">
-                        <button class="btn btn-futuristic" id="addRow">
-                            <i class="fas fa-plus me-1"></i> Add
-                        </button>
-                        <button class="btn btn-futuristic" id="saveData">
-                            <i class="fas fa-save me-1"></i> Save
-                        </button>
+                        
+                        <!-- Table action buttons inside the container -->
+                        <div class="table-action-buttons">
+                            <button class="btn btn-futuristic btn-sm" id="addRow">
+                                <i class="fas fa-plus me-1"></i> Add
+                            </button>
+                            <button class="btn btn-futuristic btn-sm" id="saveData">
+                                <i class="fas fa-save me-1"></i> Save
+                            </button>
+                        </div>
                     </div>
                 </div>
 
@@ -1705,34 +1770,40 @@
                                         <td><input type="text" class="form-control form-control-sm" id="totalProject1"></td>
                                         <td><input type="text" class="form-control form-control-sm total-plant" data-row="1" id="totalPlant1"></td>
                                         <td>
-                                            <div class="plant-checkbox-group" id="plantName1">
-                                                <div class="plant-checkbox-item">
-                                                    <input type="checkbox" id="plant-denpasar2" value="Denpasar2">
-                                                    <label for="plant-denpasar2">Denpasar2</label>
+                                            <div class="multi-select" id="plantName1">
+                                                <div class="multi-select-trigger">
+                                                    <span class="multi-select-selected">Select plants</span>
+                                                    <i class="fas fa-chevron-down"></i>
                                                 </div>
-                                                <div class="plant-checkbox-item">
-                                                    <input type="checkbox" id="plant-gianyar" value="Gianyar">
-                                                    <label for="plant-gianyar">Gianyar</label>
-                                                </div>
-                                                <div class="plant-checkbox-item">
-                                                    <input type="checkbox" id="plant-manyar" value="Manyar">
-                                                    <label for="plant-manyar">Manyar</label>
-                                                </div>
-                                                <div class="plant-checkbox-item">
-                                                    <input type="checkbox" id="plant-manukan" value="Manukan">
-                                                    <label for="plant-manukan">Manukan</label>
-                                                </div>
-                                                <div class="plant-checkbox-item">
-                                                    <input type="checkbox" id="plant-kediri" value="Kediri">
-                                                    <label for="plant-kediri">Kediri</label>
-                                                </div>
-                                                <div class="plant-checkbox-item">
-                                                    <input type="checkbox" id="plant-gempol" value="Gempol">
-                                                    <label for="plant-gempol">Gempol</label>
-                                                </div>
-                                                <div class="plant-checkbox-item">
-                                                    <input type="checkbox" id="plant-krian" value="Krian">
-                                                    <label for="plant-krian">Krian</label>
+                                                <div class="multi-select-dropdown">
+                                                    <div class="multi-select-option">
+                                                        <input type="checkbox" id="plant-denpasar2" value="Denpasar2">
+                                                        <label for="plant-denpasar2">Denpasar2</label>
+                                                    </div>
+                                                    <div class="multi-select-option">
+                                                        <input type="checkbox" id="plant-gianyar" value="Gianyar">
+                                                        <label for="plant-gianyar">Gianyar</label>
+                                                    </div>
+                                                    <div class="multi-select-option">
+                                                        <input type="checkbox" id="plant-manyar" value="Manyar">
+                                                        <label for="plant-manyar">Manyar</label>
+                                                    </div>
+                                                    <div class="multi-select-option">
+                                                        <input type="checkbox" id="plant-manukan" value="Manukan">
+                                                        <label for="plant-manukan">Manukan</label>
+                                                    </div>
+                                                    <div class="multi-select-option">
+                                                        <input type="checkbox" id="plant-kediri" value="Kediri">
+                                                        <label for="plant-kediri">Kediri</label>
+                                                    </div>
+                                                    <div class="multi-select-option">
+                                                        <input type="checkbox" id="plant-gempol" value="Gempol">
+                                                        <label for="plant-gempol">Gempol</label>
+                                                    </div>
+                                                    <div class="multi-select-option">
+                                                        <input type="checkbox" id="plant-krian" value="Krian">
+                                                        <label for="plant-krian">Krian</label>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </td>
@@ -3170,15 +3241,50 @@
                 saveOvertimeForm();
             });
             
+            // Multi-select dropdown handlers
+            document.querySelectorAll('.multi-select-trigger').forEach(trigger => {
+                trigger.addEventListener('click', function() {
+                    const dropdown = this.nextElementSibling;
+                    dropdown.classList.toggle('show');
+                    
+                    // Close other dropdowns
+                    document.querySelectorAll('.multi-select-dropdown').forEach(d => {
+                        if (d !== dropdown) {
+                            d.classList.remove('show');
+                        }
+                    });
+                });
+            });
+            
+            // Close dropdowns when clicking outside
+            document.addEventListener('click', function(e) {
+                if (!e.target.closest('.multi-select')) {
+                    document.querySelectorAll('.multi-select-dropdown').forEach(dropdown => {
+                        dropdown.classList.remove('show');
+                    });
+                }
+            });
+            
             // Plant checkbox change handler
-            document.querySelectorAll('.plant-checkbox-item input[type="checkbox"]').forEach(checkbox => {
+            document.querySelectorAll('.multi-select-option input[type="checkbox"]').forEach(checkbox => {
                 checkbox.addEventListener('change', function() {
-                    const row = this.closest('tr');
+                    const multiSelect = this.closest('.multi-select');
+                    const row = multiSelect.closest('tr');
                     const totalPlantInput = row.querySelector('.total-plant');
-                    const checkedBoxes = row.querySelectorAll('.plant-checkbox-item input[type="checkbox"]:checked');
+                    const selectedText = multiSelect.querySelector('.multi-select-selected');
+                    const checkedBoxes = multiSelect.querySelectorAll('.multi-select-option input[type="checkbox"]:checked');
                     
                     // Update total plant count
                     totalPlantInput.value = checkedBoxes.length;
+                    
+                    // Update selected text
+                    if (checkedBoxes.length === 0) {
+                        selectedText.textContent = 'Select plants';
+                    } else if (checkedBoxes.length === 1) {
+                        selectedText.textContent = checkedBoxes[0].nextElementSibling.textContent;
+                    } else {
+                        selectedText.textContent = `${checkedBoxes.length} plants selected`;
+                    }
                 });
             });
             
@@ -3224,7 +3330,7 @@
             const remarks = document.getElementById('uraianTugas').value;
             
             // Get selected plants
-            const plantCheckboxes = document.querySelectorAll('#plantName1 input[type="checkbox"]:checked');
+            const plantCheckboxes = document.querySelectorAll('#plantName1 .multi-select-option input[type="checkbox"]:checked');
             const selectedPlants = Array.from(plantCheckboxes).map(cb => cb.value);
             
             if (!date || !startTime || !endTime || !totalProject || !totalPlant || selectedPlants.length === 0) {
@@ -3267,10 +3373,11 @@
             document.getElementById('volume1').value = '';
             document.getElementById('uraianTugas').value = '';
             
-            // Uncheck all plant checkboxes
-            document.querySelectorAll('#plantName1 input[type="checkbox"]').forEach(cb => {
+            // Reset plant selection
+            document.querySelectorAll('#plantName1 .multi-select-option input[type="checkbox"]').forEach(cb => {
                 cb.checked = false;
             });
+            document.querySelector('#plantName1 .multi-select-selected').textContent = 'Select plants';
         }
 
         // Function to update overtime detail table

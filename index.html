@@ -1561,6 +1561,7 @@
                                     <th>Start Date</th>
                                     <th>End Date</th>
                                     <th>Duration (Days)</th>
+                                    <th>Remarks</th>
                                     <th>Action</th>
                                 </tr>
                             </thead>
@@ -1568,6 +1569,12 @@
                                 <!-- Data will be filled by JavaScript -->
                             </tbody>
                         </table>
+                    </div>
+                    
+                    <div class="action-buttons">
+                        <button class="btn btn-futuristic" id="saveCuti">
+                            <i class="fas fa-save me-1"></i> Save Leave Data
+                        </button>
                     </div>
                 </div>
 
@@ -1933,6 +1940,7 @@
         let currentTab = "entry";
         let users = [];
         let cutiData = [];
+        let cutiDetailData = [];
         let currentUser = null;
         let rekapLemburData = [];
         let formRekapLemburData = [];
@@ -2080,10 +2088,11 @@
                 
                 // Try to load data from Firestore
                 try {
-                    const [absensiSnapshot, settingsSnapshot, absenTabelSnapshot] = await Promise.all([
+                    const [absensiSnapshot, settingsSnapshot, absenTabelSnapshot, cutiSnapshot] = await Promise.all([
                         db.collection('absensi').limit(50).get(),
                         db.collection('settings').doc('dateRange').get().catch(() => null),
-                        db.collection('absenTabel').limit(50).get().catch(() => null)
+                        db.collection('absenTabel').limit(50).get().catch(() => null),
+                        db.collection('cuti').limit(50).get().catch(() => null)
                     ]);
                     
                     absensiData = [];
@@ -2099,6 +2108,17 @@
                     if (absenTabelSnapshot) {
                         absenTabelSnapshot.forEach(doc => {
                             absenTabelData.push({
+                                id: doc.id,
+                                ...doc.data()
+                            });
+                        });
+                    }
+                    
+                    // Load cuti data
+                    cutiData = [];
+                    if (cutiSnapshot) {
+                        cutiSnapshot.forEach(doc => {
+                            cutiData.push({
                                 id: doc.id,
                                 ...doc.data()
                             });
@@ -2122,6 +2142,7 @@
                 initCollapsible();
                 applyDateFilter();
                 updateEmployeeDropdown();
+                updateCutiEmployeeDropdown();
                 initSidebar();
                 initMobileMenu();
                 
@@ -2651,7 +2672,8 @@
         // Setup filter berdasarkan role
         function setupFilterByRole(role) {
             const employeeFilterContainer = document.getElementById('employeeFilterContainer');
-            employeeFilterContainer.style.display = role === 'user' ? 'none' : 'block';
+            // PERBAIKAN: Sembunyikan filter employee untuk semua role
+            employeeFilterContainer.style.display = 'none';
         }
 
         // Fungsi untuk apply filter tanggal
@@ -2822,6 +2844,7 @@
             input.addEventListener('blur', function() {
                 this.readOnly = true;
                 updateEmployeeDropdown();
+                updateCutiEmployeeDropdown();
             }, { once: true });
         }
 
@@ -2837,6 +2860,7 @@
             row.remove();
             
             updateEmployeeDropdown();
+            updateCutiEmployeeDropdown();
         }
 
         // Update employee dropdown
@@ -2869,6 +2893,37 @@
             
             if (currentValue !== 'all' && uniqueNames.has(currentValue)) {
                 employeeDropdown.value = currentValue;
+            }
+        }
+
+        // Update cuti employee dropdown
+        function updateCutiEmployeeDropdown() {
+            const cutiEmployeeDropdown = document.getElementById('cutiEmployee');
+            const currentValue = cutiEmployeeDropdown.value;
+            
+            // Clear existing options
+            cutiEmployeeDropdown.innerHTML = '';
+            
+            const uniqueNames = new Set();
+            absensiData.forEach(employee => {
+                if (employee.name) uniqueNames.add(employee.name);
+            });
+            
+            if (uniqueNames.size === 0) {
+                initialEmployees.forEach(employee => {
+                    uniqueNames.add(employee.name);
+                });
+            }
+            
+            uniqueNames.forEach(name => {
+                const option = document.createElement('option');
+                option.value = name;
+                option.textContent = name;
+                cutiEmployeeDropdown.appendChild(option);
+            });
+            
+            if (currentValue && uniqueNames.has(currentValue)) {
+                cutiEmployeeDropdown.value = currentValue;
             }
         }
 
@@ -2964,6 +3019,11 @@
                             overtimeDataLoaded = true;
                         }
                         updateOvertimeTable();
+                    }
+                    
+                    // Load cuti detail data when switching to cuti-detail tab
+                    if (tabName === 'cuti-detail') {
+                        generateCutiDetailData();
                     }
                 });
             });
@@ -3092,6 +3152,272 @@
             }
         }
 
+        // Fungsi untuk menghitung durasi cuti
+        function calculateDuration(startDate, endDate) {
+            const start = new Date(startDate);
+            const end = new Date(endDate);
+            const diffTime = Math.abs(end - start);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; // +1 karena inklusif
+            return diffDays;
+        }
+
+        // Fungsi untuk menghitung sisa cuti
+        function calculateRemainingLeave(employeeName, currentDuration) {
+            // Total awal cuti adalah 12 hari
+            const totalLeave = 12;
+            
+            // Cari semua cuti untuk karyawan ini
+            const employeeLeaves = cutiData.filter(cuti => cuti.employeeName === employeeName);
+            
+            // Hitung total durasi cuti yang sudah diambil
+            let totalTaken = 0;
+            employeeLeaves.forEach(leave => {
+                totalTaken += leave.duration;
+            });
+            
+            // Tambahkan durasi cuti saat ini
+            totalTaken += currentDuration;
+            
+            // Hitung sisa cuti
+            const remaining = totalLeave - totalTaken;
+            
+            // Pastikan tidak negatif
+            return Math.max(0, remaining);
+        }
+
+        // Fungsi untuk menambahkan data cuti ke tabel
+        function addCutiToTable(employeeName, startDate, endDate, duration, remarks = "") {
+            const tableBody = document.getElementById('cutiTableBody');
+            const rowCount = tableBody.rows.length;
+            
+            const row = tableBody.insertRow();
+            row.innerHTML = `
+                <td>${rowCount + 1}</td>
+                <td>${employeeName}</td>
+                <td>${startDate}</td>
+                <td>${endDate}</td>
+                <td>${duration}</td>
+                <td><input type="text" class="form-control form-control-sm remarks-input" value="${remarks}" placeholder="Enter remarks"></td>
+                <td>
+                    <button class="btn btn-futuristic btn-sm edit-cuti-btn">
+                        <i class="fas fa-edit"></i> Edit
+                    </button>
+                </td>
+            `;
+            
+            // Tambahkan event listener untuk tombol edit
+            const editBtn = row.querySelector('.edit-cuti-btn');
+            editBtn.addEventListener('click', function() {
+                const remarksInput = row.querySelector('.remarks-input');
+                remarksInput.readOnly = false;
+                remarksInput.focus();
+                remarksInput.select();
+                
+                // Ubah tombol menjadi Save
+                this.innerHTML = '<i class="fas fa-save"></i> Save';
+                this.classList.remove('edit-cuti-btn');
+                this.classList.add('save-cuti-btn');
+                
+                // Tambahkan event listener untuk tombol save
+                this.addEventListener('click', function() {
+                    remarksInput.readOnly = true;
+                    this.innerHTML = '<i class="fas fa-edit"></i> Edit';
+                    this.classList.remove('save-cuti-btn');
+                    this.classList.add('edit-cuti-btn');
+                });
+            });
+        }
+
+        // Fungsi untuk menambahkan data cuti ke tabel detail
+        function addCutiToDetailTable(employeeName, workArea, position, startDate, endDate, duration, remainingLeave) {
+            const tableBody = document.getElementById('cutiDetailTableBody');
+            const rowCount = tableBody.rows.length;
+            
+            const row = tableBody.insertRow();
+            row.innerHTML = `
+                <td>${rowCount + 1}</td>
+                <td>${employeeName}</td>
+                <td>${workArea}</td>
+                <td>${position}</td>
+                <td>${startDate}</td>
+                <td>${endDate}</td>
+                <td>${duration}</td>
+                <td>${remainingLeave}</td>
+            `;
+        }
+
+        // Fungsi untuk generate data cuti detail
+        function generateCutiDetailData() {
+            // Kosongkan tabel detail
+            document.getElementById('cutiDetailTableBody').innerHTML = '';
+            
+            // Reset data cuti detail
+            cutiDetailData = [];
+            
+            // Kelompokkan data cuti berdasarkan karyawan
+            const employeeLeaveMap = {};
+            
+            cutiData.forEach(cuti => {
+                if (!employeeLeaveMap[cuti.employeeName]) {
+                    employeeLeaveMap[cuti.employeeName] = [];
+                }
+                employeeLeaveMap[cuti.employeeName].push(cuti);
+            });
+            
+            // Proses setiap karyawan
+            Object.keys(employeeLeaveMap).forEach(employeeName => {
+                const leaves = employeeLeaveMap[employeeName];
+                let remainingLeave = 12; // Total awal cuti
+                
+                // Urutkan cuti berdasarkan tanggal mulai
+                leaves.sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
+                
+                // Cari data karyawan
+                const employee = absensiData.find(emp => emp.name === employeeName) || 
+                                initialEmployees.find(emp => emp.name === employeeName);
+                
+                if (!employee) return;
+                
+                // Proses setiap cuti
+                leaves.forEach(cuti => {
+                    // Hitung sisa cuti
+                    remainingLeave -= cuti.duration;
+                    
+                    // Tambahkan ke data cuti detail
+                    const cutiDetail = {
+                        employeeName: employee.name,
+                        workArea: employee.area,
+                        position: employee.position,
+                        startDate: cuti.startDate,
+                        endDate: cuti.endDate,
+                        duration: cuti.duration,
+                        remainingLeave: Math.max(0, remainingLeave)
+                    };
+                    
+                    cutiDetailData.push(cutiDetail);
+                    
+                    // Tambahkan ke tabel detail
+                    addCutiToDetailTable(
+                        cutiDetail.employeeName,
+                        cutiDetail.workArea,
+                        cutiDetail.position,
+                        cutiDetail.startDate,
+                        cutiDetail.endDate,
+                        cutiDetail.duration,
+                        cutiDetail.remainingLeave
+                    );
+                });
+            });
+        }
+
+        // Fungsi untuk update tabel cuti
+        function updateCutiTable() {
+            const tableBody = document.getElementById('cutiTableBody');
+            tableBody.innerHTML = '';
+            
+            cutiData.forEach((cuti, index) => {
+                const row = tableBody.insertRow();
+                row.innerHTML = `
+                    <td>${index + 1}</td>
+                    <td>${cuti.employeeName}</td>
+                    <td>${cuti.startDate}</td>
+                    <td>${cuti.endDate}</td>
+                    <td>${cuti.duration}</td>
+                    <td><input type="text" class="form-control form-control-sm remarks-input" value="${cuti.remarks || ''}" placeholder="Enter remarks"></td>
+                    <td>
+                        <button class="btn btn-futuristic btn-sm edit-cuti-btn">
+                            <i class="fas fa-edit"></i> Edit
+                        </button>
+                    </td>
+                `;
+                
+                // Tambahkan event listener untuk tombol edit
+                const editBtn = row.querySelector('.edit-cuti-btn');
+                editBtn.addEventListener('click', function() {
+                    const remarksInput = row.querySelector('.remarks-input');
+                    remarksInput.readOnly = false;
+                    remarksInput.focus();
+                    remarksInput.select();
+                    
+                    // Ubah tombol menjadi Save
+                    this.innerHTML = '<i class="fas fa-save"></i> Save';
+                    this.classList.remove('edit-cuti-btn');
+                    this.classList.add('save-cuti-btn');
+                    
+                    // Tambahkan event listener untuk tombol save
+                    this.addEventListener('click', function() {
+                        remarksInput.readOnly = true;
+                        this.innerHTML = '<i class="fas fa-edit"></i> Edit';
+                        this.classList.remove('save-cuti-btn');
+                        this.classList.add('edit-cuti-btn');
+                        
+                        // Update data cuti
+                        cuti.remarks = remarksInput.value;
+                    });
+                });
+            });
+        }
+
+        // Fungsi untuk memuat data cuti dari Firestore
+        async function loadCutiData() {
+            try {
+                const cutiSnapshot = await db.collection('cuti').get();
+                
+                cutiData = [];
+                cutiSnapshot.forEach(doc => {
+                    cutiData.push({
+                        id: doc.id,
+                        ...doc.data()
+                    });
+                });
+                
+                // Update tabel cuti
+                updateCutiTable();
+                
+                // Generate data cuti detail
+                generateCutiDetailData();
+                
+            } catch (error) {
+                console.error('Error loading leave data:', error);
+            }
+        }
+
+        // Fungsi untuk menyimpan data cuti ke Firestore
+        async function saveCutiDataToFirestore() {
+            if (!isOnline) {
+                console.log('Offline - data will be saved when connection is restored');
+                return;
+            }
+            
+            try {
+                // Simpan data cuti ke Firestore
+                const batch = db.batch();
+                
+                // Hapus data cuti lama
+                const cutiSnapshot = await db.collection('cuti').get();
+                cutiSnapshot.forEach(doc => {
+                    batch.delete(doc.ref);
+                });
+                
+                // Tambahkan data cuti baru
+                cutiData.forEach(cuti => {
+                    const docRef = db.collection('cuti').doc();
+                    batch.set(docRef, cuti);
+                });
+                
+                await batch.commit();
+                
+                // Generate data cuti detail
+                generateCutiDetailData();
+                
+                showNotification('Leave data saved successfully', 'success');
+                
+            } catch (error) {
+                console.error('Error saving leave data:', error);
+                showNotification('Error saving leave data: ' + error.message, 'error');
+            }
+        }
+
         // Initialize aplikasi saat DOM ready
         document.addEventListener('DOMContentLoaded', function() {
             // Check connection status awal
@@ -3198,6 +3524,61 @@
             // PERBAIKAN: Save overtime data button
             document.getElementById('saveOvertimeData').addEventListener('click', async function() {
                 await saveOvertimeDataToFirestore();
+            });
+            
+            // Event listener untuk tombol Add Cuti
+            document.getElementById('addCuti').addEventListener('click', function() {
+                const employeeName = document.getElementById('cutiEmployee').value;
+                const startDate = document.getElementById('cutiStartDate').value;
+                const endDate = document.getElementById('cutiEndDate').value;
+                
+                if (!employeeName || !startDate || !endDate) {
+                    showNotification('Please fill all fields', 'error');
+                    return;
+                }
+                
+                if (new Date(startDate) > new Date(endDate)) {
+                    showNotification('End date must be after start date', 'error');
+                    return;
+                }
+                
+                // Hitung durasi
+                const duration = calculateDuration(startDate, endDate);
+                
+                // Tambahkan ke data cuti
+                const newCuti = {
+                    employeeName,
+                    startDate,
+                    endDate,
+                    duration,
+                    remarks: ""
+                };
+                
+                cutiData.push(newCuti);
+                
+                // Tambahkan ke tabel cuti
+                addCutiToTable(employeeName, startDate, endDate, duration);
+                
+                // Reset form
+                document.getElementById('cutiStartDate').value = '';
+                document.getElementById('cutiEndDate').value = '';
+                
+                showNotification('Leave added successfully', 'success');
+            });
+            
+            // Event listener untuk tombol Save Cuti
+            document.getElementById('saveCuti').addEventListener('click', async function() {
+                // Update remarks dari tabel
+                const rows = document.querySelectorAll('#cutiTableBody tr');
+                rows.forEach((row, index) => {
+                    if (cutiData[index]) {
+                        const remarksInput = row.querySelector('.remarks-input');
+                        cutiData[index].remarks = remarksInput.value;
+                    }
+                });
+                
+                // Save to Firestore
+                await saveCutiDataToFirestore();
             });
             
             // Cek jika ada data backup di localStorage

@@ -89,6 +89,13 @@
             box-shadow: 0 0 0 0.25rem rgba(123, 137, 201, 0.25);
         }
 
+        .powered-by {
+            text-align: center;
+            margin-top: 15px;
+            font-size: 0.8rem;
+            color: #6c757d;
+        }
+
         /* Connection Status - Mobile Friendly */
         .connection-status {
             position: fixed;
@@ -879,6 +886,76 @@
             color: #1976d2;
         }
 
+        /* Notification styles */
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            border-radius: 5px;
+            color: white;
+            font-weight: 500;
+            z-index: 9999;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            transform: translateY(-100px);
+            opacity: 0;
+            transition: transform 0.3s ease, opacity 0.3s ease;
+        }
+
+        .notification.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .notification.success {
+            background-color: #28a745;
+        }
+
+        .notification.error {
+            background-color: #dc3545;
+        }
+
+        /* Checkbox group for plant selection */
+        .plant-checkbox-group {
+            max-height: 150px;
+            overflow-y: auto;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            padding: 8px;
+            background-color: white;
+        }
+
+        .plant-checkbox-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+
+        .plant-checkbox-item input[type="checkbox"] {
+            margin-right: 8px;
+        }
+
+        /* Overtime form layout */
+        .overtime-form-row {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+            align-items: flex-end;
+        }
+
+        .overtime-form-row .form-group {
+            flex: 1;
+            margin-bottom: 0;
+        }
+
+        /* Small save button for overtime form */
+        .small-save-btn {
+            padding: 6px 12px;
+            font-size: 0.8rem;
+            border-radius: 4px;
+            align-self: flex-end;
+        }
+
         /* Responsive Styles */
         @media (max-width: 1200px) {
             th, td {
@@ -993,6 +1070,11 @@
                 padding: 5px 8px;
                 font-size: 0.7rem;
                 min-width: 70px;
+            }
+
+            .overtime-form-row {
+                flex-direction: column;
+                gap: 10px;
             }
         }
 
@@ -1171,19 +1253,15 @@
             </div>
             <div class="mb-3">
                 <label for="email" class="form-label">Email</label>
-                <input type="email" class="form-control" id="email" placeholder="Enter email" value="test@example.com">
+                <input type="email" class="form-control" id="email" placeholder="Enter email">
             </div>
             <div class="mb-3">
                 <label for="password" class="form-label">Password</label>
-                <input type="password" class="form-control" id="password" placeholder="Enter password" value="password123">
+                <input type="password" class="form-control" id="password" placeholder="Enter password">
             </div>
             <div class="login-error" id="loginError">Email or password is incorrect!</div>
             <button class="btn btn-futuristic w-100" id="loginBtn">Login</button>
-            <div class="mt-3 text-center">
-                <small class="text-muted">Use your registered email and password</small>
-                <br>
-                <small class="text-muted">Test: <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="166273656256736e777b667a733875797b">[email&#160;protected]</a> / password123</small>
-            </div>
+            <div class="powered-by">Powered by L23-51Xe</div>
         </div>
     </div>
 
@@ -1391,9 +1469,9 @@
                         <table id="entryTable" tabindex="0">
                             <thead>
                                 <tr>
-                                    <th>Area</th>
-                                    <th>Name</th>
-                                    <th>Position</th>
+                                    <th>Work Area</th>
+                                    <th>Employee Name</th>
+                                    <th>Job Position</th>
                                     <!-- Date columns will be filled by JavaScript -->
                                     <th>Action</th>
                                 </tr>
@@ -1426,9 +1504,9 @@
                         <table id="outputTable" class="table table-striped table-sm">
                             <thead>
                                 <tr>
-                                    <th>Area</th>
-                                    <th>Name</th>
-                                    <th>Position</th>
+                                    <th>Work Area</th>
+                                    <th>Employee Name</th>
+                                    <th>Job Position</th>
                                     <th>Date</th>
                                     <th>Shift</th>
                                     <th>Shift Check In</th>
@@ -1455,9 +1533,9 @@
                             <thead>
                                 <tr>
                                     <th>No</th>
-                                    <th>Area</th>
-                                    <th>Name</th>
-                                    <th>Position</th>
+                                    <th>Work Area</th>
+                                    <th>Employee Name</th>
+                                    <th>Job Position</th>
                                     <th>Date</th>
                                     <th>Shift</th>
                                     <th>Shift Check In</th>
@@ -1490,9 +1568,9 @@
                         <table id="absenTabelTable">
                             <thead>
                                 <tr>
-                                    <th>Area</th>
-                                    <th>Name</th>
-                                    <th>Position</th>
+                                    <th>Work Area</th>
+                                    <th>Employee Name</th>
+                                    <th>Job Position</th>
                                     <!-- Date columns will be filled by JavaScript -->
                                 </tr>
                             </thead>
@@ -1567,8 +1645,8 @@
                                 <tr>
                                     <th>No</th>
                                     <th>Employee Name</th>
-                                    <th>Area</th>
-                                    <th>Position</th>
+                                    <th>Work Area</th>
+                                    <th>Job Position</th>
                                     <th>Start Date</th>
                                     <th>End Date</th>
                                     <th>Duration (Days)</th>
@@ -1590,27 +1668,23 @@
                     </div>
 
                     <div class="rekap-lembur-form">
-                        <div class="row g-2">
-                            <div class="col-12 col-md-6">
-                                <div class="form-group">
-                                    <label for="rekapEmployeeName">Employee Name</label>
-                                    <input type="text" class="form-control form-control-sm" id="rekapEmployeeName" readonly>
+                        <div class="overtime-form-row">
+                            <div class="form-group">
+                                <label for="rekapDate">Date</label>
+                                <input type="date" class="form-control form-control-sm" id="rekapDate">
+                            </div>
+                            <div class="form-group">
+                                <label>Overtime Hours</label>
+                                <div class="time-inputs">
+                                    <input type="time" class="form-control form-control-sm" id="rekapStartTime" placeholder="Start Time">
+                                    <span>-</span>
+                                    <input type="time" class="form-control form-control-sm" id="rekapEndTime" placeholder="End Time">
                                 </div>
                             </div>
-                            <div class="col-12 col-md-6">
-                                <div class="form-group">
-                                    <label for="rekapDate">Date</label>
-                                    <input type="date" class="form-control form-control-sm" id="rekapDate">
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label>Overtime Hours</label>
-                            <div class="time-inputs">
-                                <input type="time" class="form-control form-control-sm" id="rekapStartTime" placeholder="Start Time">
-                                <span>-</span>
-                                <input type="time" class="form-control form-control-sm" id="rekapEndTime" placeholder="End Time">
+                            <div class="form-group">
+                                <button class="btn btn-futuristic small-save-btn" id="saveRekapLembur">
+                                    <i class="fas fa-save"></i> Save
+                                </button>
                             </div>
                         </div>
                         
@@ -1631,16 +1705,36 @@
                                         <td><input type="text" class="form-control form-control-sm" id="totalProject1"></td>
                                         <td><input type="text" class="form-control form-control-sm total-plant" data-row="1" id="totalPlant1"></td>
                                         <td>
-                                            <select class="form-select form-select-sm plant-name" data-row="1" id="plantName1" disabled>
-                                                <option value="">Select Plant</option>
-                                                <option value="Denpasar2">Denpasar2</option>
-                                                <option value="Gianyar">Gianyar</option>
-                                                <option value="Manyar">Manyar</option>
-                                                <option value="Manukan">Manukan</option>
-                                                <option value="Kediri">Kediri</option>
-                                                <option value="Gempol">Gempol</option>
-                                                <option value="Krian">Krian</option>
-                                            </select>
+                                            <div class="plant-checkbox-group" id="plantName1">
+                                                <div class="plant-checkbox-item">
+                                                    <input type="checkbox" id="plant-denpasar2" value="Denpasar2">
+                                                    <label for="plant-denpasar2">Denpasar2</label>
+                                                </div>
+                                                <div class="plant-checkbox-item">
+                                                    <input type="checkbox" id="plant-gianyar" value="Gianyar">
+                                                    <label for="plant-gianyar">Gianyar</label>
+                                                </div>
+                                                <div class="plant-checkbox-item">
+                                                    <input type="checkbox" id="plant-manyar" value="Manyar">
+                                                    <label for="plant-manyar">Manyar</label>
+                                                </div>
+                                                <div class="plant-checkbox-item">
+                                                    <input type="checkbox" id="plant-manukan" value="Manukan">
+                                                    <label for="plant-manukan">Manukan</label>
+                                                </div>
+                                                <div class="plant-checkbox-item">
+                                                    <input type="checkbox" id="plant-kediri" value="Kediri">
+                                                    <label for="plant-kediri">Kediri</label>
+                                                </div>
+                                                <div class="plant-checkbox-item">
+                                                    <input type="checkbox" id="plant-gempol" value="Gempol">
+                                                    <label for="plant-gempol">Gempol</label>
+                                                </div>
+                                                <div class="plant-checkbox-item">
+                                                    <input type="checkbox" id="plant-krian" value="Krian">
+                                                    <label for="plant-krian">Krian</label>
+                                                </div>
+                                            </div>
                                         </td>
                                         <td><input type="text" class="form-control form-control-sm" id="volume1"></td>
                                     </tr>
@@ -1652,33 +1746,21 @@
                             <label for="uraianTugas">Task Description</label>
                             <textarea class="form-control form-control-sm" id="uraianTugas" rows="3" placeholder="Describe your overtime tasks..."></textarea>
                         </div>
-                        
-                        <div class="action-buttons">
-                            <button class="btn btn-futuristic" id="addRekapRow">
-                                <i class="fas fa-plus me-1"></i> Add Row
-                            </button>
-                            <button class="btn btn-futuristic" id="saveRekapLembur">
-                                <i class="fas fa-save me-1"></i> Save
-                            </button>
-                        </div>
                     </div>
 
                     <!-- Overtime Detail Table -->
                     <div class="table-responsive" id="overtimeDetailContainer" style="display: none;">
-                        <h5>Detail Overtime</h5>
+                        <h5>Over Time Detail</h5>
                         <table class="overtime-detail-table table-striped table-sm" id="overtimeDetailTable">
                             <thead>
                                 <tr>
                                     <th>No</th>
-                                    <th>Employee Name</th>
                                     <th>Date</th>
-                                    <th>Start Time</th>
-                                    <th>End Time</th>
                                     <th>Total Project</th>
                                     <th>Total Plant</th>
                                     <th>Plant Name</th>
                                     <th>Volume (m3)</th>
-                                    <th>Task Description</th>
+                                    <th>Remarks</th>
                                 </tr>
                             </thead>
                             <tbody id="overtimeDetailTableBody">
@@ -1848,7 +1930,10 @@
         </div>
     </div>
 
-    <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Notification element -->
+    <div id="notification" class="notification"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         // Initialize Firebase dengan konfigurasi yang benar
         const firebaseConfig = {
@@ -1923,6 +2008,19 @@
         let currentFocusedCell = null;
         let isEditingCell = false;
         let originalCellValue = '';
+
+        // Fungsi untuk menampilkan notifikasi
+        function showNotification(message, type = 'success') {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.className = 'notification ' + type;
+            notification.classList.add('show');
+            
+            // Hide notification after 3 seconds
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
+        }
 
         // Fungsi untuk mengecek koneksi
         function checkConnection() {
@@ -2430,6 +2528,13 @@
                 // Update Attendance Table view
                 updateAbsenTabelTable();
                 
+                // Update Output and Overtime Calculation tables
+                updateOutputTable();
+                updateOvertimeTable();
+                
+                // Show success notification
+                showNotification('Data saved successfully!', 'success');
+                
                 // Hapus backup setelah berhasil sync
                 localStorage.removeItem('absensiDataBackup');
                 localStorage.removeItem('absenTabelDataBackup');
@@ -2441,7 +2546,79 @@
                     localStorage.setItem('absensiDataBackup', JSON.stringify(absensiData));
                     localStorage.setItem('absenTabelDataBackup', JSON.stringify(absenTabelData));
                 }
+                showNotification('Error saving data: ' + error.message, 'error');
             }
+        }
+
+        // Update Output Table with data from absensiData
+        function updateOutputTable() {
+            const tbody = document.querySelector('#outputTable tbody');
+            tbody.innerHTML = '';
+            
+            absensiData.forEach(employee => {
+                if (employee.shifts) {
+                    Object.entries(employee.shifts).forEach(([date, shift]) => {
+                        if (shift && shift !== 'O' && shift !== 'C') {
+                            const shiftInfo = shiftMatrix[employee.position] && shiftMatrix[employee.position][shift];
+                            
+                            if (shiftInfo) {
+                                const row = document.createElement('tr');
+                                row.innerHTML = `
+                                    <td>${employee.area || ''}</td>
+                                    <td>${employee.name || ''}</td>
+                                    <td>${employee.position || ''}</td>
+                                    <td>${date}</td>
+                                    <td>${shift} (${shiftInfo.name})</td>
+                                    <td>${shiftInfo.checkIn}</td>
+                                    <td>${shiftInfo.checkOut}</td>
+                                    <td></td>
+                                `;
+                                tbody.appendChild(row);
+                            }
+                        }
+                    });
+                }
+            });
+        }
+
+        // Update Overtime Table with data from absensiData
+        function updateOvertimeTable() {
+            const tbody = document.querySelector('#overtimeTableBody');
+            tbody.innerHTML = '';
+            
+            let no = 1;
+            absensiData.forEach(employee => {
+                if (employee.shifts) {
+                    Object.entries(employee.shifts).forEach(([date, shift]) => {
+                        if (shift && shift !== 'O' && shift !== 'C') {
+                            const shiftInfo = shiftMatrix[employee.position] && shiftMatrix[employee.position][shift];
+                            
+                            if (shiftInfo) {
+                                const row = document.createElement('tr');
+                                row.innerHTML = `
+                                    <td>${no++}</td>
+                                    <td>${employee.area || ''}</td>
+                                    <td>${employee.name || ''}</td>
+                                    <td>${employee.position || ''}</td>
+                                    <td>${date}</td>
+                                    <td>${shift} (${shiftInfo.name})</td>
+                                    <td>${shiftInfo.checkIn}</td>
+                                    <td>${shiftInfo.checkOut}</td>
+                                    <td>${shiftInfo.hours}</td>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                `;
+                                tbody.appendChild(row);
+                            }
+                        }
+                    });
+                }
+            });
         }
 
         // Fungsi format tanggal
@@ -2518,6 +2695,14 @@
         function setupFilterByRole(role) {
             const employeeFilterContainer = document.getElementById('employeeFilterContainer');
             employeeFilterContainer.style.display = role === 'user' ? 'none' : 'block';
+            
+            // For Overtime Form, hide employee filter for users
+            if (role === 'user') {
+                const overtimeFormFilter = document.querySelector('#form-rekap-lembur .filter-section');
+                if (overtimeFormFilter) {
+                    overtimeFormFilter.style.display = 'none';
+                }
+            }
         }
 
         // Fungsi untuk apply filter tanggal
@@ -2552,7 +2737,7 @@
             const tbody = document.querySelector('#entryTable tbody');
             
             // Update header
-            let headerHTML = '<th>Area</th><th>Name</th><th>Position</th>';
+            let headerHTML = '<th>Work Area</th><th>Employee Name</th><th>Job Position</th>';
             dateRange.forEach(date => {
                 headerHTML += `<th>${formatDateForHeader(date)}</th>`;
             });
@@ -2601,7 +2786,7 @@
             const tbody = document.querySelector('#absenTabelTable tbody');
             
             // Update header
-            let headerHTML = '<th>Area</th><th>Name</th><th>Position</th>';
+            let headerHTML = '<th>Work Area</th><th>Employee Name</th><th>Job Position</th>';
             dateRange.forEach(date => {
                 headerHTML += `<th>${formatDateForHeader(date)}</th>`;
             });
@@ -2804,6 +2989,11 @@
                         if (tabName === 'absen-tabel') {
                             updateAbsenTabelTable();
                         }
+                        
+                        // If switching to overtime form and user is logged in, set employee name
+                        if (tabName === 'form-rekap-lembur' && currentUser && currentUser.role === 'user') {
+                            document.getElementById('rekapEmployeeName').value = currentUser.name;
+                        }
                     }
                 });
             });
@@ -2975,6 +3165,23 @@
             // Save data button
             document.getElementById('saveData').addEventListener('click', saveDataToFirestore);
             
+            // Save overtime form button
+            document.getElementById('saveRekapLembur').addEventListener('click', function() {
+                saveOvertimeForm();
+            });
+            
+            // Plant checkbox change handler
+            document.querySelectorAll('.plant-checkbox-item input[type="checkbox"]').forEach(checkbox => {
+                checkbox.addEventListener('change', function() {
+                    const row = this.closest('tr');
+                    const totalPlantInput = row.querySelector('.total-plant');
+                    const checkedBoxes = row.querySelectorAll('.plant-checkbox-item input[type="checkbox"]:checked');
+                    
+                    // Update total plant count
+                    totalPlantInput.value = checkedBoxes.length;
+                });
+            });
+            
             // Load saved header sizes
             const savedWidth = localStorage.getItem('headerWidth');
             const savedHeight = localStorage.getItem('headerHeight');
@@ -3006,6 +3213,85 @@
             console.log('Application initialized successfully');
         });
 
+        // Function to save overtime form
+        function saveOvertimeForm() {
+            const date = document.getElementById('rekapDate').value;
+            const startTime = document.getElementById('rekapStartTime').value;
+            const endTime = document.getElementById('rekapEndTime').value;
+            const totalProject = document.getElementById('totalProject1').value;
+            const totalPlant = document.getElementById('totalPlant1').value;
+            const volume = document.getElementById('volume1').value;
+            const remarks = document.getElementById('uraianTugas').value;
+            
+            // Get selected plants
+            const plantCheckboxes = document.querySelectorAll('#plantName1 input[type="checkbox"]:checked');
+            const selectedPlants = Array.from(plantCheckboxes).map(cb => cb.value);
+            
+            if (!date || !startTime || !endTime || !totalProject || !totalPlant || selectedPlants.length === 0) {
+                showNotification('Please fill all required fields', 'error');
+                return;
+            }
+            
+            // Create overtime record
+            const overtimeRecord = {
+                date,
+                startTime,
+                endTime,
+                totalProject,
+                totalPlant,
+                plantName: selectedPlants.join(', '),
+                volume,
+                remarks,
+                employeeName: currentUser.name,
+                createdAt: new Date().toISOString()
+            };
+            
+            // Add to formRekapLemburData
+            formRekapLemburData.push(overtimeRecord);
+            
+            // Update overtime detail table
+            updateOvertimeDetailTable();
+            
+            // Show overtime detail container
+            document.getElementById('overtimeDetailContainer').style.display = 'block';
+            
+            // Show success notification
+            showNotification('Overtime data saved successfully!', 'success');
+            
+            // Reset form
+            document.getElementById('rekapDate').value = '';
+            document.getElementById('rekapStartTime').value = '';
+            document.getElementById('rekapEndTime').value = '';
+            document.getElementById('totalProject1').value = '';
+            document.getElementById('totalPlant1').value = '';
+            document.getElementById('volume1').value = '';
+            document.getElementById('uraianTugas').value = '';
+            
+            // Uncheck all plant checkboxes
+            document.querySelectorAll('#plantName1 input[type="checkbox"]').forEach(cb => {
+                cb.checked = false;
+            });
+        }
+
+        // Function to update overtime detail table
+        function updateOvertimeDetailTable() {
+            const tbody = document.getElementById('overtimeDetailTableBody');
+            tbody.innerHTML = '';
+            
+            formRekapLemburData.forEach((record, index) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${index + 1}</td>
+                    <td>${record.date}</td>
+                    <td>${record.totalProject}</td>
+                    <td>${record.totalPlant}</td>
+                    <td>${record.plantName}</td>
+                    <td>${record.volume}</td>
+                    <td>${record.remarks}</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
     </script>
 </body>
 </html>

@@ -1186,7 +1186,7 @@
             border-radius: 3px;
             padding: 2px 5px;
             font-size: 0.75rem;
-            width: 60px;
+            width: 80px;
         }
         
         .time-input:focus {
@@ -1201,6 +1201,29 @@
             color: white;
             font-weight: bold;
         }
+        
+        /* PERBAIKAN: Style untuk lebar kolom overtime table */
+        #overtimeTable th, #overtimeTable td {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        #overtimeTable th:nth-child(1), #overtimeTable td:nth-child(1) { min-width: 40px; max-width: 50px; }
+        #overtimeTable th:nth-child(2), #overtimeTable td:nth-child(2) { min-width: 80px; max-width: 100px; }
+        #overtimeTable th:nth-child(3), #overtimeTable td:nth-child(3) { min-width: 100px; max-width: 120px; }
+        #overtimeTable th:nth-child(4), #overtimeTable td:nth-child(4) { min-width: 80px; max-width: 100px; }
+        #overtimeTable th:nth-child(5), #overtimeTable td:nth-child(5) { min-width: 80px; max-width: 100px; }
+        #overtimeTable th:nth-child(6), #overtimeTable td:nth-child(6) { min-width: 80px; max-width: 100px; }
+        #overtimeTable th:nth-child(7), #overtimeTable td:nth-child(7) { min-width: 90px; max-width: 110px; }
+        #overtimeTable th:nth-child(8), #overtimeTable td:nth-child(8) { min-width: 90px; max-width: 110px; }
+        #overtimeTable th:nth-child(9), #overtimeTable td:nth-child(9) { min-width: 70px; max-width: 90px; }
+        #overtimeTable th:nth-child(10), #overtimeTable td:nth-child(10) { min-width: 100px; max-width: 120px; }
+        #overtimeTable th:nth-child(11), #overtimeTable td:nth-child(11) { min-width: 100px; max-width: 120px; }
+        #overtimeTable th:nth-child(12), #overtimeTable td:nth-child(12) { min-width: 80px; max-width: 100px; }
+        #overtimeTable th:nth-child(13), #overtimeTable td:nth-child(13) { min-width: 80px; max-width: 100px; }
+        #overtimeTable th:nth-child(14), #overtimeTable td:nth-child(14) { min-width: 120px; max-width: 150px; }
+        #overtimeTable th:nth-child(15), #overtimeTable td:nth-child(15) { min-width: 100px; max-width: 120px; }
     </style>
 </head>
 <body>
@@ -1356,29 +1379,39 @@
         </div>
         
         <div class="container mt-4">
-            <div class="filter-section" id="filterSection">
+            <!-- Filter Section untuk Main Folder -->
+            <div class="filter-section" id="mainFilterSection">
                 <div class="row g-2">
                     <div class="col-12 col-md-6 col-lg-4">
-                        <label for="dateRange" class="form-label">Date Range</label>
+                        <label for="mainDateRange" class="form-label">Date Range</label>
                         <div class="input-group input-group-sm">
-                            <input type="date" class="form-control" id="startDate">
+                            <input type="date" class="form-control" id="mainStartDate">
                             <span class="input-group-text">to</span>
-                            <input type="date" class="form-control" id="endDate">
+                            <input type="date" class="form-control" id="mainEndDate">
                         </div>
                     </div>
-                    <div class="col-12 col-md-6 col-lg-4" id="employeeFilterContainer">
-                        <label for="employeeName" class="form-label">Employee Name</label>
-                        <select class="form-select form-select-sm" id="employeeName">
-                            <option value="all">Select All</option>
-                            <!-- Options will be filled by JavaScript -->
-                        </select>
-                    </div>
                     <div class="col-12 col-lg-4 d-flex align-items-end gap-2">
-                        <button class="btn btn-futuristic btn-sm flex-fill" id="applyFilter">
+                        <button class="btn btn-futuristic btn-sm flex-fill" id="applyMainFilter">
                             <i class="fas fa-filter me-1"></i> Apply
                         </button>
-                        <button class="btn btn-futuristic btn-sm flex-fill" id="exportExcel">
-                            <i class="fas fa-file-excel me-1"></i> Export
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Filter Section untuk General Folder -->
+            <div class="filter-section" id="generalFilterSection" style="display: none;">
+                <div class="row g-2">
+                    <div class="col-12 col-md-6 col-lg-4">
+                        <label for="generalDateRange" class="form-label">Date Range</label>
+                        <div class="input-group input-group-sm">
+                            <input type="date" class="form-control" id="generalStartDate">
+                            <span class="input-group-text">to</span>
+                            <input type="date" class="form-control" id="generalEndDate">
+                        </div>
+                    </div>
+                    <div class="col-12 col-lg-4 d-flex align-items-end gap-2">
+                        <button class="btn btn-futuristic btn-sm flex-fill" id="applyGeneralFilter">
+                            <i class="fas fa-filter me-1"></i> Apply
                         </button>
                     </div>
                 </div>
@@ -2130,8 +2163,14 @@
                 // Set default dates
                 const today = new Date();
                 const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-                document.getElementById('startDate').valueAsDate = firstDayOfMonth;
-                document.getElementById('endDate').valueAsDate = today;
+                
+                // Set default dates untuk main filter
+                document.getElementById('mainStartDate').valueAsDate = firstDayOfMonth;
+                document.getElementById('mainEndDate').valueAsDate = today;
+                
+                // Set default dates untuk general filter
+                document.getElementById('generalStartDate').valueAsDate = firstDayOfMonth;
+                document.getElementById('generalEndDate').valueAsDate = today;
                 
                 // Try to load data from Firestore
                 try {
@@ -2199,8 +2238,14 @@
                     // Apply date settings if available
                     if (settingsSnapshot && settingsSnapshot.exists) {
                         const settings = settingsSnapshot.data();
-                        if (settings.startDate) document.getElementById('startDate').value = settings.startDate;
-                        if (settings.endDate) document.getElementById('endDate').value = settings.endDate;
+                        if (settings.startDate) {
+                            document.getElementById('mainStartDate').value = settings.startDate;
+                            document.getElementById('generalStartDate').value = settings.startDate;
+                        }
+                        if (settings.endDate) {
+                            document.getElementById('mainEndDate').value = settings.endDate;
+                            document.getElementById('generalEndDate').value = settings.endDate;
+                        }
                     }
                     
                 } catch (firestoreError) {
@@ -2295,8 +2340,8 @@
                 // Save settings
                 const dateRangeRef = db.collection('settings').doc('dateRange');
                 batch.set(dateRangeRef, {
-                    startDate: document.getElementById('startDate').value,
-                    endDate: document.getElementById('endDate').value,
+                    startDate: document.getElementById('mainStartDate').value,
+                    endDate: document.getElementById('mainEndDate').value,
                     lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
                 });
                 
@@ -2392,7 +2437,7 @@
             tbody.innerHTML = '';
             
             // Filter output data based on date range
-            const filteredData = filterDataByDateRange(outputData);
+            const filteredData = filterDataByDateRange(outputData, 'main');
             
             filteredData.forEach(data => {
                 const row = document.createElement('tr');
@@ -2431,7 +2476,7 @@
             tbody.innerHTML = '';
             
             // Filter overtime data based on date range
-            const filteredData = filterDataByDateRange(overtimeCalcData);
+            const filteredData = filterDataByDateRange(overtimeCalcData, 'main');
             
             let no = 1;
             filteredData.forEach(data => {
@@ -2470,6 +2515,15 @@
                         const overtime = calculateTimeDifference(shiftCheckOut, actualCheckOut);
                         document.querySelector(`.overtime[data-row="${row}"]`).value = overtime;
                         filteredData[row].overtime = overtime;
+                        
+                        // Update the original data in overtimeCalcData
+                        const originalIndex = overtimeCalcData.findIndex(item => 
+                            item.name === filteredData[row].name && 
+                            item.date === filteredData[row].date
+                        );
+                        if (originalIndex !== -1) {
+                            overtimeCalcData[originalIndex].overtime = overtime;
+                        }
                     }
                 });
             });
@@ -2486,6 +2540,15 @@
                         const rmcShiftCheckOut = calculateTimeDifference(shiftCheckOut, cekRmc);
                         document.querySelector(`.rmc-shift-check-out[data-row="${row}"]`).value = rmcShiftCheckOut;
                         filteredData[row].rmcShiftCheckOut = rmcShiftCheckOut;
+                        
+                        // Update the original data in overtimeCalcData
+                        const originalIndex = overtimeCalcData.findIndex(item => 
+                            item.name === filteredData[row].name && 
+                            item.date === filteredData[row].date
+                        );
+                        if (originalIndex !== -1) {
+                            overtimeCalcData[originalIndex].rmcShiftCheckOut = rmcShiftCheckOut;
+                        }
                     }
                 });
             });
@@ -2493,6 +2556,9 @@
 
         // Fungsi untuk menghitung selisih waktu
         function calculateTimeDifference(time1, time2) {
+            // Handle empty values
+            if (!time1 || !time2) return "";
+            
             const t1 = new Date(`2000-01-01 ${time1}`);
             const t2 = new Date(`2000-01-01 ${time2}`);
             
@@ -2510,15 +2576,34 @@
         }
 
         // Fungsi untuk filter data berdasarkan rentang tanggal
-        function filterDataByDateRange(data) {
-            const startDate = document.getElementById('startDate').valueAsDate;
-            const endDate = document.getElementById('endDate').valueAsDate;
+        function filterDataByDateRange(data, filterType = 'main') {
+            let startDate, endDate;
+            
+            if (filterType === 'main') {
+                startDate = document.getElementById('mainStartDate').valueAsDate;
+                endDate = document.getElementById('mainEndDate').valueAsDate;
+            } else {
+                startDate = document.getElementById('generalStartDate').valueAsDate;
+                endDate = document.getElementById('generalEndDate').valueAsDate;
+            }
             
             if (!startDate || !endDate) return data;
             
             return data.filter(item => {
-                const itemDate = new Date(item.date);
-                return itemDate >= startDate && itemDate <= endDate;
+                // Parse tanggal dari string format "DD/MM/YYYY"
+                const dateParts = item.date.split('/');
+                const day = parseInt(dateParts[0], 10);
+                const month = parseInt(dateParts[1], 10) - 1; // Bulan dimulai dari 0
+                const year = parseInt(dateParts[2], 10);
+                
+                const itemDate = new Date(year, month, day);
+                
+                // Normalisasi tanggal untuk menghindari masalah waktu
+                const normalizedStartDate = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
+                const normalizedEndDate = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate());
+                const normalizedItemDate = new Date(itemDate.getFullYear(), itemDate.getMonth(), itemDate.getDate());
+                
+                return normalizedItemDate >= normalizedStartDate && normalizedItemDate <= normalizedEndDate;
             });
         }
 
@@ -2850,8 +2935,8 @@
 
         // Fungsi untuk apply filter tanggal
         function applyDateFilter() {
-            const startDate = document.getElementById('startDate').valueAsDate;
-            const endDate = document.getElementById('endDate').valueAsDate;
+            const startDate = document.getElementById('mainStartDate').valueAsDate;
+            const endDate = document.getElementById('mainEndDate').valueAsDate;
             
             if (!startDate || !endDate) return;
             
@@ -2867,7 +2952,7 @@
             if (dateRange.length > 31) {
                 alert('Date range limited to 31 days for better performance');
                 dateRange = dateRange.slice(0, 31);
-                document.getElementById('endDate').valueAsDate = dateRange[dateRange.length - 1];
+                document.getElementById('mainEndDate').valueAsDate = dateRange[dateRange.length - 1];
             }
             
             updateEntryTable();
@@ -3176,6 +3261,15 @@
                     const targetTab = document.getElementById(tabName);
                     if (targetTab) {
                         targetTab.classList.add('show', 'active');
+                    }
+                    
+                    // PERBAIKAN: Tampilkan/sembunyikan filter section berdasarkan tab
+                    if (tabName === 'entry' || tabName === 'output' || tabName === 'overtime' || tabName === 'cuti') {
+                        document.getElementById('mainFilterSection').style.display = 'block';
+                        document.getElementById('generalFilterSection').style.display = 'none';
+                    } else {
+                        document.getElementById('mainFilterSection').style.display = 'none';
+                        document.getElementById('generalFilterSection').style.display = 'block';
                     }
                     
                     // PERBAIKAN: Load absen tabel data when switching to that tab
@@ -3618,6 +3712,15 @@
             }
             
             try {
+                // Update remarks dari tabel
+                const rows = document.querySelectorAll('#cutiTableBody tr');
+                rows.forEach((row, index) => {
+                    if (cutiData[index]) {
+                        const remarksInput = row.querySelector('.remarks-input');
+                        cutiData[index].remarks = remarksInput.value;
+                    }
+                });
+                
                 // Simpan data cuti ke Firestore
                 const batch = db.batch();
                 
@@ -3678,8 +3781,20 @@
             // Logout button
             document.getElementById('logoutBtn').addEventListener('click', logout);
             
-            // Filter button
-            document.getElementById('applyFilter').addEventListener('click', applyDateFilter);
+            // Filter button untuk main filter
+            document.getElementById('applyMainFilter').addEventListener('click', function() {
+                applyDateFilter();
+            });
+            
+            // Filter button untuk general filter
+            document.getElementById('applyGeneralFilter').addEventListener('click', function() {
+                // Update tabel yang sesuai dengan tab yang aktif
+                if (currentTab === "absen-tabel") {
+                    updateAbsenTabelTable();
+                } else if (currentTab === "cuti-detail") {
+                    generateCutiDetailData();
+                }
+            });
             
             // Header size button - PERBAIKAN: Menggunakan minWidth daripada width
             document.getElementById('applyHeaderSize').addEventListener('click', function() {
@@ -3839,7 +3954,7 @@
                 dataToExport.push(headers);
                 
                 // Get filtered data
-                const filteredData = filterDataByDateRange(outputData);
+                const filteredData = filterDataByDateRange(outputData, 'main');
                 
                 filteredData.forEach(data => {
                     dataToExport.push([
@@ -3862,7 +3977,7 @@
                 dataToExport.push(headers);
                 
                 // Get filtered data
-                const filteredData = filterDataByDateRange(overtimeCalcData);
+                const filteredData = filterDataByDateRange(overtimeCalcData, 'main');
                 
                 let no = 1;
                 filteredData.forEach(data => {

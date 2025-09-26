@@ -1134,6 +1134,27 @@
         .notification.info {
             background-color: #17a2b8;
         }
+        
+        /* New styles for output table header */
+        #outputTable th {
+            background-color: var(--secondary-color);
+            color: white;
+        }
+        
+        /* Remarks input field */
+        .remarks-input {
+            background-color: transparent;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            padding: 2px 5px;
+            font-size: 0.75rem;
+        }
+        
+        .remarks-input:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            background-color: #f8f9fa;
+        }
     </style>
 </head>
 <body>
@@ -1375,9 +1396,9 @@
                         <table id="entryTable">
                             <thead>
                                 <tr>
-                                    <th>Area</th>
-                                    <th>Name</th>
-                                    <th>Position</th>
+                                    <th>Work Area</th>
+                                    <th>Employee Name</th>
+                                    <th>Job Position</th>
                                     <!-- Date columns will be filled by JavaScript -->
                                     <th>Action</th>
                                 </tr>
@@ -1409,9 +1430,9 @@
                         <table id="outputTable" class="table table-striped table-sm">
                             <thead>
                                 <tr>
-                                    <th>Area</th>
-                                    <th>Name</th>
-                                    <th>Position</th>
+                                    <th>Work Area</th>
+                                    <th>Employee Name</th>
+                                    <th>Job Position</th>
                                     <th>Date</th>
                                     <th>Shift</th>
                                     <th>Shift Check In</th>
@@ -1438,9 +1459,9 @@
                             <thead>
                                 <tr>
                                     <th>No</th>
-                                    <th>Area</th>
-                                    <th>Name</th>
-                                    <th>Position</th>
+                                    <th>Work Area</th>
+                                    <th>Employee Name</th>
+                                    <th>Job Position</th>
                                     <th>Date</th>
                                     <th>Shift</th>
                                     <th>Shift Check In</th>
@@ -1473,9 +1494,9 @@
                         <table id="absenTabelTable">
                             <thead>
                                 <tr>
-                                    <th>Area</th>
-                                    <th>Name</th>
-                                    <th>Position</th>
+                                    <th>Work Area</th>
+                                    <th>Employee Name</th>
+                                    <th>Job Position</th>
                                     <!-- Date columns will be filled by JavaScript -->
                                     <th>Action</th>
                                 </tr>
@@ -1551,8 +1572,8 @@
                                 <tr>
                                     <th>No</th>
                                     <th>Employee Name</th>
-                                    <th>Area</th>
-                                    <th>Position</th>
+                                    <th>Work Area</th>
+                                    <th>Job Position</th>
                                     <th>Start Date</th>
                                     <th>End Date</th>
                                     <th>Duration (Days)</th>
@@ -1880,9 +1901,9 @@
             }
         };
 
-        // Data awal karyawan
+        // Data awal karyawan dengan urutan default
         const initialEmployees = [
-            { area: "CDC East", name: "Fahmi Ardiansyal", position: "Dispatcher" },
+            { area: "CDC East", name: "Fahmi Ardiansah", position: "Dispatcher" },
             { area: "CDC East", name: "Agung Setyawan", position: "Dispatcher" },
             { area: "CDC East", name: "Drajat Triono", position: "Dispatcher" },
             { area: "CDC East", name: "Wiyanto", position: "Dispatcher" },
@@ -1892,6 +1913,8 @@
         // Variabel global
         let absensiData = [];
         let absenTabelData = [];
+        let outputData = []; // Data untuk output table
+        let overtimeCalcData = []; // Data untuk overtime calculation table
         let dateRange = [];
         let remarksData = {};
         let overtimeData = {};
@@ -2168,6 +2191,9 @@
                 await batch.commit();
                 console.log('Data saved successfully');
                 
+                // Generate output and overtime calculation data
+                generateOutputAndOvertimeData();
+                
                 // PERBAIKAN: Tampilkan notifikasi sukses
                 showNotification('Data saved successfully!', 'success');
                 
@@ -2182,6 +2208,127 @@
                     localStorage.setItem('absensiDataBackup', JSON.stringify(absensiData));
                 }
             }
+        }
+
+        // Fungsi untuk generate output dan overtime calculation data
+        function generateOutputAndOvertimeData() {
+            outputData = [];
+            overtimeCalcData = [];
+            
+            absensiData.forEach(employee => {
+                const area = employee.area;
+                const name = employee.name;
+                const position = employee.position;
+                
+                // Loop through the shifts
+                Object.keys(employee.shifts || {}).forEach(dateStr => {
+                    const shiftCode = employee.shifts[dateStr];
+                    if (shiftCode) { // if not empty
+                        // Get shift details from shiftMatrix
+                        const shiftDetails = shiftMatrix[position] && shiftMatrix[position][shiftCode];
+                        
+                        if (shiftDetails) {
+                            // For outputData
+                            outputData.push({
+                                area,
+                                name,
+                                position,
+                                date: dateStr,
+                                shift: shiftDetails.name, // use the name (without code)
+                                shiftCheckIn: shiftDetails.checkIn,
+                                shiftCheckOut: shiftDetails.checkOut,
+                                remarks: "" // initially empty
+                            });
+                            
+                            // For overtimeCalcData
+                            overtimeCalcData.push({
+                                area,
+                                name,
+                                position,
+                                date: dateStr,
+                                shift: shiftCode, // we keep the code for overtime
+                                shiftCheckIn: shiftDetails.checkIn,
+                                shiftCheckOut: shiftDetails.checkOut,
+                                wtNormal: shiftDetails.hours
+                            });
+                        }
+                    }
+                });
+            });
+            
+            // Update the tables if the tabs are active
+            if (currentTab === "output") {
+                updateOutputTable();
+            }
+            if (currentTab === "overtime") {
+                updateOvertimeTable();
+            }
+        }
+
+        // Fungsi untuk update output table
+        function updateOutputTable() {
+            const tbody = document.querySelector('#outputTable tbody');
+            tbody.innerHTML = '';
+            
+            outputData.forEach(data => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${data.area}</td>
+                    <td>${data.name}</td>
+                    <td>${data.position}</td>
+                    <td>${data.date}</td>
+                    <td>${data.shift}</td>
+                    <td>${data.shiftCheckIn}</td>
+                    <td>${data.shiftCheckOut}</td>
+                    <td><input type="text" class="remarks-input" value="${data.remarks}" data-employee="${data.name}" data-date="${data.date}"></td>
+                `;
+                tbody.appendChild(row);
+            });
+            
+            // Add event listener for remarks input
+            document.querySelectorAll('.remarks-input').forEach(input => {
+                input.addEventListener('change', function() {
+                    const employee = this.getAttribute('data-employee');
+                    const date = this.getAttribute('data-date');
+                    const remarks = this.value;
+                    
+                    // Find the item in outputData and update remarks
+                    const item = outputData.find(d => d.name === employee && d.date === date);
+                    if (item) {
+                        item.remarks = remarks;
+                    }
+                });
+            });
+        }
+
+        // Fungsi untuk update overtime calculation table
+        function updateOvertimeTable() {
+            const tbody = document.querySelector('#overtimeTableBody');
+            tbody.innerHTML = '';
+            
+            let no = 1;
+            overtimeCalcData.forEach(data => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${no++}</td>
+                    <td>${data.area}</td>
+                    <td>${data.name}</td>
+                    <td>${data.position}</td>
+                    <td>${data.date}</td>
+                    <td>${data.shift}</td>
+                    <td>${data.shiftCheckIn}</td>
+                    <td>${data.shiftCheckOut}</td>
+                    <td>${data.wtNormal}</td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                `;
+                tbody.appendChild(row);
+            });
         }
 
         // PERBAIKAN: Fungsi untuk menyimpan data ke absen tabel (read-only)
@@ -2283,7 +2430,7 @@
             const tbody = document.querySelector('#absenTabelTable tbody');
             
             // Update header
-            let headerHTML = '<th>Area</th><th>Name</th><th>Position</th>';
+            let headerHTML = '<th>Work Area</th><th>Employee Name</th><th>Job Position</th>';
             dateRange.forEach(date => {
                 headerHTML += `<th>${formatDateForHeader(date)}</th>`;
             });
@@ -2293,7 +2440,10 @@
             // Update body
             let tbodyHTML = '';
             
-            absenTabelData.forEach(employee => {
+            // Sort employees by default order
+            const sortedData = sortEmployeesByDefaultOrder(absenTabelData);
+            
+            sortedData.forEach(employee => {
                 let rowHTML = `
                     <td><input type="text" value="${employee.area || ''}" class="area-input read-only-input" readonly></td>
                     <td><input type="text" value="${employee.name || ''}" class="name-input read-only-input" readonly></td>
@@ -2327,6 +2477,18 @@
             const position = row.querySelector('.position-input').value;
             
             showNotification(`Viewing details for ${name} - ${position}`, 'info');
+        }
+
+        // Fungsi untuk mengurutkan karyawan sesuai urutan default
+        function sortEmployeesByDefaultOrder(employees) {
+            const nameOrder = ["Fahmi Ardiansah", "Agung Setyawan", "Drajat Triono", "Wiyanto", "Nur Fauziah"];
+            const sorted = [...employees];
+            sorted.sort((a, b) => {
+                const orderA = nameOrder.indexOf(a.name);
+                const orderB = nameOrder.indexOf(b.name);
+                return (orderA === -1 ? 999 : orderA) - (orderB === -1 ? 999 : orderB);
+            });
+            return sorted;
         }
 
         // Fungsi format tanggal
@@ -2441,7 +2603,7 @@
             const tbody = document.querySelector('#entryTable tbody');
             
             // Update header
-            let headerHTML = '<th>Area</th><th>Name</th><th>Position</th>';
+            let headerHTML = '<th>Work Area</th><th>Employee Name</th><th>Job Position</th>';
             dateRange.forEach(date => {
                 headerHTML += `<th>${formatDateForHeader(date)}</th>`;
             });
@@ -2463,9 +2625,12 @@
             const tbody = document.querySelector('#entryTable tbody');
             const employeesToShow = absensiData.length > 0 ? absensiData : initialEmployees;
             
+            // Sort employees by default order
+            const sortedEmployees = sortEmployeesByDefaultOrder(employeesToShow);
+            
             let tbodyHTML = '';
             
-            employeesToShow.forEach(employee => {
+            sortedEmployees.forEach(employee => {
                 let rowHTML = `
                     <td><input type="text" value="${employee.area || ''}" class="area-input read-only-input" readonly ondblclick="makeEditable(this)"></td>
                     <td><input type="text" value="${employee.name || ''}" class="name-input read-only-input" readonly ondblclick="makeEditable(this)"></td>
@@ -2694,6 +2859,16 @@
                     // PERBAIKAN: Load absen tabel data when switching to that tab
                     if (tabName === 'absen-tabel') {
                         loadAbsenTabelData();
+                    }
+                    
+                    // Load output data when switching to output tab
+                    if (tabName === 'output') {
+                        updateOutputTable();
+                    }
+                    
+                    // Load overtime data when switching to overtime tab
+                    if (tabName === 'overtime') {
+                        updateOvertimeTable();
                     }
                 });
             });

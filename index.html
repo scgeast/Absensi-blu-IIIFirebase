@@ -612,17 +612,20 @@
             content: "\2212"; /* Minus sign */
         }
 
-        /* Action buttons - Mobile Friendly */
+        /* Action buttons - Mobile Friendly - PERUBAHAN: Tombol lebih kecil di pojok kiri */
         .action-buttons {
             margin-top: 15px;
             display: flex;
+            justify-content: flex-start; /* Diubah dari center ke flex-start */
             gap: 8px;
             flex-wrap: wrap;
         }
 
         .action-buttons .btn {
-            flex: 1;
-            min-width: 120px;
+            flex: 0; /* Diubah dari flex: 1 */
+            min-width: auto; /* Diubah dari min-width: 120px */
+            padding: 6px 12px; /* Mengurangi padding */
+            font-size: 0.8rem; /* Membuat font lebih kecil */
         }
 
         .header-controls {
@@ -2236,6 +2239,9 @@
             // Update body
             updateEntryTableBody();
             initializeShiftColors();
+            
+            // Terapkan pengaturan header yang tersimpan
+            loadHeaderSettings();
         }
 
         function updateEntryTableBody() {
@@ -2464,6 +2470,36 @@
             }
         }
 
+        // Fungsi untuk memuat pengaturan header yang tersimpan
+        function loadHeaderSettings() {
+            const savedWidth = localStorage.getItem('headerWidth');
+            const savedHeight = localStorage.getItem('headerHeight');
+            
+            if (savedWidth) {
+                document.getElementById('headerWidth').value = savedWidth;
+            }
+            
+            if (savedHeight) {
+                document.getElementById('headerHeight').value = savedHeight;
+            }
+            
+            // Terapkan pengaturan jika ada
+            if (savedWidth || savedHeight) {
+                const headers = document.querySelectorAll('#entryTable th');
+                const cells = document.querySelectorAll('#entryTable td');
+                
+                headers.forEach(header => {
+                    if (savedWidth) header.style.minWidth = savedWidth + 'px';
+                    if (savedHeight) header.style.height = savedHeight + 'px';
+                });
+                
+                cells.forEach(cell => {
+                    if (savedWidth) cell.style.minWidth = savedWidth + 'px';
+                    if (savedHeight) cell.style.height = savedHeight + 'px';
+                });
+            }
+        }
+
         // Initialize aplikasi saat DOM ready
         document.addEventListener('DOMContentLoaded', function() {
             // Check connection status awal
@@ -2499,26 +2535,44 @@
             // Filter button
             document.getElementById('applyFilter').addEventListener('click', applyDateFilter);
             
-            // Header size button
+            // Header size button - PERBAIKAN: Menggunakan minWidth daripada width
             document.getElementById('applyHeaderSize').addEventListener('click', function() {
                 const width = document.getElementById('headerWidth').value;
                 const height = document.getElementById('headerHeight').value;
                 
+                // Perbaiki selektor untuk menargetkan header dan sel dengan benar
                 const headers = document.querySelectorAll('#entryTable th');
                 const cells = document.querySelectorAll('#entryTable td');
                 
+                // Terapkan ukuran ke header
                 headers.forEach(header => {
-                    if (width) header.style.width = width + 'px';
+                    if (width) header.style.minWidth = width + 'px';
                     if (height) header.style.height = height + 'px';
                 });
                 
+                // Terapkan ukuran ke sel
                 cells.forEach(cell => {
-                    if (width) cell.style.width = width + 'px';
+                    if (width) cell.style.minWidth = width + 'px';
                     if (height) cell.style.height = height + 'px';
                 });
                 
+                // Simpan pengaturan ke localStorage
                 localStorage.setItem('headerWidth', width);
                 localStorage.setItem('headerHeight', height);
+                
+                // Tampilkan notifikasi bahwa pengaturan telah diterapkan
+                const notification = document.createElement('div');
+                notification.className = 'alert alert-success position-fixed';
+                notification.style.top = '20px';
+                notification.style.right = '20px';
+                notification.style.zIndex = '9999';
+                notification.textContent = 'Header size applied successfully!';
+                document.body.appendChild(notification);
+                
+                // Hapus notifikasi setelah 3 detik
+                setTimeout(() => {
+                    notification.remove();
+                }, 3000);
             });
             
             // Add row button
@@ -2545,12 +2599,6 @@
             
             // Save data button
             document.getElementById('saveData').addEventListener('click', saveDataToFirestore);
-            
-            // Load saved header sizes
-            const savedWidth = localStorage.getItem('headerWidth');
-            const savedHeight = localStorage.getItem('headerHeight');
-            if (savedWidth) document.getElementById('headerWidth').value = savedWidth;
-            if (savedHeight) document.getElementById('headerHeight').value = savedHeight;
             
             // Cek jika ada data backup di localStorage
             const backupData = localStorage.getItem('absensiDataBackup');

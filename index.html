@@ -476,6 +476,29 @@
             font-weight: bold;
             font-size: 0.7rem;
             padding: 4px 4px;
+            cursor: pointer;
+        }
+
+        th:hover {
+            background-color: var(--accent-color);
+        }
+
+        th.sortable:after {
+            content: '\f0dc';
+            font-family: 'Font Awesome 6 Free';
+            font-weight: 900;
+            margin-left: 5px;
+            opacity: 0.5;
+        }
+
+        th.sort-asc:after {
+            content: '\f0de';
+            opacity: 1;
+        }
+
+        th.sort-desc:after {
+            content: '\f0dd';
+            opacity: 1;
         }
 
         input[type="text"] {
@@ -1155,6 +1178,29 @@
             border-color: var(--accent-color);
             background-color: #f8f9fa;
         }
+        
+        /* Time input field */
+        .time-input {
+            background-color: transparent;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            padding: 2px 5px;
+            font-size: 0.75rem;
+            width: 60px;
+        }
+        
+        .time-input:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            background-color: #f8f9fa;
+        }
+        
+        /* Style untuk cuti table header */
+        #cutiTable th {
+            background-color: var(--secondary-color);
+            color: white;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
@@ -1464,22 +1510,22 @@
                         <table class="overtime-table table-striped table-sm" id="overtimeTable">
                             <thead>
                                 <tr>
-                                    <th>No</th>
-                                    <th>Work Area</th>
-                                    <th>Employee Name</th>
-                                    <th>Job Position</th>
-                                    <th>Date</th>
-                                    <th>Shift</th>
-                                    <th>Shift Check In</th>
-                                    <th>Shift Check Out</th>
-                                    <th>WT/Normal</th>
-                                    <th>Actual Check In</th>
-                                    <th>Actual Check Out</th>
-                                    <th>Over Time</th>
-                                    <th>Cek RMC</th>
-                                    <th>RKP PIC</th>
-                                    <th>Rmc - Shift Check Out</th>
-                                    <th>Remarks</th>
+                                    <th class="sortable" data-column="0">No</th>
+                                    <th class="sortable" data-column="1">Work Area</th>
+                                    <th class="sortable" data-column="2">Employee Name</th>
+                                    <th class="sortable" data-column="3">Job Position</th>
+                                    <th class="sortable" data-column="4">Date</th>
+                                    <th class="sortable" data-column="5">Shift</th>
+                                    <th class="sortable" data-column="6">Shift Check In</th>
+                                    <th class="sortable" data-column="7">Shift Check Out</th>
+                                    <th class="sortable" data-column="8">WT/Normal</th>
+                                    <th class="sortable" data-column="9">Actual Check In</th>
+                                    <th class="sortable" data-column="10">Actual Check Out</th>
+                                    <th class="sortable" data-column="11">Over Time</th>
+                                    <th class="sortable" data-column="12">Cek RMC</th>
+                                    <th class="sortable" data-column="13">RKP PIC</th>
+                                    <th class="sortable" data-column="14">Rmc - Shift Check Out</th>
+                                    <th class="sortable" data-column="15">Remarks</th>
                                 </tr>
                             </thead>
                             <tbody id="overtimeTableBody">
@@ -1949,6 +1995,7 @@
         let isSaving = false; // Flag to prevent multiple saves
         let outputDataLoaded = false; // Flag to track if output data has been loaded
         let overtimeDataLoaded = false; // Flag to track if overtime data has been loaded
+        let sortDirection = {}; // Untuk menyimpan arah sort
 
         // Fungsi untuk mengecek koneksi
         function checkConnection() {
@@ -2088,11 +2135,13 @@
                 
                 // Try to load data from Firestore
                 try {
-                    const [absensiSnapshot, settingsSnapshot, absenTabelSnapshot, cutiSnapshot] = await Promise.all([
+                    const [absensiSnapshot, settingsSnapshot, absenTabelSnapshot, cutiSnapshot, outputSnapshot, overtimeSnapshot] = await Promise.all([
                         db.collection('absensi').limit(50).get(),
                         db.collection('settings').doc('dateRange').get().catch(() => null),
                         db.collection('absenTabel').limit(50).get().catch(() => null),
-                        db.collection('cuti').limit(50).get().catch(() => null)
+                        db.collection('cuti').limit(50).get().catch(() => null),
+                        db.collection('output').limit(50).get().catch(() => null),
+                        db.collection('overtime').limit(50).get().catch(() => null)
                     ]);
                     
                     absensiData = [];
@@ -2125,6 +2174,28 @@
                         });
                     }
                     
+                    // Load output data
+                    outputData = [];
+                    if (outputSnapshot) {
+                        outputSnapshot.forEach(doc => {
+                            outputData.push({
+                                id: doc.id,
+                                ...doc.data()
+                            });
+                        });
+                    }
+                    
+                    // Load overtime data
+                    overtimeCalcData = [];
+                    if (overtimeSnapshot) {
+                        overtimeSnapshot.forEach(doc => {
+                            overtimeCalcData.push({
+                                id: doc.id,
+                                ...doc.data()
+                            });
+                        });
+                    }
+                    
                     // Apply date settings if available
                     if (settingsSnapshot && settingsSnapshot.exists) {
                         const settings = settingsSnapshot.data();
@@ -2145,6 +2216,7 @@
                 updateCutiEmployeeDropdown();
                 initSidebar();
                 initMobileMenu();
+                initSortableHeaders();
                 
                 // Set active tab based on role
                 if (currentUser.role === 'user') {
@@ -2288,10 +2360,17 @@
                                 name,
                                 position,
                                 date: dateStr,
-                                shift: shiftCode, // we keep the code for overtime
+                                shift: shiftDetails.name, // use the name (without code)
                                 shiftCheckIn: shiftDetails.checkIn,
                                 shiftCheckOut: shiftDetails.checkOut,
-                                wtNormal: shiftDetails.hours
+                                wtNormal: shiftDetails.hours,
+                                actualCheckIn: "",
+                                actualCheckOut: "",
+                                overtime: "",
+                                cekRmc: "",
+                                rkpPic: "",
+                                rmcShiftCheckOut: "",
+                                remarks: ""
                             });
                         }
                     }
@@ -2312,7 +2391,10 @@
             const tbody = document.querySelector('#outputTable tbody');
             tbody.innerHTML = '';
             
-            outputData.forEach(data => {
+            // Filter output data based on date range
+            const filteredData = filterDataByDateRange(outputData);
+            
+            filteredData.forEach(data => {
                 const row = document.createElement('tr');
                 row.innerHTML = `
                     <td>${data.area}</td>
@@ -2343,13 +2425,16 @@
             });
         }
 
-        // Fungsi untuk update overtime calculation table
+        // Fungsi untuk update overtime table
         function updateOvertimeTable() {
             const tbody = document.querySelector('#overtimeTableBody');
             tbody.innerHTML = '';
             
+            // Filter overtime data based on date range
+            const filteredData = filterDataByDateRange(overtimeCalcData);
+            
             let no = 1;
-            overtimeCalcData.forEach(data => {
+            filteredData.forEach(data => {
                 const row = document.createElement('tr');
                 row.innerHTML = `
                     <td>${no++}</td>
@@ -2361,15 +2446,79 @@
                     <td>${data.shiftCheckIn}</td>
                     <td>${data.shiftCheckOut}</td>
                     <td>${data.wtNormal}</td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
+                    <td><input type="time" class="time-input actual-check-in" value="${data.actualCheckIn}" data-row="${no-1}"></td>
+                    <td><input type="time" class="time-input actual-check-out" value="${data.actualCheckOut}" data-row="${no-1}"></td>
+                    <td><input type="text" class="time-input overtime" value="${data.overtime}" data-row="${no-1}" readonly></td>
+                    <td><input type="time" class="time-input cek-rmc" value="${data.cekRmc}" data-row="${no-1}"></td>
+                    <td><input type="time" class="time-input rkp-pic" value="${data.rkpPic}" data-row="${no-1}"></td>
+                    <td><input type="text" class="time-input rmc-shift-check-out" value="${data.rmcShiftCheckOut}" data-row="${no-1}" readonly></td>
+                    <td><input type="text" class="remarks-input" value="${data.remarks}" data-row="${no-1}"></td>
                 `;
                 tbody.appendChild(row);
+            });
+            
+            // Add event listeners for time inputs
+            document.querySelectorAll('.actual-check-in, .actual-check-out').forEach(input => {
+                input.addEventListener('change', function() {
+                    const row = this.getAttribute('data-row');
+                    const actualCheckIn = document.querySelector(`.actual-check-in[data-row="${row}"]`).value;
+                    const actualCheckOut = document.querySelector(`.actual-check-out[data-row="${row}"]`).value;
+                    const shiftCheckOut = filteredData[row].shiftCheckOut;
+                    
+                    // Calculate overtime
+                    if (actualCheckIn && actualCheckOut && shiftCheckOut) {
+                        const overtime = calculateTimeDifference(shiftCheckOut, actualCheckOut);
+                        document.querySelector(`.overtime[data-row="${row}"]`).value = overtime;
+                        filteredData[row].overtime = overtime;
+                    }
+                });
+            });
+            
+            // Add event listeners for cek RMC input
+            document.querySelectorAll('.cek-rmc').forEach(input => {
+                input.addEventListener('change', function() {
+                    const row = this.getAttribute('data-row');
+                    const cekRmc = this.value;
+                    const shiftCheckOut = filteredData[row].shiftCheckOut;
+                    
+                    // Calculate RMC - Shift Check Out
+                    if (cekRmc && shiftCheckOut) {
+                        const rmcShiftCheckOut = calculateTimeDifference(shiftCheckOut, cekRmc);
+                        document.querySelector(`.rmc-shift-check-out[data-row="${row}"]`).value = rmcShiftCheckOut;
+                        filteredData[row].rmcShiftCheckOut = rmcShiftCheckOut;
+                    }
+                });
+            });
+        }
+
+        // Fungsi untuk menghitung selisih waktu
+        function calculateTimeDifference(time1, time2) {
+            const t1 = new Date(`2000-01-01 ${time1}`);
+            const t2 = new Date(`2000-01-01 ${time2}`);
+            
+            let diff = t2 - t1;
+            
+            // Handle overnight case
+            if (diff < 0) {
+                diff += 24 * 60 * 60 * 1000; // Add 24 hours
+            }
+            
+            const hours = Math.floor(diff / (1000 * 60 * 60));
+            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            
+            return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+        }
+
+        // Fungsi untuk filter data berdasarkan rentang tanggal
+        function filterDataByDateRange(data) {
+            const startDate = document.getElementById('startDate').valueAsDate;
+            const endDate = document.getElementById('endDate').valueAsDate;
+            
+            if (!startDate || !endDate) return data;
+            
+            return data.filter(item => {
+                const itemDate = new Date(item.date);
+                return itemDate >= startDate && itemDate <= endDate;
             });
         }
 
@@ -2381,6 +2530,15 @@
             }
             
             try {
+                // Update remarks from table
+                const rows = document.querySelectorAll('#outputTable tbody tr');
+                rows.forEach((row, index) => {
+                    const remarksInput = row.querySelector('.remarks-input');
+                    if (remarksInput && outputData[index]) {
+                        outputData[index].remarks = remarksInput.value;
+                    }
+                });
+                
                 // Save to Firestore in batch
                 const batch = db.batch();
                 
@@ -2416,6 +2574,20 @@
             }
             
             try {
+                // Update data from table
+                const rows = document.querySelectorAll('#overtimeTableBody tr');
+                rows.forEach((row, index) => {
+                    if (overtimeCalcData[index]) {
+                        overtimeCalcData[index].actualCheckIn = row.querySelector('.actual-check-in').value;
+                        overtimeCalcData[index].actualCheckOut = row.querySelector('.actual-check-out').value;
+                        overtimeCalcData[index].overtime = row.querySelector('.overtime').value;
+                        overtimeCalcData[index].cekRmc = row.querySelector('.cek-rmc').value;
+                        overtimeCalcData[index].rkpPic = row.querySelector('.rkp-pic').value;
+                        overtimeCalcData[index].rmcShiftCheckOut = row.querySelector('.rmc-shift-check-out').value;
+                        overtimeCalcData[index].remarks = row.querySelector('.remarks-input').value;
+                    }
+                });
+                
                 // Save to Firestore in batch
                 const batch = db.batch();
                 
@@ -2703,6 +2875,16 @@
             // Update absen tabel table if on that tab
             if (currentTab === "absen-tabel") {
                 updateAbsenTabelTable();
+            }
+            
+            // Update output table if on that tab
+            if (currentTab === "output") {
+                updateOutputTable();
+            }
+            
+            // Update overtime table if on that tab
+            if (currentTab === "overtime") {
+                updateOvertimeTable();
             }
         }
 
@@ -3075,6 +3257,52 @@
                     content.style.maxHeight = content.scrollHeight + "px";
                 }
             }
+        }
+
+        // Initialize sortable headers
+        function initSortableHeaders() {
+            const headers = document.querySelectorAll('#overtimeTable th.sortable');
+            
+            headers.forEach(header => {
+                header.addEventListener('click', function() {
+                    const column = parseInt(this.getAttribute('data-column'));
+                    const isAsc = this.classList.contains('sort-asc');
+                    
+                    // Reset all headers
+                    headers.forEach(h => {
+                        h.classList.remove('sort-asc', 'sort-desc');
+                    });
+                    
+                    // Set current header sort direction
+                    this.classList.add(isAsc ? 'sort-desc' : 'sort-asc');
+                    
+                    // Sort the table
+                    sortOvertimeTable(column, !isAsc);
+                });
+            });
+        }
+
+        // Sort overtime table
+        function sortOvertimeTable(column, asc) {
+            const tbody = document.querySelector('#overtimeTableBody');
+            const rows = Array.from(tbody.querySelectorAll('tr'));
+            
+            // Sort rows
+            rows.sort((a, b) => {
+                const aValue = a.cells[column].textContent.trim();
+                const bValue = b.cells[column].textContent.trim();
+                
+                // Handle numeric values
+                if (!isNaN(aValue) && !isNaN(bValue)) {
+                    return asc ? parseFloat(aValue) - parseFloat(bValue) : parseFloat(bValue) - parseFloat(aValue);
+                }
+                
+                // Handle text values
+                return asc ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
+            });
+            
+            // Re-append sorted rows
+            rows.forEach(row => tbody.appendChild(row));
         }
 
         // Show/hide loading spinner
@@ -3581,6 +3809,11 @@
                 await saveCutiDataToFirestore();
             });
             
+            // Export Excel button
+            document.getElementById('exportExcel').addEventListener('click', function() {
+                exportToExcel();
+            });
+            
             // Cek jika ada data backup di localStorage
             const backupData = localStorage.getItem('absensiDataBackup');
             if (backupData) {
@@ -3594,6 +3827,139 @@
             
             console.log('Application initialized successfully');
         });
+
+        // Fungsi untuk export ke Excel
+        function exportToExcel() {
+            let dataToExport = [];
+            let fileName = "";
+            
+            if (currentTab === "output") {
+                // Export output data
+                const headers = ["Work Area", "Employee Name", "Job Position", "Date", "Shift", "Shift Check In", "Shift Check Out", "Remarks"];
+                dataToExport.push(headers);
+                
+                // Get filtered data
+                const filteredData = filterDataByDateRange(outputData);
+                
+                filteredData.forEach(data => {
+                    dataToExport.push([
+                        data.area,
+                        data.name,
+                        data.position,
+                        data.date,
+                        data.shift,
+                        data.shiftCheckIn,
+                        data.shiftCheckOut,
+                        data.remarks
+                    ]);
+                });
+                
+                fileName = "attendance_output";
+            } else if (currentTab === "overtime") {
+                // Export overtime data
+                const headers = ["No", "Work Area", "Employee Name", "Job Position", "Date", "Shift", "Shift Check In", "Shift Check Out", 
+                                "WT/Normal", "Actual Check In", "Actual Check Out", "Over Time", "Cek RMC", "RKP PIC", "Rmc - Shift Check Out", "Remarks"];
+                dataToExport.push(headers);
+                
+                // Get filtered data
+                const filteredData = filterDataByDateRange(overtimeCalcData);
+                
+                let no = 1;
+                filteredData.forEach(data => {
+                    dataToExport.push([
+                        no++,
+                        data.area,
+                        data.name,
+                        data.position,
+                        data.date,
+                        data.shift,
+                        data.shiftCheckIn,
+                        data.shiftCheckOut,
+                        data.wtNormal,
+                        data.actualCheckIn,
+                        data.actualCheckOut,
+                        data.overtime,
+                        data.cekRmc,
+                        data.rkpPic,
+                        data.rmcShiftCheckOut,
+                        data.remarks
+                    ]);
+                });
+                
+                fileName = "overtime_calculation";
+            } else if (currentTab === "cuti") {
+                // Export cuti data
+                const headers = ["No", "Employee Name", "Start Date", "End Date", "Duration (Days)", "Remarks"];
+                dataToExport.push(headers);
+                
+                cutiData.forEach((data, index) => {
+                    dataToExport.push([
+                        index + 1,
+                        data.employeeName,
+                        data.startDate,
+                        data.endDate,
+                        data.duration,
+                        data.remarks
+                    ]);
+                });
+                
+                fileName = "leave_management";
+            } else if (currentTab === "cuti-detail") {
+                // Export cuti detail data
+                const headers = ["No", "Employee Name", "Work Area", "Job Position", "Start Date", "End Date", "Duration (Days)", "Remaining Leave"];
+                dataToExport.push(headers);
+                
+                cutiDetailData.forEach((data, index) => {
+                    dataToExport.push([
+                        index + 1,
+                        data.employeeName,
+                        data.workArea,
+                        data.position,
+                        data.startDate,
+                        data.endDate,
+                        data.duration,
+                        data.remainingLeave
+                    ]);
+                });
+                
+                fileName = "leave_detail";
+            } else {
+                // Default to export entry data
+                const headers = ["Work Area", "Employee Name", "Job Position"];
+                dateRange.forEach(date => {
+                    headers.push(formatDateForHeader(date));
+                });
+                dataToExport.push(headers);
+                
+                absensiData.forEach(employee => {
+                    const row = [employee.area, employee.name, employee.position];
+                    
+                    dateRange.forEach(date => {
+                        const dateStr = formatDateForShift(date);
+                        const shiftValue = employee.shifts && employee.shifts[dateStr] ? employee.shifts[dateStr] : "";
+                        row.push(shiftValue);
+                    });
+                    
+                    dataToExport.push(row);
+                });
+                
+                fileName = "attendance_entry";
+            }
+            
+            // Create workbook and worksheet
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.aoa_to_sheet(dataToExport);
+            
+            // Add worksheet to workbook
+            XLSX.utils.book_append_sheet(wb, ws, "Sheet1");
+            
+            // Generate Excel file and download
+            const today = new Date();
+            const dateStr = `${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, '0')}${String(today.getDate()).padStart(2, '0')}`;
+            XLSX.writeFile(wb, `${fileName}_${dateStr}.xlsx`);
+            
+            showNotification('Data exported successfully', 'success');
+        }
 
     </script>
 </body>

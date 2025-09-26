@@ -2247,9 +2247,6 @@
                 // Refresh absen tabel data
                 await loadAbsenTabelData();
                 
-                // Switch to absen tabel tab
-                document.querySelector('[data-tab="absen-tabel"]').click();
-                
             } catch (error) {
                 console.error('Error saving data to absen tabel:', error);
                 showNotification('Error saving data to Attendance Table: ' + error.message, 'error');
@@ -2496,42 +2493,50 @@
                 
                 const cell = currentFocusedCell;
                 const row = cell.closest('tr');
-                const cells = Array.from(row.querySelectorAll('input.editable-cell'));
-                const cellIndex = cells.indexOf(cell);
+                const allCells = Array.from(table.querySelectorAll('.editable-cell'));
+                const cellIndex = allCells.indexOf(cell);
                 
                 let targetCell = null;
                 
                 switch(e.key) {
                     case 'ArrowUp':
                         e.preventDefault();
-                        const prevRow = row.previousElementSibling;
+                        // Find current cell position
+                        const currentRow = cell.closest('tr');
+                        const prevRow = currentRow.previousElementSibling;
                         if (prevRow) {
-                            const prevCells = prevRow.querySelectorAll('input.editable-cell');
-                            if (prevCells[cellIndex]) {
-                                targetCell = prevCells[cellIndex];
+                            const prevCells = Array.from(prevRow.querySelectorAll('.editable-cell'));
+                            // Find cell at same position in previous row
+                            const currentCellIndex = Array.from(currentRow.querySelectorAll('td')).indexOf(cell.parentElement);
+                            if (prevCells[currentCellIndex - 3]) { // -3 to skip first 3 columns (Area, Name, Position)
+                                targetCell = prevCells[currentCellIndex - 3];
                             }
                         }
                         break;
                     case 'ArrowDown':
                         e.preventDefault();
-                        const nextRow = row.nextElementSibling;
+                        // Find current cell position
+                        const currentRow = cell.closest('tr');
+                        const nextRow = currentRow.nextElementSibling;
                         if (nextRow) {
-                            const nextCells = nextRow.querySelectorAll('input.editable-cell');
-                            if (nextCells[cellIndex]) {
-                                targetCell = nextCells[cellIndex];
+                            const nextCells = Array.from(nextRow.querySelectorAll('.editable-cell'));
+                            // Find cell at same position in next row
+                            const currentCellIndex = Array.from(currentRow.querySelectorAll('td')).indexOf(cell.parentElement);
+                            if (nextCells[currentCellIndex - 3]) { // -3 to skip first 3 columns (Area, Name, Position)
+                                targetCell = nextCells[currentCellIndex - 3];
                             }
                         }
                         break;
                     case 'ArrowLeft':
                         e.preventDefault();
                         if (cellIndex > 0) {
-                            targetCell = cells[cellIndex - 1];
+                            targetCell = allCells[cellIndex - 1];
                         }
                         break;
                     case 'ArrowRight':
                         e.preventDefault();
-                        if (cellIndex < cells.length - 1) {
-                            targetCell = cells[cellIndex + 1];
+                        if (cellIndex < allCells.length - 1) {
+                            targetCell = allCells[cellIndex + 1];
                         }
                         break;
                     case 'Tab':

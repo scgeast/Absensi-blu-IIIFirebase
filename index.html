@@ -1047,6 +1047,26 @@
             scroll-behavior: smooth;
         }
 
+        /* Table header description styles */
+        .table-header-description {
+            font-size: 0.7rem;
+            color: #666;
+            font-style: italic;
+            margin-top: 2px;
+        }
+
+        /* Edit mode styles */
+        .edit-mode input[type="text"] {
+            background-color: #fff3cd;
+            border: 1px solid #ffeeba;
+        }
+
+        .edit-actions {
+            display: flex;
+            gap: 5px;
+            justify-content: center;
+        }
+
         /* Responsive Styles */
         /* Desktop (1200px and up) */
         @media (min-width: 1200px) {
@@ -1788,11 +1808,11 @@
                         <table id="entryTable" class="optimized-table">
                             <thead>
                                 <tr>
-                                    <th>Area</th>
-                                    <th>Name</th>
-                                    <th>Position</th>
+                                    <th>Area<div class="table-header-description">Work Area</div></th>
+                                    <th>Name<div class="table-header-description">Employee Name</div></th>
+                                    <th>Position<div class="table-header-description">Job Position</div></th>
                                     <!-- Date columns will be filled by JavaScript -->
-                                    <th>Action</th>
+                                    <th>Action<div class="table-header-description">Edit/Save</div></th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -1886,11 +1906,11 @@
                         <table id="absenTabelTable" class="optimized-table">
                             <thead>
                                 <tr>
-                                    <th>Area</th>
-                                    <th>Name</th>
-                                    <th>Position</th>
+                                    <th>Area<div class="table-header-description">Work Area</div></th>
+                                    <th>Name<div class="table-header-description">Employee Name</div></th>
+                                    <th>Position<div class="table-header-description">Job Position</div></th>
                                     <!-- Date columns will be filled by JavaScript -->
-                                    <th>Action</th>
+                                    <th>Action<div class="table-header-description">Edit/Save</div></th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -2302,6 +2322,7 @@
         let currentUser = null;
         let rekapLemburData = [];
         let formRekapLemburData = [];
+        let editingRow = null; // Untuk melacak baris yang sedang diedit
         
         // Performance optimization variables
         let isProcessing = false;
@@ -4202,11 +4223,11 @@
             
             // Hanya update header jika dateRange berubah
             if (!entryTable.dataset.lastDateRange || entryTable.dataset.lastDateRange !== JSON.stringify(dateRange.map(d => d.getTime()))) {
-                let headerHTML = '<th>Area</th><th>Name</th><th>Position</th>';
+                let headerHTML = '<th>Area<div class="table-header-description">Work Area</div></th><th>Name<div class="table-header-description">Employee Name</div></th><th>Position<div class="table-header-description">Job Position</div></th>';
                 dateRange.forEach(date => {
-                    headerHTML += `<th>${formatDateForHeader(date)}</th>`;
+                    headerHTML += `<th>${formatDateForHeader(date)}<div class="table-header-description">Shift Code</div></th>`;
                 });
-                headerHTML += '<th>Action</th>';
+                headerHTML += '<th>Action<div class="table-header-description">Edit/Save</div></th>';
                 thead.innerHTML = headerHTML;
                 
                 entryTable.dataset.lastDateRange = JSON.stringify(dateRange.map(d => d.getTime()));
@@ -4235,7 +4256,13 @@
                     rowHTML += `<td><input type="text" value="${shiftValue}" class="shift-input" onchange="updateShiftColor(this)"></td>`;
                 });
                 
-                rowHTML += '<td><button class="btn-delete" onclick="deleteRow(this)"><i class="fas fa-trash"></i></button></td>';
+                // Tambahkan tombol edit dan save
+                rowHTML += `
+                    <td class="edit-actions">
+                        <button class="btn-edit" onclick="editRow(this)"><i class="fas fa-edit"></i></button>
+                        <button class="btn-delete" onclick="deleteRow(this)"><i class="fas fa-trash"></i></button>
+                    </td>
+                `;
                 
                 row.innerHTML = rowHTML;
                 fragment.appendChild(row);
@@ -4265,6 +4292,44 @@
             }, 100);
         }
 
+        // Fungsi untuk mengedit baris
+        function editRow(button) {
+            const row = button.closest('tr');
+            const inputs = row.querySelectorAll('input');
+            
+            // Jika sudah dalam mode edit, simpan perubahan
+            if (row.classList.contains('edit-mode')) {
+                // Keluar dari mode edit
+                row.classList.remove('edit-mode');
+                
+                // Ubah tombol edit kembali
+                button.innerHTML = '<i class="fas fa-edit"></i>';
+                button.classList.remove('btn-save');
+                button.classList.add('btn-edit');
+                
+                // Simpan data ke Firestore
+                saveDataToFirestore();
+                
+                // Update tabel output dan overtime
+                generateOutputTable();
+                generateOvertimeTable();
+            } else {
+                // Masuk mode edit
+                row.classList.add('edit-mode');
+                
+                // Ubah tombol edit menjadi save
+                button.innerHTML = '<i class="fas fa-save"></i>';
+                button.classList.remove('btn-edit');
+                button.classList.add('btn-save');
+                
+                // Fokus ke input pertama
+                if (inputs.length > 0) {
+                    inputs[0].focus();
+                    inputs[0].select();
+                }
+            }
+        }
+
         // Fungsi untuk mengupdate body tabel entry
         function updateEntryTableBody() {
             const tbody = document.querySelector('#entryTable tbody');
@@ -4289,7 +4354,12 @@
                     rowHTML += `<td><input type="text" value="${shiftValue}" class="shift-input" onchange="updateShiftColor(this)"></td>`;
                 });
                 
-                rowHTML += '<td><button class="btn-delete" onclick="deleteRow(this)"><i class="fas fa-trash"></i></button></td>';
+                rowHTML += `
+                    <td class="edit-actions">
+                        <button class="btn-edit" onclick="editRow(this)"><i class="fas fa-edit"></i></button>
+                        <button class="btn-delete" onclick="deleteRow(this)"><i class="fas fa-trash"></i></button>
+                    </td>
+                `;
                 
                 row.innerHTML = rowHTML;
                 tbody.appendChild(row);
@@ -4314,17 +4384,17 @@
             const thead = absenTabelTable.querySelector('thead tr');
             const tbody = absenTabelTable.querySelector('tbody');
             
-            let headerHTML = '<th>Area</th><th>Name</th><th>Position</th>';
+            let headerHTML = '<th>Area<div class="table-header-description">Work Area</div></th><th>Name<div class="table-header-description">Employee Name</div></th><th>Position<div class="table-header-description">Job Position</div></th>';
             dateRange.forEach(date => {
-                headerHTML += `<th>${formatDateForHeader(date)}</th>`;
+                headerHTML += `<th>${formatDateForHeader(date)}<div class="table-header-description">Shift Code</div></th>`;
             });
-            headerHTML += '<th>Action</th>';
+            headerHTML += '<th>Action<div class="table-header-description">Edit/Save</div></th>';
             thead.innerHTML = headerHTML;
             
             tbody.innerHTML = '';
             
-            // Gabungkan data dari absensiData dan absenTabelData
-            const allData = [...absenTabelData];
+            // Gunakan data dari absensiData, bukan absenTabelData untuk menghindari duplikasi
+            const allData = absensiData.length > 0 ? absensiData : initialEmployees;
             
             if (allData.length === 0) {
                 const row = document.createElement('tr');
@@ -4353,8 +4423,13 @@
                     rowHTML += `<td><input type="text" value="${shiftValue}" class="shift-input" readonly></td>`;
                 });
                 
-                // Untuk tab absen-tabel, tombol delete tidak ditampilkan
-                rowHTML += '<td><button class="btn-edit" onclick="alert(\'Data in Attendance Table cannot be deleted\')"><i class="fas fa-lock"></i></button></td>';
+                // Untuk tab absen-tabel, tombol edit dan save
+                rowHTML += `
+                    <td class="edit-actions">
+                        <button class="btn-edit" onclick="editAbsenTabelRow(this)"><i class="fas fa-edit"></i></button>
+                        <button class="btn-delete" onclick="alert('Data in Attendance Table cannot be deleted')"><i class="fas fa-lock"></i></button>
+                    </td>
+                `;
                 
                 row.innerHTML = rowHTML;
                 fragment.appendChild(row);
@@ -4376,6 +4451,100 @@
             setTimeout(() => {
                 tableContainer.classList.add('visible');
             }, 100);
+        }
+
+        // Fungsi untuk mengedit baris di tabel absen
+        function editAbsenTabelRow(button) {
+            const row = button.closest('tr');
+            const inputs = row.querySelectorAll('input');
+            
+            // Jika sudah dalam mode edit, simpan perubahan
+            if (row.classList.contains('edit-mode')) {
+                // Keluar dari mode edit
+                row.classList.remove('edit-mode');
+                
+                // Ubah tombol edit kembali
+                button.innerHTML = '<i class="fas fa-edit"></i>';
+                button.classList.remove('btn-save');
+                button.classList.add('btn-edit');
+                
+                // Simpan data ke Firestore
+                saveAbsenTabelData();
+            } else {
+                // Masuk mode edit
+                row.classList.add('edit-mode');
+                
+                // Ubah tombol edit menjadi save
+                button.innerHTML = '<i class="fas fa-save"></i>';
+                button.classList.remove('btn-edit');
+                button.classList.add('btn-save');
+                
+                // Fokus ke input pertama
+                if (inputs.length > 0) {
+                    inputs[0].focus();
+                    inputs[0].select();
+                }
+            }
+        }
+
+        // Fungsi untuk menyimpan data absen tabel
+        function saveAbsenTabelData() {
+            absenTabelData = [];
+            const rows = document.querySelectorAll('#absenTabelTable tbody tr');
+            
+            rows.forEach(row => {
+                const areaInput = row.querySelector('.area-input');
+                const nameInput = row.querySelector('.name-input');
+                const positionInput = row.querySelector('.position-input');
+                
+                if (!areaInput || !nameInput || !positionInput) return;
+                
+                const area = areaInput.value;
+                const name = nameInput.value;
+                const position = positionInput.value;
+                const shifts = {};
+                
+                const shiftInputs = row.querySelectorAll('.shift-input');
+                shiftInputs.forEach((input, index) => {
+                    if (index < dateRange.length) {
+                        const date = dateRange[index];
+                        const dateKey = formatDateForShift(date);
+                        shifts[dateKey] = input.value.toUpperCase();
+                    }
+                });
+                
+                // Hanya tambahkan jika ada nama
+                if (name) {
+                    absenTabelData.push({ area, name, position, shifts });
+                }
+            });
+            
+            // Simpan data absen tabel ke Firestore
+            const batch = db.batch();
+            
+            // Hapus semua data absen tabel lama
+            db.collection('absenTabel').get().then((querySnapshot) => {
+                querySnapshot.forEach((doc) => {
+                    batch.delete(doc.ref);
+                });
+                
+                // Tambahkan data absen tabel baru
+                absenTabelData.forEach((data) => {
+                    const docRef = db.collection('absenTabel').doc();
+                    batch.set(docRef, data);
+                });
+                
+                // Eksekusi batch
+                return batch.commit();
+            })
+            .then(() => {
+                console.log('Attendance table data successfully saved to Firestore');
+                alert('Attendance table data successfully saved!');
+            })
+            .catch((error) => {
+                console.error('Error saving attendance table data to Firestore:', error);
+                alert('Error saving attendance table data: ' + error.message);
+            });
         }
 
         // Fungsi untuk memuat pengaturan header
@@ -4886,7 +5055,12 @@
                     rowHTML += '<td><input type="text" class="shift-input" onchange="updateShiftColor(this)"></td>';
                 });
                 
-                rowHTML += '<td><button class="btn-delete" onclick="deleteRow(this)"><i class="fas fa-trash"></i></button></td>';
+                rowHTML += `
+                    <td class="edit-actions">
+                        <button class="btn-edit" onclick="editRow(this)"><i class="fas fa-edit"></i></button>
+                        <button class="btn-delete" onclick="deleteRow(this)"><i class="fas fa-trash"></i></button>
+                    </td>
+                `;
                 
                 newRow.innerHTML = rowHTML;
                 tbody.appendChild(newRow);

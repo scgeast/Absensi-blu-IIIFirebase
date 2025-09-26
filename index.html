@@ -1508,6 +1508,16 @@
             return `${dayName} ${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()}`;
         }
 
+        // Fungsi debounce untuk mengurangi frekuensi eksekusi fungsi
+        function debounce(func, wait) {
+            let timeout;
+            return function(...args) {
+                const context = this;
+                clearTimeout(timeout);
+                timeout = setTimeout(() => func.apply(context, args), wait);
+            };
+        }
+
         // Fungsi untuk mengupdate warna sel berdasarkan nilai shift
         function updateShiftColor(input) {
             const value = input.value.toUpperCase();
@@ -1523,10 +1533,14 @@
             else if (value === "C") td.classList.add("shift-C");
             else if (value === "O") td.classList.add("shift-O");
 
-            saveDataToFirestore();
+            // Gunakan debounce untuk menyimpan data ke Firestore
+            debouncedSaveDataToFirestore();
             generateOutputTable();
             generateOvertimeTable();
         }
+
+        // Fungsi debounce untuk menyimpan data
+        const debouncedSaveDataToFirestore = debounce(saveDataToFirestore, 1000);
 
         // Fungsi untuk membuat input field dapat diedit
         function makeEditable(input) {
@@ -2505,72 +2519,102 @@
                 });
         }
 
-        // Fungsi untuk load data dari Firestore
-        function loadDataFromFirestore() {
-            showLoading(true);
+        // Fungsi untuk menyimpan data ke localStorage
+        function saveDataToLocalStorage() {
+            try {
+                localStorage.setItem('absensiData', JSON.stringify(absensiData));
+                localStorage.setItem('absenTabelData', JSON.stringify(absenTabelData));
+                localStorage.setItem('overtimeData', JSON.stringify(overtimeData));
+                localStorage.setItem('remarksData', JSON.stringify(remarksData));
+                localStorage.setItem('users', JSON.stringify(users));
+                localStorage.setItem('cutiData', JSON.stringify(cutiData));
+                localStorage.setItem('formRekapLemburData', JSON.stringify(formRekapLemburData));
+                localStorage.setItem('lastUpdated', new Date().toISOString());
+            } catch (error) {
+                console.error('Error saving data to localStorage:', error);
+            }
+        }
+
+        // Fungsi untuk load data dari localStorage
+        function loadDataFromLocalStorage() {
+            try {
+                const lastUpdated = localStorage.getItem('lastUpdated');
+                const now = new Date();
+                const lastUpdatedDate = new Date(lastUpdated);
+                
+                // Use cached data if it's less than 1 hour old
+                if (lastUpdated && (now - lastUpdatedDate) < 3600000) {
+                    absensiData = JSON.parse(localStorage.getItem('absensiData') || '[]');
+                    absenTabelData = JSON.parse(localStorage.getItem('absenTabelData') || '[]');
+                    overtimeData = JSON.parse(localStorage.getItem('overtimeData') || '{}');
+                    remarksData = JSON.parse(localStorage.getItem('remarksData') || '{}');
+                    users = JSON.parse(localStorage.getItem('users') || '[]');
+                    cutiData = JSON.parse(localStorage.getItem('cutiData') || '[]');
+                    formRekapLemburData = JSON.parse(localStorage.getItem('formRekapLemburData') || '[]');
+                    
+                    return true;
+                }
+            } catch (error) {
+                console.error('Error loading data from localStorage:', error);
+            }
             
-            // Load data absensi
-            db.collection('absensi').get()
-                .then((querySnapshot) => {
-                    absensiData = [];
-                    querySnapshot.forEach((doc) => {
-                        absensiData.push({
-                            id: doc.id,
-                            ...doc.data()
-                        });
-                    });
-                    
-                    // Load data absen tabel
-                    return db.collection('absenTabel').get();
-                })
-                .then((querySnapshot) => {
-                    absenTabelData = [];
-                    querySnapshot.forEach((doc) => {
-                        absenTabelData.push({
-                            id: doc.id,
-                            ...doc.data()
-                        });
-                    });
-                    
-                    // Load data overtime
-                    return db.collection('overtime').get();
-                })
-                .then((querySnapshot) => {
-                    overtimeData = {};
-                    querySnapshot.forEach((doc) => {
-                        const data = doc.data();
-                        overtimeData[data.key] = data;
-                    });
-                    
-                    // Load data remarks
-                    return db.collection('remarks').get();
-                })
-                .then((querySnapshot) => {
-                    remarksData = {};
-                    querySnapshot.forEach((doc) => {
-                        const data = doc.data();
-                        remarksData[data.key] = data.value;
-                    });
-                    
-                    // Load data users
-                    return loadUsersFromFirestore();
-                })
-                .then(() => {
-                    // Load data cuti
-                    return loadCutiFromFirestore();
-                })
-                .then(() => {
-                    // Load data form rekap lembur
-                    return loadFormRekapLemburFromFirestore();
-                })
-                .then(() => {
-                    // Setup aplikasi setelah load data
-                    const today = new Date();
-                    const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-                    
-                    document.getElementById('startDate').valueAsDate = firstDayOfMonth;
-                    document.getElementById('endDate').valueAsDate = today;
-                    
+            return false;
+        }
+
+        // Fungsi untuk load data dari Firestore dengan optimasi
+        async function loadFreshData() {
+            try {
+                // Load data secara paralel dengan Promise.all
+                const [
+                    absensiSnapshot,
+                    absenTabelSnapshot,
+                    overtimeSnapshot,
+                    remarksSnapshot,
+                    usersSnapshot,
+                    cutiSnapshot,
+                    formRekapLemburSnapshot
+                ] = await Promise.all([
+                    db.collection('absensi').get(),
+                    db.collection('absenTabel').get(),
+                    db.collection('overtime').get(),
+                    db.collection('remarks').get(),
+                    db.collection('users').get(),
+                    db.collection('cuti').get(),
+                    db.collection('formRekapLembur').get()
+                ]);
+                
+                // Proses data secara efisien
+                absensiData = absensiSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                absenTabelData = absenTabelSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                
+                overtimeData = {};
+                overtimeSnapshot.forEach(doc => {
+                    const data = doc.data();
+                    overtimeData[data.key] = data;
+                });
+                
+                remarksData = {};
+                remarksSnapshot.forEach(doc => {
+                    const data = doc.data();
+                    remarksData[data.key] = data.value;
+                });
+                
+                users = usersSnapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() }));
+                cutiData = cutiSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                formRekapLemburData = formRekapLemburSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                
+                // Simpan data ke localStorage untuk cache
+                saveDataToLocalStorage();
+                
+                // Setup aplikasi setelah load data
+                const today = new Date();
+                const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+                
+                document.getElementById('startDate').valueAsDate = firstDayOfMonth;
+                document.getElementById('endDate').valueAsDate = today;
+                
+                // Gunakan requestAnimationFrame untuk mengurangi blocking
+                requestAnimationFrame(() => {
                     initCollapsible();
                     applyDateFilter();
                     updateEmployeeDropdown();
@@ -2579,29 +2623,128 @@
                     displayCuti();
                     displayCutiDetail();
                     displayRekapLembur();
-                    
-                    // Populate dropdown karyawan untuk cuti
                     populateCutiEmployeeDropdown();
                     
                     // Set active tab based on role
                     if (currentUser.role === 'user') {
-                        // For user, set first tab in General folder as active
                         document.querySelector('[data-tab="absen-tabel"]').click();
                     } else {
-                        // For admin, set first tab in Main folder as active
                         document.querySelector('[data-tab="entry"]').click();
                     }
                     
                     showLoading(false);
-                })
-                .catch((error) => {
-                    console.error('Error loading data from Firestore:', error);
-                    alert('Error loading data: ' + error.message);
-                    showLoading(false);
                 });
+            } catch (error) {
+                console.error('Error loading data from Firestore:', error);
+                alert('Error loading data: ' + error.message);
+                showLoading(false);
+            }
         }
 
-        // Fungsi untuk menyimpan data ke Firestore
+        // Fungsi untuk load data dari Firestore
+        function loadDataFromFirestore() {
+            showLoading(true);
+            
+            // Try to load from cache first
+            if (loadDataFromLocalStorage()) {
+                // Setup aplikasi dengan data dari cache
+                const today = new Date();
+                const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+                
+                document.getElementById('startDate').valueAsDate = firstDayOfMonth;
+                document.getElementById('endDate').valueAsDate = today;
+                
+                initCollapsible();
+                applyDateFilter();
+                updateEmployeeDropdown();
+                initSidebar();
+                displayUsers();
+                displayCuti();
+                displayCutiDetail();
+                displayRekapLembur();
+                populateCutiEmployeeDropdown();
+                
+                // Set active tab based on role
+                if (currentUser.role === 'user') {
+                    document.querySelector('[data-tab="absen-tabel"]').click();
+                } else {
+                    document.querySelector('[data-tab="entry"]').click();
+                }
+                
+                showLoading(false);
+                
+                // Load fresh data in background
+                loadFreshDataInBackground();
+            } else {
+                // Load fresh data
+                loadFreshData();
+            }
+        }
+
+        // Fungsi untuk load data di background
+        function loadFreshDataInBackground() {
+            // Load data secara paralel dengan Promise.all
+            Promise.all([
+                db.collection('absensi').get(),
+                db.collection('absenTabel').get(),
+                db.collection('overtime').get(),
+                db.collection('remarks').get(),
+                db.collection('users').get(),
+                db.collection('cuti').get(),
+                db.collection('formRekapLembur').get()
+            ]).then(([
+                absensiSnapshot,
+                absenTabelSnapshot,
+                overtimeSnapshot,
+                remarksSnapshot,
+                usersSnapshot,
+                cutiSnapshot,
+                formRekapLemburSnapshot
+            ]) => {
+                // Proses data secara efisien
+                absensiData = absensiSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                absenTabelData = absenTabelSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                
+                overtimeData = {};
+                overtimeSnapshot.forEach(doc => {
+                    const data = doc.data();
+                    overtimeData[data.key] = data;
+                });
+                
+                remarksData = {};
+                remarksSnapshot.forEach(doc => {
+                    const data = doc.data();
+                    remarksData[data.key] = data.value;
+                });
+                
+                users = usersSnapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() }));
+                cutiData = cutiSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                formRekapLemburData = formRekapLemburSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                
+                // Simpan data ke localStorage untuk cache
+                saveDataToLocalStorage();
+                
+                // Update UI jika diperlukan
+                if (currentTab === 'entry') {
+                    updateEntryTable();
+                } else if (currentTab === 'absen-tabel') {
+                    generateAbsenTabelTable();
+                } else if (currentTab === 'output') {
+                    generateOutputTable();
+                } else if (currentTab === 'overtime') {
+                    generateOvertimeTable();
+                }
+                
+                displayUsers();
+                displayCuti();
+                displayCutiDetail();
+                displayRekapLembur();
+            }).catch((error) => {
+                console.error('Error loading fresh data in background:', error);
+            });
+        }
+
+        // Fungsi untuk menyimpan data ke Firestore dengan optimasi
         function saveDataToFirestore() {
             absensiData = [];
             const rows = document.querySelectorAll('#entryTable tbody tr');
@@ -2679,6 +2822,8 @@
             .then(() => {
                 console.log('Data successfully saved to Firestore');
                 updateEmployeeDropdown();
+                // Simpan ke localStorage untuk cache
+                saveDataToLocalStorage();
             })
             .catch((error) => {
                 console.error('Error saving data to Firestore:', error);
@@ -3035,21 +3180,57 @@
             generateOvertimeTable();
         }
 
-        // Fungsi untuk mengupdate tabel entry berdasarkan dateRange
+        // Fungsi untuk mengupdate tabel entry berdasarkan dateRange dengan optimasi
         function updateEntryTable() {
             const entryTable = document.querySelector('#entryTable');
             const thead = entryTable.querySelector('thead tr');
             const tbody = entryTable.querySelector('tbody');
             
-            let headerHTML = '<th>Area</th><th>Name</th><th>Position</th>';
-            dateRange.forEach(date => {
-                headerHTML += `<th>${formatDateForHeader(date)}</th>`;
-            });
-            headerHTML += '<th>Action</th>';
-            thead.innerHTML = headerHTML;
+            // Hanya update header jika dateRange berubah
+            if (!entryTable.dataset.lastDateRange || entryTable.dataset.lastDateRange !== JSON.stringify(dateRange.map(d => d.getTime()))) {
+                let headerHTML = '<th>Area</th><th>Name</th><th>Position</th>';
+                dateRange.forEach(date => {
+                    headerHTML += `<th>${formatDateForHeader(date)}</th>`;
+                });
+                headerHTML += '<th>Action</th>';
+                thead.innerHTML = headerHTML;
+                
+                entryTable.dataset.lastDateRange = JSON.stringify(dateRange.map(d => d.getTime()));
+            }
             
-            updateEntryTableBody();
-            initializeShiftColors();
+            // Gunakan DocumentFragment untuk mengurangi reflow
+            const fragment = document.createDocumentFragment();
+            tbody.innerHTML = '';
+            
+            const employeesToShow = absensiData.length > 0 ? absensiData : initialEmployees;
+            
+            employeesToShow.forEach(employee => {
+                const row = document.createElement('tr');
+                let rowHTML = `
+                    <td><input type="text" value="${employee.area || ''}" class="area-input read-only-input" readonly ondblclick="makeEditable(this)"></td>
+                    <td><input type="text" value="${employee.name || ''}" class="name-input read-only-input" readonly ondblclick="makeEditable(this)"></td>
+                    <td><input type="text" value="${employee.position || ''}" class="position-input read-only-input" readonly ondblclick="makeEditable(this)"></td>
+                `;
+                
+                dateRange.forEach(date => {
+                    const dateStr = formatDateForShift(date);
+                    const shiftValue = employee.shifts && employee.shifts[dateStr] ? employee.shifts[dateStr] : '';
+                    rowHTML += `<td><input type="text" value="${shiftValue}" class="shift-input" onchange="updateShiftColor(this)"></td>`;
+                });
+                
+                rowHTML += '<td><button class="btn-delete" onclick="deleteRow(this)"><i class="fas fa-trash"></i></button></td>';
+                
+                row.innerHTML = rowHTML;
+                fragment.appendChild(row);
+            });
+            
+            tbody.appendChild(fragment);
+            
+            // Inisialisasi warna shift setelah membuat tabel
+            setTimeout(() => {
+                initializeShiftColors();
+            }, 100);
+            
             loadHeaderSettings();
             addArrowNavigation();
         }
@@ -3112,6 +3293,9 @@
                 return;
             }
             
+            // Gunakan DocumentFragment untuk mengurangi reflow
+            const fragment = document.createDocumentFragment();
+            
             allData.forEach(employee => {
                 const row = document.createElement('tr');
                 let rowHTML = `
@@ -3130,8 +3314,10 @@
                 rowHTML += '<td><button class="btn-edit" onclick="alert(\'Data in Attendance Table cannot be deleted\')"><i class="fas fa-lock"></i></button></td>';
                 
                 row.innerHTML = rowHTML;
-                tbody.appendChild(row);
+                fragment.appendChild(row);
             });
+            
+            tbody.appendChild(fragment);
             
             initializeShiftColors();
         }
@@ -3211,6 +3397,9 @@
             const rows = document.querySelectorAll('#entryTable tbody tr');
             const selectedEmployee = document.getElementById('employeeName').value;
             
+            // Gunakan DocumentFragment untuk mengurangi reflow
+            const fragment = document.createDocumentFragment();
+            
             rows.forEach((row, rowIndex) => {
                 const area = row.querySelector('.area-input').value;
                 const name = row.querySelector('.name-input').value;
@@ -3254,10 +3443,12 @@
                             </td>
                         `;
                         
-                        outputTable.appendChild(newRow);
+                        fragment.appendChild(newRow);
                     }
                 });
             });
+            
+            outputTable.appendChild(fragment);
         }
 
         // Fungsi untuk menghasilkan overtime table dengan filter
@@ -3269,6 +3460,9 @@
             const selectedEmployee = document.getElementById('employeeName').value;
             
             let rowCount = 1;
+            
+            // Gunakan DocumentFragment untuk mengurangi reflow
+            const fragment = document.createDocumentFragment();
             
             rows.forEach((row, rowIndex) => {
                 const area = row.querySelector('.area-input').value;
@@ -3314,14 +3508,16 @@
                             <td><input type="text" class="remarks" value="${savedOvertimeData.remarks || ''}" onchange="saveOvertimeData('${overtimeKey}', this)"></td>
                         `;
                         
-                        overtimeTableBody.appendChild(newRow);
+                        fragment.appendChild(newRow);
                         rowCount++;
                     }
                 });
             });
+            
+            overtimeTableBody.appendChild(fragment);
         }
 
-        // Inisialisasi aplikasi
+        // Inisialisasi aplikasi dengan event delegation
         document.addEventListener('DOMContentLoaded', function() {
             // Setup login
             document.getElementById('loginBtn').addEventListener('click', function() {
@@ -3412,21 +3608,6 @@
             
             // Setup simpan form rekap lembur
             document.getElementById('saveRekapLembur').addEventListener('click', saveFormRekapLembur);
-            
-            // Setup event listener untuk Total Plant pada form rekap lembur
-            document.addEventListener('input', function(e) {
-                if (e.target.classList.contains('total-plant')) {
-                    const row = e.target.getAttribute('data-row');
-                    const plantNameSelect = document.getElementById(`plantName${row}`);
-                    
-                    if (e.target.value.trim() !== '') {
-                        plantNameSelect.disabled = false;
-                    } else {
-                        plantNameSelect.disabled = true;
-                        plantNameSelect.value = '';
-                    }
-                }
-            });
             
             // Event listeners lainnya
             document.getElementById('applyHeaderSize').addEventListener('click', applyHeaderSize);
@@ -3525,6 +3706,40 @@
                 
                 initializeShiftColors();
                 addArrowNavigation();
+            });
+            
+            // Event delegation untuk tabel entry
+            document.querySelector('#entryTable tbody').addEventListener('click', function(e) {
+                if (e.target.classList.contains('btn-delete')) {
+                    deleteRow(e.target);
+                }
+            });
+            
+            document.querySelector('#entryTable tbody').addEventListener('dblclick', function(e) {
+                if (e.target.classList.contains('read-only-input')) {
+                    makeEditable(e.target);
+                }
+            });
+            
+            document.querySelector('#entryTable tbody').addEventListener('input', function(e) {
+                if (e.target.classList.contains('shift-input')) {
+                    updateShiftColor(e.target);
+                }
+            });
+            
+            // Event listener untuk Total Plant pada form rekap lembur
+            document.addEventListener('input', function(e) {
+                if (e.target.classList.contains('total-plant')) {
+                    const row = e.target.getAttribute('data-row');
+                    const plantNameSelect = document.getElementById(`plantName${row}`);
+                    
+                    if (e.target.value.trim() !== '') {
+                        plantNameSelect.disabled = false;
+                    } else {
+                        plantNameSelect.disabled = true;
+                        plantNameSelect.value = '';
+                    }
+                }
             });
         });
     </script>

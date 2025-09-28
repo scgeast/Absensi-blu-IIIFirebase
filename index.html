@@ -1794,9 +1794,6 @@
                         </div>
                         
                         <div class="action-buttons-right">
-                            <button class="btn btn-futuristic" id="addRekapRow">
-                                <i class="fas fa-plus me-1"></i> Add Row
-                            </button>
                             <button class="btn btn-futuristic" id="saveRekapLembur">
                                 <i class="fas fa-save me-1"></i> Save
                             </button>
@@ -2268,6 +2265,9 @@
                         if (settings.startDate) document.getElementById('startDateMain').value = settings.startDate;
                         if (settings.endDate) document.getElementById('endDateMain').value = settings.endDate;
                     }
+                    
+                    // Generate output and overtime calculation data
+                    generateOutputAndOvertimeData();
                     
                 } catch (firestoreError) {
                     console.warn('Could not load data from Firestore:', firestoreError);
@@ -3879,11 +3879,11 @@
 
         // Fungsi untuk generate plant selects berdasarkan total plant
         function generatePlantSelects(rowNum, totalPlant) {
-            const container = document.querySelector(`#plantContainer${rowNum}`);
-            if (!container) return;
+            const plantContainer = document.querySelector(`#plantContainer${rowNum}`);
+            if (!plantContainer) return;
             
             // Clear existing selects
-            container.innerHTML = '';
+            plantContainer.innerHTML = '';
             
             // Create new selects based on total plant
             for (let i = 1; i <= totalPlant; i++) {
@@ -3900,7 +3900,7 @@
                     <option value="Gempol">Gempol</option>
                     <option value="Krian">Krian</option>
                 `;
-                container.appendChild(select);
+                plantContainer.appendChild(select);
             }
         }
 
@@ -4252,36 +4252,6 @@
                         }
                     }
                 }
-            });
-            
-            // Event listener untuk tombol Add Rekap Row
-            document.getElementById('addRekapRow').addEventListener('click', function() {
-                const tableBody = document.getElementById('rekapLemburTableBody');
-                const rowCount = tableBody.rows.length;
-                const newRowNum = rowCount + 1;
-                
-                const newRow = document.createElement('tr');
-                newRow.innerHTML = `
-                    <td>${newRowNum}</td>
-                    <td><input type="text" class="form-control form-control-sm" id="totalProject${newRowNum}"></td>
-                    <td><input type="number" class="form-control form-control-sm total-plant" data-row="${newRowNum}" id="totalPlant${newRowNum}" min="1" value="1"></td>
-                    <td>
-                        <div class="plant-select-container">
-                            <select class="form-select form-select-sm plant-name" data-row="${newRowNum}" id="plantName${newRowNum}">
-                                <option value="">Select Plant</option>
-                                <option value="Denpasar2">Denpasar2</option>
-                                <option value="Gianyar">Gianyar</option>
-                                <option value="Manyar">Manyar</option>
-                                <option value="Manukan">Manukan</option>
-                                <option value="Kediri">Kediri</option>
-                                <option value="Gempol">Gempol</option>
-                                <option value="Krian">Krian</option>
-                            </select>
-                        </div>
-                    </td>
-                    <td><input type="text" class="form-control form-control-sm" id="volume${newRowNum}"></td>
-                `;
-                tableBody.appendChild(newRow);
             });
             
             // Event listener untuk tombol Save Rekap Lembur

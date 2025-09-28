@@ -794,6 +794,27 @@
             font-weight: bold;
         }
 
+        /* Total Overtime Display */
+        .total-overtime-display {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            margin-top: 15px;
+            margin-bottom: 15px;
+        }
+
+        .total-overtime-label {
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+
+        .total-overtime-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #dc3545;
+        }
+
         /* Loading Spinner */
         .spinner-container {
             position: fixed;
@@ -1184,56 +1205,89 @@
             border-left: 4px solid var(--accent-color);
         }
         
-        /* Overtime Form Styles */
-        .overtime-form-header {
+        /* Rekap Lembur Form Styles - Updated */
+        .rekap-lembur-form-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 15px;
         }
         
-        .total-overtime {
-            color: #dc3545;
+        .rekap-lembur-form-title {
             font-size: 1.2rem;
             font-weight: bold;
+            color: var(--primary-color);
         }
         
-        .overtime-form-table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        
-        .overtime-form-table th, 
-        .overtime-form-table td {
-            padding: 8px;
-            text-align: left;
-            border: 1px solid #ddd;
-        }
-        
-        .overtime-form-table th {
-            background-color: var(--secondary-color);
-            color: white;
-            font-weight: bold;
-            white-space: nowrap;
-        }
-        
-        .plant-select-container {
+        .rekap-lembur-form-datetime {
             display: flex;
-            flex-direction: column;
-            gap: 5px;
+            gap: 15px;
+        }
+        
+        .rekap-lembur-form-datetime .form-group {
+            margin-bottom: 0;
+        }
+        
+        .rekap-lembur-form-datetime label {
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+        
+        .rekap-lembur-form-time {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .rekap-lembur-form-time .form-control {
+            width: 120px;
+        }
+        
+        .plant-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .plant-row .form-control {
+            margin-right: 10px;
         }
         
         .plant-select {
-            padding: 5px;
-            border: 1px solid #ddd;
-            border-radius: 3px;
+            width: 150px;
         }
         
-        .action-buttons-right {
-            display: flex;
-            justify-content: flex-end;
-            gap: 10px;
-            margin-top: 15px;
+        .volume-input {
+            width: 100px;
+        }
+        
+        .remove-plant-btn {
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            padding: 5px 8px;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+        
+        .remove-plant-btn:hover {
+            background-color: #c82333;
+        }
+        
+        .add-plant-btn {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            padding: 5px 8px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            margin-top: 10px;
+        }
+        
+        .add-plant-btn:hover {
+            background-color: #218838;
         }
     </style>
 </head>
@@ -1726,66 +1780,48 @@
                     </div>
 
                     <div class="rekap-lembur-form">
-                        <div class="overtime-form-header">
-                            <h5>Overtime Form</h5>
-                            <div class="total-overtime" id="totalOvertimeDisplay">Total: 00:00</div>
-                        </div>
-                        
-                        <div class="row g-2">
-                            <div class="col-12 col-md-4">
+                        <div class="rekap-lembur-form-header">
+                            <div class="rekap-lembur-form-title">Overtime Form</div>
+                            <div class="rekap-lembur-form-datetime">
                                 <div class="form-group">
                                     <label for="rekapDate">Date</label>
                                     <input type="date" class="form-control form-control-sm" id="rekapDate">
                                 </div>
-                            </div>
-                            <div class="col-12 col-md-4">
-                                <div class="form-group">
-                                    <label for="rekapStartTime">Start Time</label>
-                                    <input type="time" class="form-control form-control-sm" id="rekapStartTime">
-                                </div>
-                            </div>
-                            <div class="col-12 col-md-4">
-                                <div class="form-group">
-                                    <label for="rekapEndTime">End Time</label>
-                                    <input type="time" class="form-control form-control-sm" id="rekapEndTime">
+                                <div class="rekap-lembur-form-time">
+                                    <div class="form-group">
+                                        <label for="rekapStartTime">Start Time</label>
+                                        <input type="time" class="form-control form-control-sm" id="rekapStartTime">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="rekapEndTime">End Time</label>
+                                        <input type="time" class="form-control form-control-sm" id="rekapEndTime">
+                                    </div>
                                 </div>
                             </div>
                         </div>
                         
-                        <div class="table-responsive">
-                            <table class="overtime-form-table table-striped table-sm" id="rekapLemburTable">
-                                <thead>
-                                    <tr>
-                                        <th>No</th>
-                                        <th>Total Project</th>
-                                        <th>Total Plant</th>
-                                        <th>Plant Name</th>
-                                        <th>Volume (m3)</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="rekapLemburTableBody">
-                                    <tr>
-                                        <td>1</td>
-                                        <td><input type="text" class="form-control form-control-sm" id="totalProject1"></td>
-                                        <td><input type="number" class="form-control form-control-sm total-plant" data-row="1" id="totalPlant1" min="1" value="1"></td>
-                                        <td>
-                                            <div class="plant-select-container">
-                                                <select class="form-select form-select-sm plant-name" data-row="1" id="plantName1">
-                                                    <option value="">Select Plant</option>
-                                                    <option value="Denpasar2">Denpasar2</option>
-                                                    <option value="Gianyar">Gianyar</option>
-                                                    <option value="Manyar">Manyar</option>
-                                                    <option value="Manukan">Manukan</option>
-                                                    <option value="Kediri">Kediri</option>
-                                                    <option value="Gempol">Gempol</option>
-                                                    <option value="Krian">Krian</option>
-                                                </select>
-                                            </div>
-                                        </td>
-                                        <td><input type="text" class="form-control form-control-sm" id="volume1"></td>
-                                    </tr>
-                                </tbody>
-                            </table>
+                        <div class="form-group">
+                            <label>Project Details</label>
+                            <div id="plantRowsContainer">
+                                <div class="plant-row">
+                                    <input type="text" class="form-control form-control-sm total-project" placeholder="Total Project" id="totalProject1">
+                                    <input type="number" class="form-control form-control-sm total-plant" placeholder="Total Plant" id="totalPlant1" min="1" max="10" value="1">
+                                    <select class="form-select form-select-sm plant-name plant-select" id="plantName1">
+                                        <option value="">Select Plant</option>
+                                        <option value="Denpasar2">Denpasar2</option>
+                                        <option value="Gianyar">Gianyar</option>
+                                        <option value="Manyar">Manyar</option>
+                                        <option value="Manukan">Manukan</option>
+                                        <option value="Kediri">Kediri</option>
+                                        <option value="Gempol">Gempol</option>
+                                        <option value="Krian">Krian</option>
+                                    </select>
+                                    <input type="text" class="form-control form-control-sm volume-input" placeholder="Volume (m3)" id="volume1">
+                                </div>
+                            </div>
+                            <button type="button" class="add-plant-btn" id="addPlantRow">
+                                <i class="fas fa-plus me-1"></i> Add Plant
+                            </button>
                         </div>
                         
                         <div class="form-group">
@@ -1793,18 +1829,21 @@
                             <textarea class="form-control form-control-sm" id="uraianTugas" rows="3" placeholder="Describe your overtime tasks..."></textarea>
                         </div>
                         
-                        <div class="action-buttons-right">
+                        <div class="action-buttons">
                             <button class="btn btn-futuristic" id="saveRekapLembur">
                                 <i class="fas fa-save me-1"></i> Save
-                            </button>
-                            <button class="btn btn-futuristic" id="exportExcelRekap">
-                                <i class="fas fa-file-excel me-1"></i> Export
                             </button>
                         </div>
                     </div>
 
+                    <!-- Total Overtime Display -->
+                    <div class="total-overtime-display">
+                        <div class="total-overtime-label">Total Overtime:</div>
+                        <div class="total-overtime-value" id="totalOvertimeValue">0:00</div>
+                    </div>
+
                     <!-- Overtime Detail Table -->
-                    <div class="table-responsive" id="overtimeDetailContainer" style="display: none;">
+                    <div class="table-responsive" id="overtimeDetailContainer">
                         <h5>Overtime Detail</h5>
                         <table class="overtime-detail-table table-striped table-sm" id="overtimeDetailTable">
                             <thead>
@@ -1818,6 +1857,7 @@
                                     <th>Plant Name</th>
                                     <th>Volume (m3)</th>
                                     <th>Task Description</th>
+                                    <th>Overtime Hours</th>
                                 </tr>
                             </thead>
                             <tbody id="overtimeDetailTableBody">
@@ -2065,8 +2105,7 @@
         let isSaving = false; // Flag to prevent multiple saves
         let outputDataLoaded = false; // Flag to track if output data has been loaded
         let overtimeDataLoaded = false; // Flag to track if overtime data has been loaded
-        let overtimeFormData = []; // Data untuk form rekap lembur
-        let totalOvertimeHours = 0; // Total overtime hours
+        let plantRowCount = 1; // Untuk melacak jumlah baris plant
 
         // Fungsi untuk mengecek koneksi
         function checkConnection() {
@@ -2210,12 +2249,11 @@
                 
                 // Try to load data from Firestore
                 try {
-                    const [absensiSnapshot, settingsSnapshot, absenTabelSnapshot, cutiSnapshot, overtimeFormSnapshot] = await Promise.all([
+                    const [absensiSnapshot, settingsSnapshot, absenTabelSnapshot, cutiSnapshot] = await Promise.all([
                         db.collection('absensi').limit(50).get(),
                         db.collection('settings').doc('dateRange').get().catch(() => null),
                         db.collection('absenTabel').limit(50).get().catch(() => null),
-                        db.collection('cuti').limit(50).get().catch(() => null),
-                        db.collection('overtimeForm').where('employeeName', '==', currentUser.name).get().catch(() => null)
+                        db.collection('cuti').limit(50).get().catch(() => null)
                     ]);
                     
                     absensiData = [];
@@ -2248,26 +2286,12 @@
                         });
                     }
                     
-                    // Load overtime form data
-                    overtimeFormData = [];
-                    if (overtimeFormSnapshot) {
-                        overtimeFormSnapshot.forEach(doc => {
-                            overtimeFormData.push({
-                                id: doc.id,
-                                ...doc.data()
-                            });
-                        });
-                    }
-                    
                     // Apply date settings if available
                     if (settingsSnapshot && settingsSnapshot.exists) {
                         const settings = settingsSnapshot.data();
                         if (settings.startDate) document.getElementById('startDateMain').value = settings.startDate;
                         if (settings.endDate) document.getElementById('endDateMain').value = settings.endDate;
                     }
-                    
-                    // Generate output and overtime calculation data
-                    generateOutputAndOvertimeData();
                     
                 } catch (firestoreError) {
                     console.warn('Could not load data from Firestore:', firestoreError);
@@ -2288,11 +2312,6 @@
                     document.querySelector('[data-tab="absen-tabel"]').click();
                 } else {
                     document.querySelector('[data-tab="entry"]').click();
-                }
-                
-                // Calculate total overtime if on form-rekap-lembur tab
-                if (currentTab === 'form-rekap-lembur') {
-                    calculateTotalOvertime();
                 }
                 
             } catch (error) {
@@ -3013,7 +3032,7 @@
                 generateCutiDetailData();
             }
             if (currentTab === "form-rekap-lembur") {
-                calculateTotalOvertime();
+                updateTotalOvertimeDisplay();
             }
         }
 
@@ -3363,10 +3382,10 @@
                         updateCutiTable();
                     }
                     
-                    // Load overtime form data when switching to form-rekap-lembur tab
+                    // Load rekap lembur data when switching to form-rekap-lembur tab
                     if (tabName === 'form-rekap-lembur') {
-                        loadOvertimeFormData();
-                        calculateTotalOvertime();
+                        loadRekapLemburData();
+                        updateTotalOvertimeDisplay();
                     }
                 });
             });
@@ -3761,76 +3780,63 @@
             }
         }
 
-        // Fungsi untuk load overtime form data
-        async function loadOvertimeFormData() {
+        // Fungsi untuk memuat data rekap lembur dari Firestore
+        async function loadRekapLemburData() {
             try {
-                // Load data from Firestore for current user
-                const overtimeFormSnapshot = await db.collection('overtimeForm')
+                // Hanya memuat data untuk user yang sedang login
+                const rekapLemburSnapshot = await db.collection('rekapLembur')
                     .where('employeeName', '==', currentUser.name)
                     .get();
                 
-                overtimeFormData = [];
-                overtimeFormSnapshot.forEach(doc => {
-                    overtimeFormData.push({
+                formRekapLemburData = [];
+                rekapLemburSnapshot.forEach(doc => {
+                    formRekapLemburData.push({
                         id: doc.id,
                         ...doc.data()
                     });
                 });
                 
-                // Update overtime detail table
-                updateOvertimeDetailTable();
+                // Update tabel rekap lembur
+                updateRekapLemburTable();
                 
             } catch (error) {
                 console.error('Error loading overtime form data:', error);
             }
         }
 
-        // Fungsi untuk update overtime detail table
-        function updateOvertimeDetailTable() {
-            const tbody = document.getElementById('overtimeDetailTableBody');
-            tbody.innerHTML = '';
+        // Fungsi untuk update tabel rekap lembur
+        function updateRekapLemburTable() {
+            const tableBody = document.getElementById('overtimeDetailTableBody');
+            tableBody.innerHTML = '';
             
             // Filter data berdasarkan date range General folder
             const startDateGeneral = document.getElementById('startDateGeneral').valueAsDate;
             const endDateGeneral = document.getElementById('endDateGeneral').valueAsDate;
             
-            let filteredOvertimeFormData = overtimeFormData.filter(data => {
-                const dataDate = new Date(data.date);
-                const dateInRange = (!startDateGeneral || !endDateGeneral) || 
-                                  (dataDate >= startDateGeneral && dataDate <= endDateGeneral);
-                
-                return dateInRange;
-            });
+            let filteredData = formRekapLemburData;
             
-            filteredOvertimeFormData.forEach((data, index) => {
-                const row = document.createElement('tr');
-                
-                // Format plant names for display
-                const plantNames = Array.isArray(data.plantNames) 
-                    ? data.plantNames.join(', ') 
-                    : (data.plantNames || '');
-                
+            if (startDateGeneral && endDateGeneral) {
+                filteredData = formRekapLemburData.filter(data => {
+                    const dataDate = new Date(data.date);
+                    return dataDate >= startDateGeneral && dataDate <= endDateGeneral;
+                });
+            }
+            
+            filteredData.forEach((data, index) => {
+                const row = tableBody.insertRow();
                 row.innerHTML = `
                     <td>${index + 1}</td>
                     <td>${data.date}</td>
                     <td>${data.startTime}</td>
                     <td>${data.endTime}</td>
-                    <td>${data.totalProject || ''}</td>
-                    <td>${data.totalPlant || ''}</td>
-                    <td>${plantNames}</td>
-                    <td>${data.volume || ''}</td>
-                    <td>${data.taskDescription || ''}</td>
+                    <td>${data.totalProject}</td>
+                    <td>${data.totalPlant}</td>
+                    <td>${data.plantName}</td>
+                    <td>${data.volume}</td>
+                    <td>${data.taskDescription}</td>
+                    <td>${data.overtimeHours}</td>
                 `;
-                tbody.appendChild(row);
             });
-            
-            // Show overtime detail container if there's data
-            const container = document.getElementById('overtimeDetailContainer');
-            if (filteredOvertimeFormData.length > 0) {
-                container.style.display = 'block';
-            } else {
-                container.style.display = 'none';
-            }
         }
 
         // Fungsi untuk menghitung total overtime
@@ -3841,56 +3847,46 @@
             const startDateGeneral = document.getElementById('startDateGeneral').valueAsDate;
             const endDateGeneral = document.getElementById('endDateGeneral').valueAsDate;
             
-            let filteredOvertimeFormData = overtimeFormData.filter(data => {
-                const dataDate = new Date(data.date);
-                const dateInRange = (!startDateGeneral || !endDateGeneral) || 
-                                  (dataDate >= startDateGeneral && dataDate <= endDateGeneral);
-                
-                return dateInRange;
-            });
+            let filteredData = formRekapLemburData;
             
-            filteredOvertimeFormData.forEach(data => {
-                if (data.startTime && data.endTime) {
-                    const startTime = new Date(`2000-01-01T${data.startTime}`);
-                    let endTime = new Date(`2000-01-01T${data.endTime}`);
-                    
-                    // Handle end time that crosses midnight
-                    if (endTime < startTime) {
-                        endTime.setDate(endTime.getDate() + 1);
-                    }
-                    
-                    const diffMs = endTime - startTime;
-                    const diffMinutes = Math.floor(diffMs / (1000 * 60));
-                    totalMinutes += diffMinutes;
+            if (startDateGeneral && endDateGeneral) {
+                filteredData = formRekapLemburData.filter(data => {
+                    const dataDate = new Date(data.date);
+                    return dataDate >= startDateGeneral && dataDate <= endDateGeneral;
+                });
+            }
+            
+            // Hitung total overtime
+            filteredData.forEach(data => {
+                if (data.overtimeHours) {
+                    const [hours, minutes] = data.overtimeHours.split(':').map(Number);
+                    totalMinutes += hours * 60 + minutes;
                 }
             });
             
-            // Convert total minutes to hours and minutes
-            const hours = Math.floor(totalMinutes / 60);
-            const minutes = totalMinutes % 60;
+            // Konversi kembali ke format jam:menit
+            const totalHours = Math.floor(totalMinutes / 60);
+            const remainingMinutes = totalMinutes % 60;
             
-            // Update total overtime display
-            const totalOvertimeDisplay = document.getElementById('totalOvertimeDisplay');
-            totalOvertimeDisplay.textContent = `Total: ${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
-            
-            // Store total overtime hours for later use
-            totalOvertimeHours = hours + (minutes / 60);
+            return `${String(totalHours).padStart(2, '0')}:${String(remainingMinutes).padStart(2, '0')}`;
         }
 
-        // Fungsi untuk generate plant selects berdasarkan total plant
-        function generatePlantSelects(rowNum, totalPlant) {
-            const plantContainer = document.querySelector(`#plantContainer${rowNum}`);
-            if (!plantContainer) return;
-            
-            // Clear existing selects
-            plantContainer.innerHTML = '';
-            
-            // Create new selects based on total plant
-            for (let i = 1; i <= totalPlant; i++) {
-                const select = document.createElement('select');
-                select.className = 'form-select form-select-sm plant-name mb-1';
-                select.id = `plantName${rowNum}_${i}`;
-                select.innerHTML = `
+        // Fungsi untuk update tampilan total overtime
+        function updateTotalOvertimeDisplay() {
+            const totalOvertime = calculateTotalOvertime();
+            document.getElementById('totalOvertimeValue').textContent = totalOvertime;
+        }
+
+        // Fungsi untuk menambahkan baris plant
+        function addPlantRow() {
+            plantRowCount++;
+            const container = document.getElementById('plantRowsContainer');
+            const newRow = document.createElement('div');
+            newRow.className = 'plant-row';
+            newRow.innerHTML = `
+                <input type="text" class="form-control form-control-sm total-project" placeholder="Total Project" id="totalProject${plantRowCount}">
+                <input type="number" class="form-control form-control-sm total-plant" placeholder="Total Plant" id="totalPlant${plantRowCount}" min="1" max="10" value="1">
+                <select class="form-select form-select-sm plant-name plant-select" id="plantName${plantRowCount}">
                     <option value="">Select Plant</option>
                     <option value="Denpasar2">Denpasar2</option>
                     <option value="Gianyar">Gianyar</option>
@@ -3899,100 +3895,126 @@
                     <option value="Kediri">Kediri</option>
                     <option value="Gempol">Gempol</option>
                     <option value="Krian">Krian</option>
-                `;
-                plantContainer.appendChild(select);
+                </select>
+                <input type="text" class="form-control form-control-sm volume-input" placeholder="Volume (m3)" id="volume${plantRowCount}">
+                <button type="button" class="remove-plant-btn" onclick="removePlantRow(this)">
+                    <i class="fas fa-trash"></i>
+                </button>
+            `;
+            container.appendChild(newRow);
+            
+            // Tambahkan event listener untuk input total plant
+            document.getElementById(`totalPlant${plantRowCount}`).addEventListener('change', function() {
+                handleTotalPlantChange(this);
+            });
+        }
+
+        // Fungsi untuk menghapus baris plant
+        function removePlantRow(button) {
+            button.parentElement.remove();
+        }
+
+        // Fungsi untuk menangani perubahan pada input total plant
+        function handleTotalPlantChange(input) {
+            const totalPlant = parseInt(input.value) || 1;
+            const plantSelect = input.nextElementSibling;
+            
+            // Hapus semua option kecuali option pertama
+            while (plantSelect.options.length > 1) {
+                plantSelect.remove(1);
+            }
+            
+            // Tambahkan option sebanyak total plant
+            for (let i = 1; i <= totalPlant; i++) {
+                const option = document.createElement('option');
+                option.value = `Plant ${i}`;
+                option.textContent = `Plant ${i}`;
+                plantSelect.appendChild(option);
             }
         }
 
-        // Fungsi untuk menyimpan data overtime form
-        async function saveOvertimeForm() {
-            if (!currentUser) {
-                showNotification('User not logged in', 'error');
-                return;
-            }
-            
-            const date = document.getElementById('rekapDate').value;
-            const startTime = document.getElementById('rekapStartTime').value;
-            const endTime = document.getElementById('rekapEndTime').value;
-            const taskDescription = document.getElementById('uraianTugas').value;
-            
-            if (!date || !startTime || !endTime) {
-                showNotification('Please fill date, start time, and end time', 'error');
+        // Fungsi untuk menyimpan data rekap lembur
+        async function saveRekapLemburData() {
+            if (!isOnline) {
+                console.log('Offline - data will be saved when connection is restored');
                 return;
             }
             
             try {
-                // Collect data from table rows
-                const tableRows = document.querySelectorAll('#rekapLemburTableBody tr');
-                const projects = [];
+                const date = document.getElementById('rekapDate').value;
+                const startTime = document.getElementById('rekapStartTime').value;
+                const endTime = document.getElementById('rekapEndTime').value;
+                const taskDescription = document.getElementById('uraianTugas').value;
                 
-                tableRows.forEach((row, index) => {
-                    const rowNum = index + 1;
-                    const totalProject = document.getElementById(`totalProject${rowNum}`).value;
-                    const totalPlant = document.getElementById(`totalPlant${rowNum}`).value;
-                    const volume = document.getElementById(`volume${rowNum}`).value;
-                    
-                    // Collect plant names
-                    const plantNames = [];
-                    const plantSelects = row.querySelectorAll('.plant-name');
-                    plantSelects.forEach(select => {
-                        if (select.value) {
-                            plantNames.push(select.value);
-                        }
-                    });
-                    
-                    projects.push({
-                        totalProject,
-                        totalPlant: parseInt(totalPlant) || 1,
-                        plantNames,
-                        volume
-                    });
-                });
-                
-                // Calculate overtime duration
-                const startDateTime = new Date(`2000-01-01T${startTime}`);
-                let endDateTime = new Date(`2000-01-01T${endTime}`);
-                
-                // Handle end time that crosses midnight
-                if (endDateTime < startDateTime) {
-                    endDateTime.setDate(endDateTime.getDate() + 1);
+                if (!date || !startTime || !endTime || !taskDescription) {
+                    showNotification('Please fill all required fields', 'error');
+                    return;
                 }
                 
-                const diffMs = endDateTime - startDateTime;
-                const diffMinutes = Math.floor(diffMs / (1000 * 60));
-                const overtimeHours = Math.floor(diffMinutes / 60);
-                const overtimeMinutes = diffMinutes % 60;
-                const overtimeDuration = `${String(overtimeHours).padStart(2, '0')}:${String(overtimeMinutes).padStart(2, '0')}`;
+                // Hitung overtime hours
+                const start = new Date(`2000-01-01T${startTime}`);
+                const end = new Date(`2000-01-01T${endTime}`);
                 
-                // Create overtime form data object
-                const overtimeFormDataObj = {
-                    employeeName: currentUser.name,
-                    date,
-                    startTime,
-                    endTime,
-                    overtimeDuration,
-                    taskDescription,
-                    projects,
-                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                };
+                // Jika end time lebih kecil dari start time, berarti melewati tengah malam
+                if (end < start) {
+                    end.setDate(end.getDate() + 1);
+                }
                 
-                // Save to Firestore
-                const docRef = await db.collection('overtimeForm').add(overtimeFormDataObj);
+                const diffMs = end - start;
+                const diffHrs = Math.floor(diffMs / (1000 * 60 * 60));
+                const diffMins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+                const overtimeHours = `${String(diffHrs).padStart(2, '0')}:${String(diffMins).padStart(2, '0')}`;
                 
-                // Add to local data array
-                overtimeFormData.push({
-                    id: docRef.id,
-                    ...overtimeFormDataObj
+                // Collect plant data
+                const plantRows = document.querySelectorAll('.plant-row');
+                const plants = [];
+                
+                plantRows.forEach(row => {
+                    const totalProject = row.querySelector('.total-project').value;
+                    const totalPlant = row.querySelector('.total-plant').value;
+                    const plantName = row.querySelector('.plant-select').value;
+                    const volume = row.querySelector('.volume-input').value;
+                    
+                    if (totalProject && totalPlant && plantName && volume) {
+                        plants.push({
+                            totalProject,
+                            totalPlant,
+                            plantName,
+                            volume
+                        });
+                    }
                 });
                 
-                // Update overtime detail table
-                updateOvertimeDetailTable();
+                if (plants.length === 0) {
+                    showNotification('Please add at least one plant', 'error');
+                    return;
+                }
                 
-                // Update total overtime
-                calculateTotalOvertime();
+                // Simpan data ke Firestore
+                const batch = db.batch();
                 
-                // Update overtime calculation table
-                updateOvertimeCalculationWithNewData(overtimeFormDataObj);
+                // Simpan setiap plant sebagai dokumen terpisah
+                plants.forEach(plant => {
+                    const docRef = db.collection('rekapLembur').doc();
+                    batch.set(docRef, {
+                        employeeName: currentUser.name,
+                        date,
+                        startTime,
+                        endTime,
+                        overtimeHours,
+                        totalProject: plant.totalProject,
+                        totalPlant: plant.totalPlant,
+                        plantName: plant.plantName,
+                        volume: plant.volume,
+                        taskDescription,
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                });
+                
+                await batch.commit();
+                
+                // Update data overtime calculation
+                await updateOvertimeCalculationData(date, overtimeHours, taskDescription);
                 
                 // Reset form
                 document.getElementById('rekapDate').value = '';
@@ -4000,58 +4022,74 @@
                 document.getElementById('rekapEndTime').value = '';
                 document.getElementById('uraianTugas').value = '';
                 
-                // Reset table to single row
-                const tableBody = document.getElementById('rekapLemburTableBody');
-                tableBody.innerHTML = `
-                    <tr>
-                        <td>1</td>
-                        <td><input type="text" class="form-control form-control-sm" id="totalProject1"></td>
-                        <td><input type="number" class="form-control form-control-sm total-plant" data-row="1" id="totalPlant1" min="1" value="1"></td>
-                        <td>
-                            <div class="plant-select-container">
-                                <select class="form-select form-select-sm plant-name" data-row="1" id="plantName1">
-                                    <option value="">Select Plant</option>
-                                    <option value="Denpasar2">Denpasar2</option>
-                                    <option value="Gianyar">Gianyar</option>
-                                    <option value="Manyar">Manyar</option>
-                                    <option value="Manukan">Manukan</option>
-                                    <option value="Kediri">Kediri</option>
-                                    <option value="Gempol">Gempol</option>
-                                    <option value="Krian">Krian</option>
-                                </select>
-                            </div>
-                        </td>
-                        <td><input type="text" class="form-control form-control-sm" id="volume1"></td>
-                    </tr>
+                // Reset plant rows
+                document.getElementById('plantRowsContainer').innerHTML = `
+                    <div class="plant-row">
+                        <input type="text" class="form-control form-control-sm total-project" placeholder="Total Project" id="totalProject1">
+                        <input type="number" class="form-control form-control-sm total-plant" placeholder="Total Plant" id="totalPlant1" min="1" max="10" value="1">
+                        <select class="form-select form-select-sm plant-name plant-select" id="plantName1">
+                            <option value="">Select Plant</option>
+                            <option value="Denpasar2">Denpasar2</option>
+                            <option value="Gianyar">Gianyar</option>
+                            <option value="Manyar">Manyar</option>
+                            <option value="Manukan">Manukan</option>
+                            <option value="Kediri">Kediri</option>
+                            <option value="Gempol">Gempol</option>
+                            <option value="Krian">Krian</option>
+                        </select>
+                        <input type="text" class="form-control form-control-sm volume-input" placeholder="Volume (m3)" id="volume1">
+                    </div>
                 `;
+                
+                plantRowCount = 1;
+                
+                // Reload data
+                await loadRekapLemburData();
+                updateTotalOvertimeDisplay();
                 
                 showNotification('Overtime form saved successfully', 'success');
                 
             } catch (error) {
-                console.error('Error saving overtime form:', error);
-                showNotification('Error saving overtime form: ' + error.message, 'error');
+                console.error('Error saving overtime form data:', error);
+                showNotification('Error saving overtime form data: ' + error.message, 'error');
             }
         }
 
-        // Fungsi untuk update overtime calculation dengan data baru
-        function updateOvertimeCalculationWithNewData(newData) {
-            if (!newData || !overtimeCalcData.length) return;
-            
-            // Find matching employee and date in overtimeCalcData
-            const formattedDate = formatDateForShift(new Date(newData.date));
-            const matchingIndex = overtimeCalcData.findIndex(item => 
-                item.name === newData.employeeName && item.date === formattedDate
-            );
-            
-            if (matchingIndex !== -1) {
-                // Update the matching item
-                overtimeCalcData[matchingIndex].rkpPIC = newData.overtimeDuration;
-                overtimeCalcData[matchingIndex].remarks = newData.taskDescription;
+        // Fungsi untuk update data overtime calculation
+        async function updateOvertimeCalculationData(date, overtimeHours, taskDescription) {
+            try {
+                // Format date untuk pencocokan
+                const dateObj = new Date(date);
+                const formattedDate = formatDateForShift(dateObj);
                 
-                // Update the table if overtime tab is active
-                if (currentTab === "overtime") {
-                    updateOvertimeTable();
+                // Cari data overtime calculation yang sesuai
+                const overtimeSnapshot = await db.collection('overtime')
+                    .where('name', '==', currentUser.name)
+                    .where('date', '==', formattedDate)
+                    .get();
+                
+                if (overtimeSnapshot.empty) {
+                    console.log('No matching overtime calculation data found');
+                    return;
                 }
+                
+                // Update data
+                const batch = db.batch();
+                
+                overtimeSnapshot.forEach(doc => {
+                    const docRef = db.collection('overtime').doc(doc.id);
+                    batch.update(docRef, {
+                        rkpPIC: overtimeHours,
+                        remarks: taskDescription
+                    });
+                });
+                
+                await batch.commit();
+                
+                console.log('Overtime calculation data updated successfully');
+                
+            } catch (error) {
+                console.error('Error updating overtime calculation data:', error);
             }
         }
 
@@ -4221,82 +4259,15 @@
                 await saveCutiDataToFirestore();
             });
             
-            // Event listener untuk total plant input
-            document.addEventListener('change', function(e) {
-                if (e.target.classList.contains('total-plant')) {
-                    const rowNum = e.target.getAttribute('data-row');
-                    const totalPlant = parseInt(e.target.value) || 1;
-                    
-                    // Generate plant selects
-                    const plantContainer = e.target.closest('td').querySelector('.plant-select-container');
-                    if (plantContainer) {
-                        // Clear existing selects
-                        plantContainer.innerHTML = '';
-                        
-                        // Create new selects based on total plant
-                        for (let i = 1; i <= totalPlant; i++) {
-                            const select = document.createElement('select');
-                            select.className = 'form-select form-select-sm plant-name mb-1';
-                            select.id = `plantName${rowNum}_${i}`;
-                            select.innerHTML = `
-                                <option value="">Select Plant</option>
-                                <option value="Denpasar2">Denpasar2</option>
-                                <option value="Gianyar">Gianyar</option>
-                                <option value="Manyar">Manyar</option>
-                                <option value="Manukan">Manukan</option>
-                                <option value="Kediri">Kediri</option>
-                                <option value="Gempol">Gempol</option>
-                                <option value="Krian">Krian</option>
-                            `;
-                            plantContainer.appendChild(select);
-                        }
-                    }
-                }
-            });
+            // Event listener untuk tombol Add Plant
+            document.getElementById('addPlantRow').addEventListener('click', addPlantRow);
             
             // Event listener untuk tombol Save Rekap Lembur
-            document.getElementById('saveRekapLembur').addEventListener('click', saveOvertimeForm);
+            document.getElementById('saveRekapLembur').addEventListener('click', saveRekapLemburData);
             
-            // Event listener untuk tombol Export Excel Rekap
-            document.getElementById('exportExcelRekap').addEventListener('click', function() {
-                // Create a new workbook
-                const wb = XLSX.utils.book_new();
-                
-                // Get data from overtime detail table
-                const table = document.getElementById('overtimeDetailTable');
-                const ws_data = [];
-                
-                // Add headers
-                const headers = [];
-                table.querySelectorAll('th').forEach(th => {
-                    headers.push(th.textContent);
-                });
-                ws_data.push(headers);
-                
-                // Add rows
-                table.querySelectorAll('tbody tr').forEach(tr => {
-                    const row = [];
-                    tr.querySelectorAll('td').forEach(td => {
-                        row.push(td.textContent);
-                    });
-                    ws_data.push(row);
-                });
-                
-                // Create worksheet
-                const ws = XLSX.utils.aoa_to_sheet(ws_data);
-                
-                // Add worksheet to workbook
-                XLSX.utils.book_append_sheet(wb, ws, 'Overtime Detail');
-                
-                // Generate filename with current date
-                const today = new Date();
-                const dateStr = `${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, '0')}${String(today.getDate()).padStart(2, '0')}`;
-                const filename = `Overtime_Detail_${currentUser.name}_${dateStr}.xlsx`;
-                
-                // Save workbook
-                XLSX.writeFile(wb, filename);
-                
-                showNotification('Overtime detail exported successfully', 'success');
+            // Event listener untuk input total plant pertama
+            document.getElementById('totalPlant1').addEventListener('change', function() {
+                handleTotalPlantChange(this);
             });
             
             // Cek jika ada data backup di localStorage

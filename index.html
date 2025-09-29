@@ -1825,7 +1825,7 @@
                     </div>
 
                     <!-- PERBAIKAN: Overtime Detail untuk admin -->
-                    <div class="overtime-form-container" id="adminOvertimeDetail" style="display: none;">
+                    <div class="overtime-form-container" id="adminOvertimeDetail">
                         <div class="overtime-controls">
                             <div class="overtime-filter">
                                 <label for="overtimeEmployeeFilter" class="form-label me-2">Employee Name:</label>
@@ -3376,17 +3376,20 @@
             });
         }
 
-        // Initialize sidebar
+        // PERBAIKAN: Initialize sidebar dengan benar untuk semua role
         function initSidebar() {
             const sidebar = document.getElementById('sidebar');
             const sidebarToggle = document.getElementById('sidebarToggle');
             
-            sidebarToggle.addEventListener('click', function() {
-                sidebar.classList.toggle('expanded');
-                document.getElementById('mainContent').classList.toggle('expanded');
-                document.body.classList.toggle('header-expanded');
-                document.getElementById('userPasswordSection').classList.toggle('expanded');
-            });
+            // Pastikan event listener terpasang dengan benar
+            if (sidebarToggle) {
+                sidebarToggle.addEventListener('click', function() {
+                    sidebar.classList.toggle('expanded');
+                    document.getElementById('mainContent').classList.toggle('expanded');
+                    document.body.classList.toggle('header-expanded');
+                    document.getElementById('userPasswordSection').classList.toggle('expanded');
+                });
+            }
             
             // Folder toggle
             document.querySelectorAll('.sidebar-folder-header').forEach(header => {
@@ -3423,11 +3426,9 @@
                         document.getElementById('filterSectionMain').style.display = 'block';
                         document.getElementById('filterSectionGeneral').style.display = 'none';
                     } else if (tabName === 'setting') {
-                        // PERBAIKAN: Hilangkan Filter Date pada menu setting admin
                         document.getElementById('filterSectionMain').style.display = 'none';
                         document.getElementById('filterSectionGeneral').style.display = 'none';
                     } else if (tabName === 'cuti-detail') {
-                        // PERBAIKAN: Hilangkan Filter date pada menu Leave Detail
                         document.getElementById('filterSectionMain').style.display = 'none';
                         document.getElementById('filterSectionGeneral').style.display = 'none';
                     } else {
@@ -3436,14 +3437,13 @@
                         document.getElementById('filterSectionGeneral').style.display = 'block';
                     }
                     
-                    // PERBAIKAN: Load absen tabel data when switching to that tab
+                    // Load absen tabel data when switching to that tab
                     if (tabName === 'absen-tabel') {
                         loadAbsenTabelData();
                     }
                     
                     // Load output data when switching to output tab
                     if (tabName === 'output') {
-                        // Only generate output data if not already loaded
                         if (!outputDataLoaded) {
                             generateOutputAndOvertimeData();
                             outputDataLoaded = true;
@@ -3453,7 +3453,6 @@
                     
                     // Load overtime data when switching to overtime tab
                     if (tabName === 'overtime') {
-                        // Only generate overtime data if not already loaded
                         if (!overtimeDataLoaded) {
                             generateOutputAndOvertimeData();
                             overtimeDataLoaded = true;
@@ -3896,7 +3895,7 @@
             } else {
                 // Untuk user biasa, tampilkan form input
                 document.getElementById('userOvertimeForm').style.display = 'block';
-                document.getElementById('adminOvertimeDetail').style.display = 'none';
+                document.getElementById('adminOvertimeDetail').style.display = 'block'; // Tampilkan juga detail tabel
                 
                 // Set tanggal default ke hari ini
                 document.getElementById('rekapDate').valueAsDate = new Date();
@@ -4063,7 +4062,7 @@
             }
         }
 
-        // Fungsi untuk menyimpan data overtime - DIPERBAIKI
+        // PERBAIKAN: Fungsi untuk menyimpan data overtime - DIPERBAIKI
         async function saveRekapLembur() {
             if (!currentUser) {
                 showNotification('Please login first', 'error');
@@ -4186,15 +4185,23 @@
             return `${String(diffHrs).padStart(2, '0')}:${String(diffMins).padStart(2, '0')}`;
         }
 
-        // Fungsi untuk memuat data overtime user
+        // PERBAIKAN: Fungsi untuk memuat data overtime user
         async function loadUserOvertimeData() {
             if (!currentUser) return;
             
             try {
-                const querySnapshot = await db.collection('overtimeRecords')
-                    .where('employeeEmail', '==', currentUser.email)
-                    .orderBy('date', 'desc')
-                    .get();
+                let query;
+                if (currentUser.role === 'admin') {
+                    // Admin bisa melihat semua data
+                    query = db.collection('overtimeRecords').orderBy('date', 'desc');
+                } else {
+                    // User biasa hanya bisa melihat data sendiri
+                    query = db.collection('overtimeRecords')
+                        .where('employeeEmail', '==', currentUser.email)
+                        .orderBy('date', 'desc');
+                }
+                
+                const querySnapshot = await query.get();
                 
                 rekapLemburData = [];
                 querySnapshot.forEach(doc => {
@@ -4221,13 +4228,17 @@
             const startDate = document.getElementById('startDateGeneral').valueAsDate;
             const endDate = document.getElementById('endDateGeneral').valueAsDate;
             
-            // Filter berdasarkan employee (untuk admin)
+            // Filter berdasarkan employee (untuk admin) atau user saat ini (untuk user biasa)
             let filteredData = rekapLemburData;
+            
             if (currentUser.role === 'admin') {
                 const employeeFilter = document.getElementById('overtimeEmployeeFilter').value;
                 if (employeeFilter !== 'all') {
                     filteredData = rekapLemburData.filter(record => record.employeeName === employeeFilter);
                 }
+            } else {
+                // Untuk user biasa, hanya tampilkan data miliknya sendiri
+                filteredData = rekapLemburData.filter(record => record.employeeEmail === currentUser.email);
             }
             
             // Filter berdasarkan date range

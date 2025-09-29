@@ -2534,6 +2534,13 @@
                 return dateInRange && employeeMatch;
             });
             
+            // PERBAIKAN: Urutkan data berdasarkan tanggal
+            filteredOutputData.sort((a, b) => {
+                const dateA = parseDateFromString(a.date);
+                const dateB = parseDateFromString(b.date);
+                return dateA - dateB;
+            });
+            
             filteredOutputData.forEach(data => {
                 const row = document.createElement('tr');
                 row.innerHTML = `
@@ -2582,6 +2589,13 @@
                 const employeeMatch = employeeFilterGeneral === 'all' || data.name === employeeFilterGeneral;
                 
                 return dateInRange && employeeMatch;
+            });
+            
+            // PERBAIKAN: Urutkan data berdasarkan tanggal
+            filteredOvertimeData.sort((a, b) => {
+                const dateA = parseDateFromString(a.date);
+                const dateB = parseDateFromString(b.date);
+                return dateA - dateB;
             });
             
             let no = 1;
@@ -3378,6 +3392,14 @@
                         // Main folder tabs
                         document.getElementById('filterSectionMain').style.display = 'block';
                         document.getElementById('filterSectionGeneral').style.display = 'none';
+                    } else if (tabName === 'setting') {
+                        // PERBAIKAN: Hilangkan Filter Date pada menu setting admin
+                        document.getElementById('filterSectionMain').style.display = 'none';
+                        document.getElementById('filterSectionGeneral').style.display = 'none';
+                    } else if (tabName === 'cuti-detail') {
+                        // PERBAIKAN: Hilangkan Filter date pada menu Leave Detail
+                        document.getElementById('filterSectionMain').style.display = 'none';
+                        document.getElementById('filterSectionGeneral').style.display = 'none';
                     } else {
                         // General folder tabs
                         document.getElementById('filterSectionMain').style.display = 'none';
@@ -3864,7 +3886,13 @@
             // Set tanggal default ke hari ini
             document.getElementById('rekapDate').valueAsDate = new Date();
             
-            // Tambah row pertama
+            // PERBAIKAN: Form Overtime buat default hanya 1 baris saja
+            // Hapus semua baris yang ada
+            const tbody = document.getElementById('rekapLemburTableBody');
+            tbody.innerHTML = '';
+            currentRekapRows = [];
+            
+            // Tambah hanya 1 baris default
             addRekapRow();
             
             // Load data overtime user
@@ -4056,7 +4084,7 @@
                 updateOvertimeDetailTable();
                 updateTotalOvertime();
                 
-                // Integrasi dengan Overtime Calculation
+                // PERBAIKAN: Rekap Overtime buat terintegrasi dengan kolom Rkp Pic dan Remarks pada menu Overtime Calculation
                 await updateOvertimeCalculation(overtimeRecord);
                 
                 // Reset form
@@ -4303,9 +4331,9 @@
             addRekapRow();
         }
 
-        // Fungsi untuk integrasi dengan Overtime Calculation
+        // Fungsi untuk integrasi dengan Overtime Calculation - DIPERBAIKI
         async function updateOvertimeCalculation(overtimeRecord) {
-            if (!currentUser || currentUser.role !== 'admin') return;
+            if (!currentUser) return;
             
             try {
                 // Cari data overtime calculation yang sesuai
@@ -4326,6 +4354,20 @@
                     });
                     
                     await batch.commit();
+                    
+                    // Update local data
+                    overtimeSnapshot.forEach(doc => {
+                        const localItem = overtimeCalcData.find(d => d.id === doc.id);
+                        if (localItem) {
+                            localItem.rkpPIC = overtimeRecord.overtimeDuration;
+                            localItem.remarks = overtimeRecord.taskDescription;
+                        }
+                    });
+                    
+                    // Update table if currently viewing overtime tab
+                    if (currentTab === "overtime") {
+                        updateOvertimeTable();
+                    }
                 }
                 // Jika tidak ditemukan, data akan diupdate saat next sync
                 
@@ -4345,13 +4387,14 @@
             
             users.forEach((user, index) => {
                 const row = document.createElement('tr');
+                // PERBAIKAN: Tampilkan password user pada list user management
                 row.innerHTML = `
                     <td>${index + 1}</td>
                     <td>${user.email}</td>
                     <td>${user.name || '-'}</td>
                     <td>${user.position || '-'}</td>
                     <td>${user.role}</td>
-                    <td>•••••••••</td>
+                    <td>${user.password || '-'}</td>
                     <td>
                         <button class="btn btn-warning btn-sm me-1" onclick="editUser('${user.id}')">
                             <i class="fas fa-edit"></i> Edit

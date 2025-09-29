@@ -1268,6 +1268,26 @@
             background-color: var(--secondary-color);
             color: white;
         }
+        
+        /* PERBAIKAN: Style untuk Total Overtime di pojok kanan */
+        .overtime-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .overtime-filter {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .total-overtime-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
     </style>
 </head>
 <body>
@@ -1340,7 +1360,7 @@
                     <li>
                         <a href="#" data-tab="cuti-detail">
                             <i class="fas fa-calendar-alt"></i>
-                            <span>Leave Detail</span>
+                            <span>Summarize Leave</span>
                         </a>
                     </li>
                 </ul>
@@ -1723,11 +1743,11 @@
                     </div>
                 </div>
 
-                <!-- Cuti Detail Tab -->
+                <!-- Cuti Detail Tab - PERBAIKAN: Summarize Leave -->
                 <div class="tab-pane fade" id="cuti-detail" role="tabpanel">
-                    <button type="button" class="collapsible">Employee Leave Details <i class="fas fa-chevron-down"></i></button>
+                    <button type="button" class="collapsible">Summarize Leave <i class="fas fa-chevron-down"></i></button>
                     <div class="collapsible-content">
-                        <p class="small">Detailed employee leave data that has been saved.</p>
+                        <p class="small">Summary of employee leave data. All users can see this summary, but regular users can only view their own details.</p>
                     </div>
 
                     <div class="table-responsive">
@@ -1738,10 +1758,7 @@
                                     <th>Employee Name</th>
                                     <th>Work Area</th>
                                     <th>Job Position</th>
-                                    <th>Start Date</th>
-                                    <th>End Date</th>
-                                    <th>Duration (Days)</th>
-                                    <th>Remaining Leave</th>
+                                    <th>Remaining</th>
                                     <th>Action</th>
                                 </tr>
                             </thead>
@@ -1759,7 +1776,8 @@
                         <p class="small">Fill in the overtime form to record your overtime activities. You can only view your own overtime data.</p>
                     </div>
 
-                    <div class="overtime-form-container">
+                    <!-- PERBAIKAN: Form untuk user biasa -->
+                    <div class="overtime-form-container" id="userOvertimeForm">
                         <h5>Overtime Form</h5>
                         <div class="overtime-form-row">
                             <div class="overtime-form-group">
@@ -1794,8 +1812,6 @@
                             </table>
                         </div>
                         
-                        <!-- PERBAIKAN: Tombol Add Row dihilangkan -->
-                        
                         <div class="form-group mt-3">
                             <label for="uraianTugas">Task Description</label>
                             <textarea class="form-control form-control-sm" id="uraianTugas" rows="3" placeholder="Describe your overtime tasks..."></textarea>
@@ -1808,34 +1824,45 @@
                         </div>
                     </div>
 
-                    <!-- Overtime Detail Table -->
-                    <div class="table-responsive mt-4" id="overtimeDetailContainer">
-                        <h5>Overtime Detail</h5>
-                        <table class="overtime-table table-striped table-sm" id="overtimeDetailTable">
-                            <thead>
-                                <tr>
-                                    <th>No</th>
-                                    <th>Date</th>
-                                    <th>Start Time</th>
-                                    <th>End Time</th>
-                                    <th>Total Project</th>
-                                    <th>Total Plant</th>
-                                    <th>Plant Name</th>
-                                    <th>Volume (m3)</th>
-                                    <th>Task Description</th>
-                                    <th>Action</th>
-                                </tr>
-                            </thead>
-                            <tbody id="overtimeDetailTableBody">
-                                <!-- Data akan diisi setelah menyimpan -->
-                            </tbody>
-                        </table>
-                    </div>
-                    
-                    <!-- Total Overtime Display -->
-                    <div class="total-overtime-display">
-                        <span>Total Overtime: </span>
-                        <span class="total-overtime-value" id="totalOvertimeValue">00:00</span>
+                    <!-- PERBAIKAN: Overtime Detail untuk admin -->
+                    <div class="overtime-form-container" id="adminOvertimeDetail" style="display: none;">
+                        <div class="overtime-controls">
+                            <div class="overtime-filter">
+                                <label for="overtimeEmployeeFilter" class="form-label me-2">Employee Name:</label>
+                                <select class="form-select form-select-sm" id="overtimeEmployeeFilter">
+                                    <option value="all">All Employees</option>
+                                    <!-- Options will be filled by JavaScript -->
+                                </select>
+                            </div>
+                            <div class="total-overtime-container">
+                                <span class="me-2">Total Overtime:</span>
+                                <span class="total-overtime-value" id="totalOvertimeValue">00:00</span>
+                            </div>
+                        </div>
+                        
+                        <div class="table-responsive mt-3">
+                            <h5>Overtime Detail</h5>
+                            <table class="overtime-table table-striped table-sm" id="overtimeDetailTable">
+                                <thead>
+                                    <tr>
+                                        <th>No</th>
+                                        <th>Employee Name</th>
+                                        <th>Date</th>
+                                        <th>Start Time</th>
+                                        <th>End Time</th>
+                                        <th>Total Project</th>
+                                        <th>Total Plant</th>
+                                        <th>Plant Name</th>
+                                        <th>Volume (m3)</th>
+                                        <th>Task Description</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="overtimeDetailTableBody">
+                                    <!-- Data akan diisi setelah menyimpan -->
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
 
@@ -3085,6 +3112,9 @@
             if (currentTab === "cuti-detail") {
                 generateCutiDetailData();
             }
+            if (currentTab === "form-rekap-lembur") {
+                updateOvertimeDetailTable();
+            }
         }
 
         // Update entry table
@@ -3582,7 +3612,7 @@
         }
 
         // Fungsi untuk menghitung sisa cuti
-        function calculateRemainingLeave(employeeName, currentDuration) {
+        function calculateRemainingLeave(employeeName) {
             // Total awal cuti adalah 12 hari
             const totalLeave = 12;
             
@@ -3594,9 +3624,6 @@
             employeeLeaves.forEach(leave => {
                 totalTaken += leave.duration;
             });
-            
-            // Tambahkan durasi cuti saat ini
-            totalTaken += currentDuration;
             
             // Hitung sisa cuti
             const remaining = totalLeave - totalTaken;
@@ -3649,10 +3676,10 @@
         }
 
         // =============================================
-        // PERBAIKAN UNTUK CUTI DETAIL
+        // PERBAIKAN UNTUK SUMMARIZE LEAVE
         // =============================================
 
-        // Fungsi untuk generate data cuti detail - DIPERBAIKI: Tambah fungsi view
+        // Fungsi untuk generate data summarize leave - PERBAIKAN
         function generateCutiDetailData() {
             // Kosongkan tabel detail
             document.getElementById('cutiDetailTableBody').innerHTML = '';
@@ -3660,61 +3687,36 @@
             // Reset data cuti detail
             cutiDetailData = [];
             
-            // Kelompokkan data cuti berdasarkan karyawan
-            const employeeLeaveMap = {};
+            // Dapatkan semua karyawan dari absensiData atau initialEmployees
+            const allEmployees = absensiData.length > 0 ? absensiData : initialEmployees;
             
-            cutiData.forEach(cuti => {
-                // Filter berdasarkan user role
-                if (currentUser.role === 'user' && cuti.employeeName !== currentUser.name) {
-                    return; // User hanya bisa melihat data mereka sendiri
-                }
-                
-                if (!employeeLeaveMap[cuti.employeeName]) {
-                    employeeLeaveMap[cuti.employeeName] = [];
-                }
-                employeeLeaveMap[cuti.employeeName].push(cuti);
-            });
+            // Buat set untuk melacak karyawan yang sudah diproses
+            const processedEmployees = new Set();
             
             // Proses setiap karyawan
-            Object.keys(employeeLeaveMap).forEach(employeeName => {
-                const leaves = employeeLeaveMap[employeeName];
-                let remainingLeave = 12; // Total awal cuti
+            allEmployees.forEach(employee => {
+                if (processedEmployees.has(employee.name)) return; // Skip jika sudah diproses
+                processedEmployees.add(employee.name);
                 
-                // Urutkan cuti berdasarkan tanggal mulai
-                leaves.sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
+                // Hitung sisa cuti untuk karyawan ini
+                const remainingLeave = calculateRemainingLeave(employee.name);
                 
-                // Cari data karyawan
-                const employee = absensiData.find(emp => emp.name === employeeName) || 
-                                initialEmployees.find(emp => emp.name === employeeName);
+                // Tambahkan ke data cuti detail
+                const cutiDetail = {
+                    employeeName: employee.name,
+                    workArea: employee.area,
+                    position: employee.position,
+                    remainingLeave: remainingLeave
+                };
                 
-                if (!employee) return;
+                cutiDetailData.push(cutiDetail);
                 
-                // Proses setiap cuti
-                leaves.forEach(cuti => {
-                    // Hitung sisa cuti
-                    remainingLeave -= cuti.duration;
-                    
-                    // Tambahkan ke data cuti detail
-                    const cutiDetail = {
-                        employeeName: employee.name,
-                        workArea: employee.area,
-                        position: employee.position,
-                        startDate: cuti.startDate,
-                        endDate: cuti.endDate,
-                        duration: cuti.duration,
-                        remainingLeave: Math.max(0, remainingLeave),
-                        remarks: cuti.remarks || ''
-                    };
-                    
-                    cutiDetailData.push(cutiDetail);
-                    
-                    // Tambahkan ke tabel detail dengan fungsi view
-                    addCutiToDetailTable(cutiDetail);
-                });
+                // Tambahkan ke tabel detail
+                addCutiToDetailTable(cutiDetail);
             });
         }
 
-        // Fungsi untuk menambahkan data cuti ke tabel detail - DIPERBAIKI: Tambah fungsi view
+        // Fungsi untuk menambahkan data cuti ke tabel detail - PERBAIKAN
         function addCutiToDetailTable(cutiDetail) {
             const tableBody = document.getElementById('cutiDetailTableBody');
             const rowCount = tableBody.rows.length;
@@ -3725,9 +3727,6 @@
                 <td>${cutiDetail.employeeName}</td>
                 <td>${cutiDetail.workArea}</td>
                 <td>${cutiDetail.position}</td>
-                <td>${cutiDetail.startDate}</td>
-                <td>${cutiDetail.endDate}</td>
-                <td>${cutiDetail.duration}</td>
                 <td>${cutiDetail.remainingLeave}</td>
                 <td>
                     <button class="btn btn-info btn-sm view-leave-details" onclick="viewLeaveDetails('${cutiDetail.employeeName}')">
@@ -3883,27 +3882,97 @@
 
         // Fungsi untuk inisialisasi Overtime Form - DIPERBAIKI
         function initOvertimeForm() {
-            // Set tanggal default ke hari ini
-            document.getElementById('rekapDate').valueAsDate = new Date();
-            
-            // PERBAIKAN: Form Overtime buat default hanya 1 baris saja
-            // Hapus semua baris yang ada
-            const tbody = document.getElementById('rekapLemburTableBody');
-            tbody.innerHTML = '';
-            currentRekapRows = [];
-            
-            // Tambah hanya 1 baris default
-            addRekapRow();
-            
-            // Load data overtime user
-            loadUserOvertimeData();
-            
-            // Setup event listeners - DIPERBAIKI: Hilangkan tombol Add Row
-            document.getElementById('saveRekapLembur').addEventListener('click', saveRekapLembur);
+            // PERBAIKAN: Tampilkan form yang berbeda berdasarkan role
+            if (currentUser.role === 'admin') {
+                // Untuk admin, tampilkan hanya overtime detail
+                document.getElementById('userOvertimeForm').style.display = 'none';
+                document.getElementById('adminOvertimeDetail').style.display = 'block';
+                
+                // Load semua data overtime untuk admin
+                loadAllOvertimeData();
+                
+                // Setup employee filter
+                setupOvertimeEmployeeFilter();
+            } else {
+                // Untuk user biasa, tampilkan form input
+                document.getElementById('userOvertimeForm').style.display = 'block';
+                document.getElementById('adminOvertimeDetail').style.display = 'none';
+                
+                // Set tanggal default ke hari ini
+                document.getElementById('rekapDate').valueAsDate = new Date();
+                
+                // Hapus semua baris yang ada
+                const tbody = document.getElementById('rekapLemburTableBody');
+                tbody.innerHTML = '';
+                currentRekapRows = [];
+                
+                // Tambah hanya 1 baris default
+                addRekapRow();
+                
+                // Load data overtime user
+                loadUserOvertimeData();
+                
+                // Setup event listeners
+                document.getElementById('saveRekapLembur').addEventListener('click', saveRekapLembur);
+            }
             
             // Event listener untuk filter date change
             document.getElementById('startDateGeneral').addEventListener('change', updateOvertimeDisplay);
             document.getElementById('endDateGeneral').addEventListener('change', updateOvertimeDisplay);
+        }
+
+        // PERBAIKAN: Fungsi untuk setup filter employee pada overtime detail
+        function setupOvertimeEmployeeFilter() {
+            const overtimeEmployeeFilter = document.getElementById('overtimeEmployeeFilter');
+            
+            // Clear existing options
+            overtimeEmployeeFilter.innerHTML = '<option value="all">All Employees</option>';
+            
+            // Get all unique employee names
+            const uniqueNames = new Set();
+            absensiData.forEach(employee => {
+                if (employee.name) uniqueNames.add(employee.name);
+            });
+            
+            if (uniqueNames.size === 0) {
+                initialEmployees.forEach(employee => {
+                    uniqueNames.add(employee.name);
+                });
+            }
+            
+            // Add options to dropdown
+            uniqueNames.forEach(name => {
+                const option = document.createElement('option');
+                option.value = name;
+                option.textContent = name;
+                overtimeEmployeeFilter.appendChild(option);
+            });
+            
+            // Add event listener for filter change
+            overtimeEmployeeFilter.addEventListener('change', updateOvertimeDetailTable);
+        }
+
+        // PERBAIKAN: Fungsi untuk memuat semua data overtime (untuk admin)
+        async function loadAllOvertimeData() {
+            try {
+                const querySnapshot = await db.collection('overtimeRecords')
+                    .orderBy('date', 'desc')
+                    .get();
+                
+                rekapLemburData = [];
+                querySnapshot.forEach(doc => {
+                    rekapLemburData.push({
+                        id: doc.id,
+                        ...doc.data()
+                    });
+                });
+                
+                updateOvertimeDetailTable();
+                updateTotalOvertime();
+                
+            } catch (error) {
+                console.error('Error loading all overtime data:', error);
+            }
         }
 
         // Fungsi untuk menambah row pada form overtime
@@ -4143,7 +4212,7 @@
             }
         }
 
-        // Fungsi untuk update tabel detail overtime - DIPERBAIKI: Tambah fungsi edit/delete untuk admin
+        // PERBAIKAN: Fungsi untuk update tabel detail overtime
         function updateOvertimeDetailTable() {
             const tbody = document.getElementById('overtimeDetailTableBody');
             tbody.innerHTML = '';
@@ -4152,9 +4221,18 @@
             const startDate = document.getElementById('startDateGeneral').valueAsDate;
             const endDate = document.getElementById('endDateGeneral').valueAsDate;
             
+            // Filter berdasarkan employee (untuk admin)
             let filteredData = rekapLemburData;
+            if (currentUser.role === 'admin') {
+                const employeeFilter = document.getElementById('overtimeEmployeeFilter').value;
+                if (employeeFilter !== 'all') {
+                    filteredData = rekapLemburData.filter(record => record.employeeName === employeeFilter);
+                }
+            }
+            
+            // Filter berdasarkan date range
             if (startDate && endDate) {
-                filteredData = rekapLemburData.filter(record => {
+                filteredData = filteredData.filter(record => {
                     const recordDate = new Date(record.date);
                     return recordDate >= startDate && recordDate <= endDate;
                 });
@@ -4162,7 +4240,7 @@
             
             if (filteredData.length === 0) {
                 const row = document.createElement('tr');
-                row.innerHTML = `<td colspan="10" class="text-center">No overtime data found</td>`;
+                row.innerHTML = `<td colspan="11" class="text-center">No overtime data found</td>`;
                 tbody.appendChild(row);
                 return;
             }
@@ -4175,6 +4253,7 @@
                         const row = document.createElement('tr');
                         row.innerHTML = `
                             <td>${rowNumber++}</td>
+                            <td>${record.employeeName}</td>
                             <td>${index === 0 ? record.date : ''}</td>
                             <td>${index === 0 ? record.startTime : ''}</td>
                             <td>${index === 0 ? record.endTime : ''}</td>
@@ -4186,11 +4265,9 @@
                             <td>
                                 ${index === 0 ? `
                                 <div class="btn-group">
-                                    ${currentUser.role === 'admin' ? `
                                     <button class="btn btn-warning btn-sm" onclick="editOvertimeRecord('${record.id}')">
                                         <i class="fas fa-edit"></i>
                                     </button>
-                                    ` : ''}
                                     <button class="btn btn-danger btn-sm" onclick="deleteOvertimeRecord('${record.id}')">
                                         <i class="fas fa-trash"></i>
                                     </button>
@@ -4205,6 +4282,7 @@
                     const row = document.createElement('tr');
                     row.innerHTML = `
                         <td>${rowNumber++}</td>
+                        <td>${record.employeeName}</td>
                         <td>${record.date}</td>
                         <td>${record.startTime}</td>
                         <td>${record.endTime}</td>
@@ -4215,11 +4293,9 @@
                         <td>${record.taskDescription}</td>
                         <td>
                             <div class="btn-group">
-                                ${currentUser.role === 'admin' ? `
                                 <button class="btn btn-warning btn-sm" onclick="editOvertimeRecord('${record.id}')">
                                     <i class="fas fa-edit"></i>
                                 </button>
-                                ` : ''}
                                 <button class="btn btn-danger btn-sm" onclick="deleteOvertimeRecord('${record.id}')">
                                     <i class="fas fa-trash"></i>
                                 </button>
@@ -4229,6 +4305,9 @@
                     tbody.appendChild(row);
                 }
             });
+            
+            // Update total overtime
+            updateTotalOvertime();
         }
 
         // Fungsi untuk edit overtime record (admin only)
@@ -4279,7 +4358,7 @@
             }
         }
 
-        // Fungsi untuk update total overtime
+        // PERBAIKAN: Fungsi untuk update total overtime
         function updateTotalOvertime() {
             const totalOvertimeElement = document.getElementById('totalOvertimeValue');
             
@@ -4287,9 +4366,18 @@
             const startDate = document.getElementById('startDateGeneral').valueAsDate;
             const endDate = document.getElementById('endDateGeneral').valueAsDate;
             
+            // Filter berdasarkan employee (untuk admin)
             let filteredData = rekapLemburData;
+            if (currentUser.role === 'admin') {
+                const employeeFilter = document.getElementById('overtimeEmployeeFilter').value;
+                if (employeeFilter !== 'all') {
+                    filteredData = rekapLemburData.filter(record => record.employeeName === employeeFilter);
+                }
+            }
+            
+            // Filter berdasarkan date range
             if (startDate && endDate) {
-                filteredData = rekapLemburData.filter(record => {
+                filteredData = filteredData.filter(record => {
                     const recordDate = new Date(record.date);
                     return recordDate >= startDate && recordDate <= endDate;
                 });
@@ -4312,7 +4400,6 @@
         // Fungsi untuk update overtime display saat filter berubah
         function updateOvertimeDisplay() {
             updateOvertimeDetailTable();
-            updateTotalOvertime();
         }
 
         // Fungsi untuk reset form overtime

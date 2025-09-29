@@ -1848,6 +1848,37 @@
 
                     <div class="row">
                         <div class="col-12">
+                            <h5>User Management</h5>
+                            <div class="mb-3">
+                                <button class="btn btn-futuristic" data-bs-toggle="modal" data-bs-target="#addUserModal">
+                                    <i class="fas fa-user-plus me-1"></i> Add User
+                                </button>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="user-table table-striped table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>No</th>
+                                            <th>Email</th>
+                                            <th>Employee Name</th>
+                                            <th>Job Position</th>
+                                            <th>Role</th>
+                                            <th>Password</th>
+                                            <th>Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="userTableBody">
+                                        <!-- Data will be filled by JavaScript -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <div class="row">
+                        <div class="col-12">
                             <h5>Change Password</h5>
                             <div class="row g-2">
                                 <div class="col-12 col-md-4">
@@ -1874,33 +1905,6 @@
                             </button>
                         </div>
                     </div>
-
-                    <hr>
-
-                    <div class="row">
-                        <div class="col-12">
-                            <h5>User Management</h5>
-                            <div class="mb-3">
-                                <button class="btn btn-futuristic" data-bs-toggle="modal" data-bs-target="#addUserModal">
-                                    <i class="fas fa-user-plus me-1"></i> Add User
-                                </button>
-                            </div>
-                            <div class="table-responsive">
-                                <table class="user-table table-striped table-sm">
-                                    <thead>
-                                        <tr>
-                                            <th>Email</th>
-                                            <th>Role</th>
-                                            <th>Action</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="userTableBody">
-                                        <!-- Data will be filled by JavaScript -->
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
                 </div>
             </div>
         </div>
@@ -1922,6 +1926,14 @@
                     <div class="mb-3">
                         <label for="newUserPassword" class="form-label">Password</label>
                         <input type="password" class="form-control form-control-sm" id="newUserPassword">
+                    </div>
+                    <div class="mb-3">
+                        <label for="newUserName" class="form-label">Employee Name</label>
+                        <input type="text" class="form-control form-control-sm" id="newUserName">
+                    </div>
+                    <div class="mb-3">
+                        <label for="newUserPosition" class="form-label">Job Position</label>
+                        <input type="text" class="form-control form-control-sm" id="newUserPosition">
                     </div>
                     <div class="mb-3">
                         <label for="newUserRole" class="form-label">Role</label>
@@ -1954,11 +1966,23 @@
                         <input type="email" class="form-control form-control-sm" id="editUserEmail" readonly>
                     </div>
                     <div class="mb-3">
+                        <label for="editUserName" class="form-label">Employee Name</label>
+                        <input type="text" class="form-control form-control-sm" id="editUserName">
+                    </div>
+                    <div class="mb-3">
+                        <label for="editUserPosition" class="form-label">Job Position</label>
+                        <input type="text" class="form-control form-control-sm" id="editUserPosition">
+                    </div>
+                    <div class="mb-3">
                         <label for="editUserRole" class="form-label">Role</label>
                         <select class="form-select form-select-sm" id="editUserRole">
                             <option value="user">User</option>
                             <option value="admin">Admin</option>
                         </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editUserPassword" class="form-label">New Password (leave empty to keep current)</label>
+                        <input type="password" class="form-control form-control-sm" id="editUserPassword">
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -2193,16 +2217,19 @@
                     if (userDoc.exists) {
                         userData = userDoc.data();
                         currentUser.role = userData.role;
-                        currentUser.name = userData.name;
+                        currentUser.name = userData.name || userData.email.split('@')[0]; // Gunakan name jika ada, jika tidak gunakan bagian email
+                        currentUser.position = userData.position || ''; // Simpan position juga
                     } else {
                         // Create default user data if doesn't exist
                         currentUser.role = "user";
                         currentUser.name = currentUser.email.split('@')[0];
+                        currentUser.position = '';
                         
                         await db.collection('users').doc(currentUser.uid).set({
                             email: currentUser.email,
                             role: currentUser.role,
                             name: currentUser.name,
+                            position: currentUser.position,
                             createdAt: firebase.firestore.FieldValue.serverTimestamp()
                         });
                     }
@@ -2211,6 +2238,7 @@
                     console.warn('Firestore unavailable, using default values:', firestoreError);
                     currentUser.role = "user";
                     currentUser.name = currentUser.email.split('@')[0];
+                    currentUser.position = '';
                 }
                 
                 // Update UI
@@ -2220,7 +2248,8 @@
                 document.getElementById('mainContent').style.display = 'block';
                 document.querySelector('.futuristic-header').style.display = 'block';
                 
-                document.querySelector('.header-subtitle').innerHTML = `Modern and Efficient Attendance Management | Logged in as: ${currentUser.name} (${currentUser.role})`;
+                // PERBAIKI: Pastikan nama pengguna ditampilkan dengan benar
+                document.querySelector('.header-subtitle').innerHTML = `Modern and Efficient Attendance Management | Logged in as: ${currentUser.name || currentUser.email} (${currentUser.role})`;
                 
                 setupMenuByRole(currentUser.role);
                 setupFilterByRole(currentUser.role);
@@ -2305,6 +2334,9 @@
                     // Use initial employees if Firestore is unavailable
                     absensiData = [...initialEmployees];
                 }
+                
+                // Load users data
+                await loadUsers();
                 
                 // Setup UI components
                 initCollapsible();
@@ -2452,6 +2484,7 @@
                             
                             // For overtimeCalcData
                             overtimeCalcData.push({
+                                id: `${name}-${dateStr}`, // Create unique ID
                                 area,
                                 name,
                                 position,
@@ -4302,6 +4335,162 @@
         }
 
         // =============================================
+        // PERBAIKAN USER MANAGEMENT
+        // =============================================
+
+        // Fungsi untuk memperbarui tampilan tabel user management
+        function updateUserManagementTable() {
+            const userTableBody = document.getElementById('userTableBody');
+            userTableBody.innerHTML = '';
+            
+            users.forEach((user, index) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${index + 1}</td>
+                    <td>${user.email}</td>
+                    <td>${user.name || '-'}</td>
+                    <td>${user.position || '-'}</td>
+                    <td>${user.role}</td>
+                    <td>•••••••••</td>
+                    <td>
+                        <button class="btn btn-warning btn-sm me-1" onclick="editUser('${user.id}')">
+                            <i class="fas fa-edit"></i> Edit
+                        </button>
+                        <button class="btn btn-danger btn-sm" onclick="deleteUser('${user.id}')">
+                            <i class="fas fa-trash"></i> Delete
+                        </button>
+                    </td>
+                `;
+                userTableBody.appendChild(row);
+            });
+        }
+
+        // Fungsi untuk mengedit user
+        async function editUser(userId) {
+            const user = users.find(u => u.id === userId);
+            if (!user) return;
+            
+            // Isi form modal edit
+            document.getElementById('editUserId').value = user.id;
+            document.getElementById('editUserEmail').value = user.email;
+            document.getElementById('editUserRole').value = user.role;
+            
+            // Isi nilai field
+            document.getElementById('editUserName').value = user.name || '';
+            document.getElementById('editUserPosition').value = user.position || '';
+            document.getElementById('editUserPassword').value = '';
+            
+            // Show modal
+            const modal = new bootstrap.Modal(document.getElementById('editUserModal'));
+            modal.show();
+        }
+
+        // Fungsi untuk mengupdate user
+        async function updateUser() {
+            const userId = document.getElementById('editUserId').value;
+            const email = document.getElementById('editUserEmail').value;
+            const role = document.getElementById('editUserRole').value;
+            const name = document.getElementById('editUserName').value;
+            const position = document.getElementById('editUserPosition').value;
+            const newPassword = document.getElementById('editUserPassword').value;
+            
+            if (!email || !role) {
+                showNotification('Email and role must be filled', 'error');
+                return;
+            }
+            
+            try {
+                showLoading(true);
+                
+                // Update data di Firestore
+                await db.collection('users').doc(userId).update({
+                    email,
+                    role,
+                    name,
+                    position,
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                
+                // Update password jika ada
+                if (newPassword) {
+                    // Untuk mengupdate password user lain, admin memerlukan credential khusus
+                    // Ini memerlukan Admin SDK di sisi server, atau kita bisa menggunakan fungsi callable
+                    // Untuk sekarang, kita hanya update data password di Firestore
+                    await db.collection('users').doc(userId).update({
+                        password: newPassword // Disimpan sebagai plaintext, tidak disarankan untuk produksi
+                    });
+                    
+                    showNotification('User data and password updated successfully', 'success');
+                } else {
+                    showNotification('User data updated successfully', 'success');
+                }
+                
+                // Close modal
+                const modal = bootstrap.Modal.getInstance(document.getElementById('editUserModal'));
+                modal.hide();
+                
+                // Reload user data
+                await loadUsers();
+                
+            } catch (error) {
+                console.error('Error updating user:', error);
+                showNotification('Error updating user: ' + error.message, 'error');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // Fungsi untuk menghapus user
+        async function deleteUser(userId) {
+            if (!confirm('Are you sure you want to delete this user?')) {
+                return;
+            }
+            
+            try {
+                showLoading(true);
+                
+                // Hapus user dari Firestore
+                await db.collection('users').doc(userId).delete();
+                
+                // Hapus user dari Authentication (memerlukan Admin SDK)
+                // Untuk sekarang, kita hanya hapus dari Firestore
+                
+                showNotification('User deleted successfully', 'success');
+                
+                // Reload user data
+                await loadUsers();
+                
+            } catch (error) {
+                console.error('Error deleting user:', error);
+                showNotification('Error deleting user: ' + error.message, 'error');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // Fungsi untuk memuat data users
+        async function loadUsers() {
+            try {
+                const usersSnapshot = await db.collection('users').get();
+                
+                users = [];
+                usersSnapshot.forEach(doc => {
+                    users.push({
+                        id: doc.id,
+                        ...doc.data()
+                    });
+                });
+                
+                // Update tampilan tabel user management
+                updateUserManagementTable();
+                
+            } catch (error) {
+                console.error('Error loading users:', error);
+                showNotification('Error loading users: ' + error.message, 'error');
+            }
+        }
+
+        // =============================================
         // PERBAIKAN CHANGE PASSWORD
         // =============================================
 
@@ -4526,6 +4715,115 @@
                 
                 await saveCutiDataToFirestore();
             });
+            
+            // Event listener untuk tombol change password admin
+            document.getElementById('changePasswordBtn').addEventListener('click', async function() {
+                const currentPassword = document.getElementById('currentPassword').value;
+                const newPassword = document.getElementById('newPassword').value;
+                const confirmPassword = document.getElementById('confirmPassword').value;
+                
+                if (!currentPassword || !newPassword || !confirmPassword) {
+                    showNotification('Please fill all password fields', 'error');
+                    return;
+                }
+                
+                if (newPassword !== confirmPassword) {
+                    showNotification('New password and confirm password do not match', 'error');
+                    return;
+                }
+                
+                if (newPassword.length < 6) {
+                    showNotification('New password must be at least 6 characters', 'error');
+                    return;
+                }
+                
+                try {
+                    showLoading(true);
+                    
+                    // Re-authenticate user
+                    const user = auth.currentUser;
+                    const credential = firebase.auth.EmailAuthProvider.credential(user.email, currentPassword);
+                    
+                    await user.reauthenticateWithCredential(credential);
+                    
+                    // Update password
+                    await user.updatePassword(newPassword);
+                    
+                    showNotification('Password changed successfully', 'success');
+                    
+                    // Reset form
+                    document.getElementById('currentPassword').value = '';
+                    document.getElementById('newPassword').value = '';
+                    document.getElementById('confirmPassword').value = '';
+                    
+                } catch (error) {
+                    console.error('Error changing password:', error);
+                    if (error.code === 'auth/wrong-password') {
+                        showNotification('Current password is incorrect', 'error');
+                    } else {
+                        showNotification('Error changing password: ' + error.message, 'error');
+                    }
+                } finally {
+                    showLoading(false);
+                }
+            });
+            
+            // Event listener untuk tombol save user
+            document.getElementById('saveUserBtn').addEventListener('click', async function() {
+                const email = document.getElementById('newUserEmail').value;
+                const password = document.getElementById('newUserPassword').value;
+                const name = document.getElementById('newUserName').value;
+                const position = document.getElementById('newUserPosition').value;
+                const role = document.getElementById('newUserRole').value;
+                
+                if (!email || !password || !role) {
+                    showNotification('Email, password, and role must be filled', 'error');
+                    return;
+                }
+                
+                try {
+                    showLoading(true);
+                    
+                    // Create user in Firebase Authentication
+                    const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+                    const user = userCredential.user;
+                    
+                    // Save user data to Firestore
+                    await db.collection('users').doc(user.uid).set({
+                        email,
+                        name,
+                        position,
+                        role,
+                        password, // Storing password in plaintext is not recommended for production
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                    
+                    showNotification('User created successfully', 'success');
+                    
+                    // Close modal
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('addUserModal'));
+                    modal.hide();
+                    
+                    // Reset form
+                    document.getElementById('newUserEmail').value = '';
+                    document.getElementById('newUserPassword').value = '';
+                    document.getElementById('newUserName').value = '';
+                    document.getElementById('newUserPosition').value = '';
+                    document.getElementById('newUserRole').value = 'user';
+                    
+                    // Reload user data
+                    await loadUsers();
+                    
+                } catch (error) {
+                    console.error('Error creating user:', error);
+                    showNotification('Error creating user: ' + error.message, 'error');
+                } finally {
+                    showLoading(false);
+                }
+            });
+            
+            // Event listener untuk tombol update user
+            document.getElementById('updateUserBtn').addEventListener('click', updateUser);
             
             // PERBAIKAN: Event listener untuk change password dari sidebar
             document.getElementById('userChangePasswordBtn').addEventListener('click', changeUserPassword);

@@ -468,23 +468,6 @@
             max-width: 100px;
         }
 
-        /* PERBAIKAN: Header kolom No agar lebih kecil */
-        th.no-column {
-            width: 40px;
-            min-width: 40px;
-            max-width: 40px;
-            font-size: 0.7rem;
-            padding: 2px;
-        }
-
-        td.no-column {
-            width: 40px;
-            min-width: 40px;
-            max-width: 40px;
-            font-size: 0.7rem;
-            padding: 2px;
-        }
-
         th {
             background-color: var(--secondary-color);
             color: white;
@@ -1305,6 +1288,11 @@
             align-items: center;
             gap: 10px;
         }
+
+        /* PERBAIKAN: Sembunyikan overtime filter untuk user biasa */
+        .overtime-filter.hidden {
+            display: none !important;
+        }
     </style>
 </head>
 <body>
@@ -1646,7 +1634,7 @@
                         <table class="overtime-table table-striped table-sm" id="overtimeTable">
                             <thead>
                                 <tr>
-                                    <th class="no-column">No</th>
+                                    <th>No</th>
                                     <th>Work Area</th>
                                     <th>Employee Name</th>
                                     <th>Job Position</th>
@@ -1738,7 +1726,7 @@
                         <table class="table table-striped table-sm" id="cutiTable">
                             <thead>
                                 <tr>
-                                    <th class="no-column">No</th>
+                                    <th>No</th>
                                     <th>Employee Name</th>
                                     <th>Start Date</th>
                                     <th>End Date</th>
@@ -1771,7 +1759,7 @@
                         <table class="cuti-detail-table table-striped table-sm" id="cutiDetailTable">
                             <thead>
                                 <tr>
-                                    <th class="no-column">No</th>
+                                    <th>No</th>
                                     <th>Employee Name</th>
                                     <th>Work Area</th>
                                     <th>Job Position</th>
@@ -1815,7 +1803,7 @@
                             <table class="overtime-table table-striped table-sm" id="rekapLemburTable">
                                 <thead>
                                     <tr>
-                                        <th class="no-column">No</th>
+                                        <th>No</th>
                                         <th>Total Project</th>
                                         <th>Total Plant</th>
                                         <th>Plant Name</th>
@@ -1844,7 +1832,7 @@
                     <!-- PERBAIKAN: Overtime Detail untuk admin -->
                     <div class="overtime-form-container" id="adminOvertimeDetail">
                         <div class="overtime-controls">
-                            <div class="overtime-filter">
+                            <div class="overtime-filter" id="overtimeFilterSection">
                                 <label for="overtimeEmployeeFilter" class="form-label me-2">Employee Name:</label>
                                 <select class="form-select form-select-sm" id="overtimeEmployeeFilter">
                                     <option value="all">All Employees</option>
@@ -1862,7 +1850,7 @@
                             <table class="overtime-table table-striped table-sm" id="overtimeDetailTable">
                                 <thead>
                                     <tr>
-                                        <th class="no-column">No</th>
+                                        <th>No</th>
                                         <th>Employee Name</th>
                                         <th>Date</th>
                                         <th>Start Time</th>
@@ -1902,7 +1890,7 @@
                                 <table class="user-table table-striped table-sm">
                                     <thead>
                                         <tr>
-                                            <th class="no-column">No</th>
+                                            <th>No</th>
                                             <th>Email</th>
                                             <th>Employee Name</th>
                                             <th>Job Position</th>
@@ -1916,6 +1904,37 @@
                                     </tbody>
                                 </table>
                             </div>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <div class="row">
+                        <div class="col-12">
+                            <h5>Change Password</h5>
+                            <div class="row g-2">
+                                <div class="col-12 col-md-4">
+                                    <div class="mb-3">
+                                        <label for="currentPassword" class="form-label">Current Password</label>
+                                        <input type="password" class="form-control form-control-sm" id="currentPassword">
+                                    </div>
+                                </div>
+                                <div class="col-12 col-md-4">
+                                    <div class="mb-3">
+                                        <label for="newPassword" class="form-label">New Password</label>
+                                        <input type="password" class="form-control form-control-sm" id="newPassword">
+                                    </div>
+                                </div>
+                                <div class="col-12 col-md-4">
+                                    <div class="mb-3">
+                                        <label for="confirmPassword" class="form-label">Confirm New Password</label>
+                                        <input type="password" class="form-control form-control-sm" id="confirmPassword">
+                                    </div>
+                                </div>
+                            </div>
+                            <button class="btn btn-futuristic" id="changePasswordBtn">
+                                <i class="fas fa-key me-1"></i> Change Password
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -1988,7 +2007,7 @@
                     </div>
                     <div class="mb-3">
                         <label for="editUserRole" class="form-label">Role</label>
-                        <select class="form-select form-control-sm" id="editUserRole">
+                        <select class="form-select form-select-sm" id="editUserRole">
                             <option value="user">User</option>
                             <option value="admin">Admin</option>
                         </select>
@@ -2615,7 +2634,7 @@
             filteredOvertimeData.forEach(data => {
                 const row = document.createElement('tr');
                 row.innerHTML = `
-                    <td class="no-column">${no++}</td>
+                    <td>${no++}</td>
                     <td>${data.area}</td>
                     <td>${data.name}</td>
                     <td>${data.position}</td>
@@ -2891,7 +2910,7 @@
             const thead = document.querySelector('#absenTabelTable thead tr');
             const tbody = document.querySelector('#absenTabelTable tbody');
             
-            // PERBAIKAN: Update header - make it exactly the same as entry table
+            // Update header - make it exactly the same as entry table
             let headerHTML = '<th>Work Area</th><th>Employee Name</th><th>Job Position</th>';
             dateRangeGeneral.forEach(date => {
                 headerHTML += `<th>${formatDateForHeader(date)}</th>`;
@@ -3624,7 +3643,7 @@
             
             const row = tableBody.insertRow();
             row.innerHTML = `
-                <td class="no-column">${rowCount + 1}</td>
+                <td>${rowCount + 1}</td>
                 <td>${employeeName}</td>
                 <td>${startDate}</td>
                 <td>${endDate}</td>
@@ -3708,7 +3727,7 @@
             
             const row = tableBody.insertRow();
             row.innerHTML = `
-                <td class="no-column">${rowCount + 1}</td>
+                <td>${rowCount + 1}</td>
                 <td>${cutiDetail.employeeName}</td>
                 <td>${cutiDetail.workArea}</td>
                 <td>${cutiDetail.position}</td>
@@ -3761,7 +3780,7 @@
             cutiData.forEach((cuti, index) => {
                 const row = tableBody.insertRow();
                 row.innerHTML = `
-                    <td class="no-column">${index + 1}</td>
+                    <td>${index + 1}</td>
                     <td>${cuti.employeeName}</td>
                     <td>${cuti.startDate}</td>
                     <td>${cuti.endDate}</td>
@@ -3865,13 +3884,16 @@
         // PERBAIKAN OVERTIME FORM
         // =============================================
 
-        // Fungsi untuk inisialisasi Overtime Form - DIPERBAIKI
+        // PERBAIKAN: Fungsi untuk inisialisasi Overtime Form
         function initOvertimeForm() {
             // PERBAIKAN: Tampilkan form yang berbeda berdasarkan role
             if (currentUser.role === 'admin') {
                 // Untuk admin, tampilkan hanya overtime detail
                 document.getElementById('userOvertimeForm').style.display = 'none';
                 document.getElementById('adminOvertimeDetail').style.display = 'block';
+                
+                // Tampilkan filter employee untuk admin
+                document.getElementById('overtimeFilterSection').style.display = 'flex';
                 
                 // Load semua data overtime untuk admin
                 loadAllOvertimeData();
@@ -3881,7 +3903,10 @@
             } else {
                 // Untuk user biasa, tampilkan form input
                 document.getElementById('userOvertimeForm').style.display = 'block';
-                document.getElementById('adminOvertimeDetail').style.display = 'block'; // Tampilkan juga detail tabel
+                document.getElementById('adminOvertimeDetail').style.display = 'block';
+                
+                // SEMBUNYIKAN filter employee untuk user biasa
+                document.getElementById('overtimeFilterSection').style.display = 'none';
                 
                 // Set tanggal default ke hari ini
                 document.getElementById('rekapDate').valueAsDate = new Date();
@@ -3969,7 +3994,7 @@
             const row = document.createElement('tr');
             row.setAttribute('data-row-id', rowId);
             row.innerHTML = `
-                <td class="no-column">${rowCount + 1}</td>
+                <td>${rowCount + 1}</td>
                 <td><input type="text" class="form-control form-control-sm total-project" data-row="${rowId}"></td>
                 <td>
                     <input type="number" class="form-control form-control-sm total-plant" 
@@ -4134,17 +4159,17 @@
                 // Tambahkan ke data lokal
                 rekapLemburData.push(overtimeRecord);
                 
+                // PERBAIKAN: Update Overtime Calculation secara otomatis
+                await updateOvertimeCalculation(overtimeRecord);
+                
                 // Update tampilan
                 updateOvertimeDetailTable();
                 updateTotalOvertime();
                 
-                // PERBAIKAN: Rekap Overtime buat terintegrasi dengan kolom Rkp Pic dan Remarks pada menu Overtime Calculation
-                await updateOvertimeCalculation(overtimeRecord);
-                
                 // Reset form
                 resetOvertimeForm();
                 
-                showNotification('Overtime data saved successfully', 'success');
+                showNotification('Overtime data saved successfully and integrated with Overtime Calculation', 'success');
                 
             } catch (error) {
                 console.error('Error saving overtime data:', error);
@@ -4223,12 +4248,20 @@
                     filteredData = rekapLemburData.filter(record => record.employeeName === employeeFilter);
                 }
             } else {
-                // Untuk user biasa, hanya tampilkan data miliknya sendiri
+                // PERBAIKAN: Untuk user biasa, hanya tampilkan data miliknya sendiri
                 filteredData = rekapLemburData.filter(record => record.employeeEmail === currentUser.email);
+                
+                // Juga filter berdasarkan date range yang dipilih
+                if (startDate && endDate) {
+                    filteredData = filteredData.filter(record => {
+                        const recordDate = new Date(record.date);
+                        return recordDate >= startDate && recordDate <= endDate;
+                    });
+                }
             }
             
-            // Filter berdasarkan date range
-            if (startDate && endDate) {
+            // Filter berdasarkan date range untuk admin
+            if (currentUser.role === 'admin' && startDate && endDate) {
                 filteredData = filteredData.filter(record => {
                     const recordDate = new Date(record.date);
                     return recordDate >= startDate && recordDate <= endDate;
@@ -4248,24 +4281,8 @@
                 if (record.tableData && record.tableData.length > 0) {
                     record.tableData.forEach((tableRow, index) => {
                         const row = document.createElement('tr');
-                        
-                        // PERBAIKAN: Hapus tombol edit dan delete untuk user biasa
-                        let actionCell = '';
-                        if (currentUser.role === 'admin' && index === 0) {
-                            actionCell = `
-                                <div class="btn-group">
-                                    <button class="btn btn-warning btn-sm" onclick="editOvertimeRecord('${record.id}')">
-                                        <i class="fas fa-edit"></i>
-                                    </button>
-                                    <button class="btn btn-danger btn-sm" onclick="deleteOvertimeRecord('${record.id}')">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
-                                </div>
-                            `;
-                        }
-                        
                         row.innerHTML = `
-                            <td class="no-column">${rowNumber++}</td>
+                            <td>${rowNumber++}</td>
                             <td>${record.employeeName}</td>
                             <td>${index === 0 ? record.date : ''}</td>
                             <td>${index === 0 ? record.startTime : ''}</td>
@@ -4275,31 +4292,26 @@
                             <td>${tableRow.plantNames || ''}</td>
                             <td>${tableRow.volume || ''}</td>
                             <td>${index === 0 ? record.taskDescription : ''}</td>
-                            <td>${actionCell}</td>
+                            <td>
+                                ${index === 0 ? `
+                                <div class="btn-group">
+                                    <button class="btn btn-warning btn-sm" onclick="editOvertimeRecord('${record.id}')">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="btn btn-danger btn-sm" onclick="deleteOvertimeRecord('${record.id}')">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                                ` : ''}
+                            </td>
                         `;
                         tbody.appendChild(row);
                     });
                 } else {
                     // Jika tidak ada data tabel, tampilkan satu baris saja
                     const row = document.createElement('tr');
-                    
-                    // PERBAIKAN: Hapus tombol edit dan delete untuk user biasa
-                    let actionCell = '';
-                    if (currentUser.role === 'admin') {
-                        actionCell = `
-                            <div class="btn-group">
-                                <button class="btn btn-warning btn-sm" onclick="editOvertimeRecord('${record.id}')">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                                <button class="btn btn-danger btn-sm" onclick="deleteOvertimeRecord('${record.id}')">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </div>
-                        `;
-                    }
-                    
                     row.innerHTML = `
-                        <td class="no-column">${rowNumber++}</td>
+                        <td>${rowNumber++}</td>
                         <td>${record.employeeName}</td>
                         <td>${record.date}</td>
                         <td>${record.startTime}</td>
@@ -4309,7 +4321,16 @@
                         <td></td>
                         <td></td>
                         <td>${record.taskDescription}</td>
-                        <td>${actionCell}</td>
+                        <td>
+                            <div class="btn-group">
+                                <button class="btn btn-warning btn-sm" onclick="editOvertimeRecord('${record.id}')">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn btn-danger btn-sm" onclick="deleteOvertimeRecord('${record.id}')">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
                     `;
                     tbody.appendChild(row);
                 }
@@ -4427,48 +4448,131 @@
             addRekapRow();
         }
 
-        // Fungsi untuk integrasi dengan Overtime Calculation - DIPERBAIKI
+        // PERBAIKAN: Fungsi untuk integrasi dengan Overtime Calculation - DIPERBAIKI
         async function updateOvertimeCalculation(overtimeRecord) {
             if (!currentUser) return;
             
             try {
-                // Cari data overtime calculation yang sesuai
+                // Format tanggal untuk pencarian (DD/MM/YYYY)
+                const formattedDate = formatDateForShift(new Date(overtimeRecord.date));
+                
+                // Cari data overtime calculation yang sesuai berdasarkan nama dan tanggal
                 const overtimeSnapshot = await db.collection('overtime')
                     .where('name', '==', overtimeRecord.employeeName)
-                    .where('date', '==', overtimeRecord.date)
                     .get();
                 
                 if (!overtimeSnapshot.empty) {
-                    // Update existing record
                     const batch = db.batch();
-                    overtimeSnapshot.forEach(doc => {
-                        const docRef = db.collection('overtime').doc(doc.id);
-                        batch.update(docRef, {
-                            rkpPIC: overtimeRecord.overtimeDuration,
-                            remarks: overtimeRecord.taskDescription
-                        });
-                    });
+                    let foundMatch = false;
                     
-                    await batch.commit();
-                    
-                    // Update local data
                     overtimeSnapshot.forEach(doc => {
-                        const localItem = overtimeCalcData.find(d => d.id === doc.id);
-                        if (localItem) {
-                            localItem.rkpPIC = overtimeRecord.overtimeDuration;
-                            localItem.remarks = overtimeRecord.taskDescription;
+                        const overtimeData = doc.data();
+                        
+                        // Cek apakah tanggal cocok (format DD/MM/YYYY)
+                        if (overtimeData.date === formattedDate) {
+                            foundMatch = true;
+                            
+                            // Update existing record
+                            const docRef = db.collection('overtime').doc(doc.id);
+                            
+                            // PERBAIKAN: Update RKP PIC dengan durasi overtime
+                            batch.update(docRef, {
+                                rkpPIC: overtimeRecord.overtimeDuration,
+                                // PERBAIKAN: Update Remarks dengan summary uraian tugas
+                                remarks: overtimeRecord.taskDescription || 'Overtime recorded',
+                                lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+                            });
+                            
+                            // Update local data
+                            const localItem = overtimeCalcData.find(d => d.id === doc.id);
+                            if (localItem) {
+                                localItem.rkpPIC = overtimeRecord.overtimeDuration;
+                                localItem.remarks = overtimeRecord.taskDescription || 'Overtime recorded';
+                            }
                         }
                     });
                     
-                    // Update table if currently viewing overtime tab
-                    if (currentTab === "overtime") {
-                        updateOvertimeTable();
+                    // Jika tidak ditemukan record yang cocok, buat record baru
+                    if (!foundMatch) {
+                        await createNewOvertimeCalculationRecord(overtimeRecord, formattedDate);
+                    } else {
+                        await batch.commit();
                     }
+                    
+                } else {
+                    // Jika tidak ada data sama sekali untuk employee ini, buat record baru
+                    await createNewOvertimeCalculationRecord(overtimeRecord, formattedDate);
                 }
-                // Jika tidak ditemukan, data akan diupdate saat next sync
+                
+                // Update table if currently viewing overtime tab
+                if (currentTab === "overtime") {
+                    updateOvertimeTable();
+                }
                 
             } catch (error) {
                 console.error('Error updating overtime calculation:', error);
+                // Tetap lanjutkan meski ada error di integrasi
+                console.log('Continuing without overtime calculation integration');
+            }
+        }
+
+        // PERBAIKAN: Fungsi untuk membuat record overtime calculation baru
+        async function createNewOvertimeCalculationRecord(overtimeRecord, formattedDate) {
+            try {
+                // Buat data dasar untuk overtime calculation
+                const newOvertimeCalc = {
+                    area: "CDC East", // Default area
+                    name: overtimeRecord.employeeName,
+                    position: "", // Akan diisi jika tersedia
+                    date: formattedDate,
+                    shift: "", // Akan diisi jika tersedia
+                    shiftCheckIn: "",
+                    shiftCheckOut: "",
+                    wtNormal: "",
+                    actualCheckIn: "",
+                    actualCheckOut: "",
+                    overTime: "",
+                    cekRMC: "",
+                    // PERBAIKAN: Isi otomatis RKP PIC dan Remarks
+                    rkpPIC: overtimeRecord.overtimeDuration,
+                    rmcShiftCheckOut: "",
+                    remarks: overtimeRecord.taskDescription || 'Overtime recorded',
+                    createdFromOvertimeForm: true,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                };
+                
+                // Coba dapatkan data employee untuk melengkapi informasi
+                const employeeData = absensiData.find(emp => emp.name === overtimeRecord.employeeName);
+                if (employeeData) {
+                    newOvertimeCalc.area = employeeData.area || "CDC East";
+                    newOvertimeCalc.position = employeeData.position || "";
+                    
+                    // Coba dapatkan shift untuk tanggal tersebut
+                    if (employeeData.shifts && employeeData.shifts[formattedDate]) {
+                        const shiftCode = employeeData.shifts[formattedDate];
+                        newOvertimeCalc.shift = shiftCode;
+                        
+                        // Dapatkan detail shift dari matrix
+                        const shiftDetails = shiftMatrix[employeeData.position] && shiftMatrix[employeeData.position][shiftCode];
+                        if (shiftDetails) {
+                            newOvertimeCalc.shiftCheckIn = shiftDetails.checkIn;
+                            newOvertimeCalc.shiftCheckOut = shiftDetails.checkOut;
+                            newOvertimeCalc.wtNormal = shiftDetails.hours;
+                        }
+                    }
+                }
+                
+                // Simpan ke Firestore
+                const docRef = await db.collection('overtime').add(newOvertimeCalc);
+                newOvertimeCalc.id = docRef.id;
+                
+                // Tambahkan ke data lokal
+                overtimeCalcData.push(newOvertimeCalc);
+                
+                console.log('Created new overtime calculation record:', newOvertimeCalc);
+                
+            } catch (error) {
+                console.error('Error creating new overtime calculation record:', error);
             }
         }
 
@@ -4485,7 +4589,7 @@
                 const row = document.createElement('tr');
                 // PERBAIKAN: Tampilkan password user pada list user management
                 row.innerHTML = `
-                    <td class="no-column">${index + 1}</td>
+                    <td>${index + 1}</td>
                     <td>${user.email}</td>
                     <td>${user.name || '-'}</td>
                     <td>${user.position || '-'}</td>
@@ -4853,6 +4957,58 @@
                 });
                 
                 await saveCutiDataToFirestore();
+            });
+            
+            // Event listener untuk tombol change password admin
+            document.getElementById('changePasswordBtn').addEventListener('click', async function() {
+                const currentPassword = document.getElementById('currentPassword').value;
+                const newPassword = document.getElementById('newPassword').value;
+                const confirmPassword = document.getElementById('confirmPassword').value;
+                
+                if (!currentPassword || !newPassword || !confirmPassword) {
+                    showNotification('Please fill all password fields', 'error');
+                    return;
+                }
+                
+                if (newPassword !== confirmPassword) {
+                    showNotification('New password and confirm password do not match', 'error');
+                    return;
+                }
+                
+                if (newPassword.length < 6) {
+                    showNotification('New password must be at least 6 characters', 'error');
+                    return;
+                }
+                
+                try {
+                    showLoading(true);
+                    
+                    // Re-authenticate user
+                    const user = auth.currentUser;
+                    const credential = firebase.auth.EmailAuthProvider.credential(user.email, currentPassword);
+                    
+                    await user.reauthenticateWithCredential(credential);
+                    
+                    // Update password
+                    await user.updatePassword(newPassword);
+                    
+                    showNotification('Password changed successfully', 'success');
+                    
+                    // Reset form
+                    document.getElementById('currentPassword').value = '';
+                    document.getElementById('newPassword').value = '';
+                    document.getElementById('confirmPassword').value = '';
+                    
+                } catch (error) {
+                    console.error('Error changing password:', error);
+                    if (error.code === 'auth/wrong-password') {
+                        showNotification('Current password is incorrect', 'error');
+                    } else {
+                        showNotification('Error changing password: ' + error.message, 'error');
+                    }
+                } finally {
+                    showLoading(false);
+                }
             });
             
             // Event listener untuk tombol save user

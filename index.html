@@ -4060,19 +4060,12 @@
             });
         }
 
-        // PERBAIKAN: Fungsi untuk toggle folder
-        function handleFolderToggle(e) {
-            const folderHeader = e.currentTarget;
-            const folder = folderHeader.parentElement;
-            folder.classList.toggle('expanded');
-        }
-
         // PERBAIKAN: Initialize sidebar dengan benar untuk semua role
         function initSidebar() {
             const sidebar = document.getElementById('sidebar');
             const sidebarToggle = document.getElementById('sidebarToggle');
             
-            // PERBAIKAN: Pastikan event listener terpasang dengan benar untuk toggle sidebar
+            // Pastikan event listener terpasang dengan benar
             if (sidebarToggle) {
                 sidebarToggle.addEventListener('click', function() {
                     sidebar.classList.toggle('expanded');
@@ -4082,12 +4075,11 @@
                 });
             }
             
-            // PERBAIKAN: Folder toggle - pastikan event listener terpasang dengan benar
+            // Folder toggle
             document.querySelectorAll('.sidebar-folder-header').forEach(header => {
-                // Hapus event listener lama jika ada
-                header.removeEventListener('click', handleFolderToggle);
-                // Tambahkan event listener baru
-                header.addEventListener('click', handleFolderToggle);
+                header.addEventListener('click', function() {
+                    this.parentElement.classList.toggle('expanded');
+                });
             });
             
             // Menu item clicks

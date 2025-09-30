@@ -468,6 +468,23 @@
             max-width: 100px;
         }
 
+        /* PERBAIKAN: Header kolom No agar lebih kecil */
+        th.no-column {
+            width: 40px;
+            min-width: 40px;
+            max-width: 40px;
+            font-size: 0.7rem;
+            padding: 2px;
+        }
+
+        td.no-column {
+            width: 40px;
+            min-width: 40px;
+            max-width: 40px;
+            font-size: 0.7rem;
+            padding: 2px;
+        }
+
         th {
             background-color: var(--secondary-color);
             color: white;
@@ -1629,7 +1646,7 @@
                         <table class="overtime-table table-striped table-sm" id="overtimeTable">
                             <thead>
                                 <tr>
-                                    <th>No</th>
+                                    <th class="no-column">No</th>
                                     <th>Work Area</th>
                                     <th>Employee Name</th>
                                     <th>Job Position</th>
@@ -1721,7 +1738,7 @@
                         <table class="table table-striped table-sm" id="cutiTable">
                             <thead>
                                 <tr>
-                                    <th>No</th>
+                                    <th class="no-column">No</th>
                                     <th>Employee Name</th>
                                     <th>Start Date</th>
                                     <th>End Date</th>
@@ -1754,7 +1771,7 @@
                         <table class="cuti-detail-table table-striped table-sm" id="cutiDetailTable">
                             <thead>
                                 <tr>
-                                    <th>No</th>
+                                    <th class="no-column">No</th>
                                     <th>Employee Name</th>
                                     <th>Work Area</th>
                                     <th>Job Position</th>
@@ -1798,7 +1815,7 @@
                             <table class="overtime-table table-striped table-sm" id="rekapLemburTable">
                                 <thead>
                                     <tr>
-                                        <th>No</th>
+                                        <th class="no-column">No</th>
                                         <th>Total Project</th>
                                         <th>Total Plant</th>
                                         <th>Plant Name</th>
@@ -1845,7 +1862,7 @@
                             <table class="overtime-table table-striped table-sm" id="overtimeDetailTable">
                                 <thead>
                                     <tr>
-                                        <th>No</th>
+                                        <th class="no-column">No</th>
                                         <th>Employee Name</th>
                                         <th>Date</th>
                                         <th>Start Time</th>
@@ -1885,7 +1902,7 @@
                                 <table class="user-table table-striped table-sm">
                                     <thead>
                                         <tr>
-                                            <th>No</th>
+                                            <th class="no-column">No</th>
                                             <th>Email</th>
                                             <th>Employee Name</th>
                                             <th>Job Position</th>
@@ -1899,37 +1916,6 @@
                                     </tbody>
                                 </table>
                             </div>
-                        </div>
-                    </div>
-
-                    <hr>
-
-                    <div class="row">
-                        <div class="col-12">
-                            <h5>Change Password</h5>
-                            <div class="row g-2">
-                                <div class="col-12 col-md-4">
-                                    <div class="mb-3">
-                                        <label for="currentPassword" class="form-label">Current Password</label>
-                                        <input type="password" class="form-control form-control-sm" id="currentPassword">
-                                    </div>
-                                </div>
-                                <div class="col-12 col-md-4">
-                                    <div class="mb-3">
-                                        <label for="newPassword" class="form-label">New Password</label>
-                                        <input type="password" class="form-control form-control-sm" id="newPassword">
-                                    </div>
-                                </div>
-                                <div class="col-12 col-md-4">
-                                    <div class="mb-3">
-                                        <label for="confirmPassword" class="form-label">Confirm New Password</label>
-                                        <input type="password" class="form-control form-control-sm" id="confirmPassword">
-                                    </div>
-                                </div>
-                            </div>
-                            <button class="btn btn-futuristic" id="changePasswordBtn">
-                                <i class="fas fa-key me-1"></i> Change Password
-                            </button>
                         </div>
                     </div>
                 </div>
@@ -2002,7 +1988,7 @@
                     </div>
                     <div class="mb-3">
                         <label for="editUserRole" class="form-label">Role</label>
-                        <select class="form-select form-select-sm" id="editUserRole">
+                        <select class="form-select form-control-sm" id="editUserRole">
                             <option value="user">User</option>
                             <option value="admin">Admin</option>
                         </select>
@@ -2629,7 +2615,7 @@
             filteredOvertimeData.forEach(data => {
                 const row = document.createElement('tr');
                 row.innerHTML = `
-                    <td>${no++}</td>
+                    <td class="no-column">${no++}</td>
                     <td>${data.area}</td>
                     <td>${data.name}</td>
                     <td>${data.position}</td>
@@ -2905,7 +2891,7 @@
             const thead = document.querySelector('#absenTabelTable thead tr');
             const tbody = document.querySelector('#absenTabelTable tbody');
             
-            // Update header - make it exactly the same as entry table
+            // PERBAIKAN: Update header - make it exactly the same as entry table
             let headerHTML = '<th>Work Area</th><th>Employee Name</th><th>Job Position</th>';
             dateRangeGeneral.forEach(date => {
                 headerHTML += `<th>${formatDateForHeader(date)}</th>`;
@@ -3638,7 +3624,7 @@
             
             const row = tableBody.insertRow();
             row.innerHTML = `
-                <td>${rowCount + 1}</td>
+                <td class="no-column">${rowCount + 1}</td>
                 <td>${employeeName}</td>
                 <td>${startDate}</td>
                 <td>${endDate}</td>
@@ -3722,7 +3708,7 @@
             
             const row = tableBody.insertRow();
             row.innerHTML = `
-                <td>${rowCount + 1}</td>
+                <td class="no-column">${rowCount + 1}</td>
                 <td>${cutiDetail.employeeName}</td>
                 <td>${cutiDetail.workArea}</td>
                 <td>${cutiDetail.position}</td>
@@ -3775,7 +3761,7 @@
             cutiData.forEach((cuti, index) => {
                 const row = tableBody.insertRow();
                 row.innerHTML = `
-                    <td>${index + 1}</td>
+                    <td class="no-column">${index + 1}</td>
                     <td>${cuti.employeeName}</td>
                     <td>${cuti.startDate}</td>
                     <td>${cuti.endDate}</td>
@@ -3983,7 +3969,7 @@
             const row = document.createElement('tr');
             row.setAttribute('data-row-id', rowId);
             row.innerHTML = `
-                <td>${rowCount + 1}</td>
+                <td class="no-column">${rowCount + 1}</td>
                 <td><input type="text" class="form-control form-control-sm total-project" data-row="${rowId}"></td>
                 <td>
                     <input type="number" class="form-control form-control-sm total-plant" 
@@ -4262,8 +4248,24 @@
                 if (record.tableData && record.tableData.length > 0) {
                     record.tableData.forEach((tableRow, index) => {
                         const row = document.createElement('tr');
+                        
+                        // PERBAIKAN: Hapus tombol edit dan delete untuk user biasa
+                        let actionCell = '';
+                        if (currentUser.role === 'admin' && index === 0) {
+                            actionCell = `
+                                <div class="btn-group">
+                                    <button class="btn btn-warning btn-sm" onclick="editOvertimeRecord('${record.id}')">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="btn btn-danger btn-sm" onclick="deleteOvertimeRecord('${record.id}')">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            `;
+                        }
+                        
                         row.innerHTML = `
-                            <td>${rowNumber++}</td>
+                            <td class="no-column">${rowNumber++}</td>
                             <td>${record.employeeName}</td>
                             <td>${index === 0 ? record.date : ''}</td>
                             <td>${index === 0 ? record.startTime : ''}</td>
@@ -4273,26 +4275,31 @@
                             <td>${tableRow.plantNames || ''}</td>
                             <td>${tableRow.volume || ''}</td>
                             <td>${index === 0 ? record.taskDescription : ''}</td>
-                            <td>
-                                ${index === 0 ? `
-                                <div class="btn-group">
-                                    <button class="btn btn-warning btn-sm" onclick="editOvertimeRecord('${record.id}')">
-                                        <i class="fas fa-edit"></i>
-                                    </button>
-                                    <button class="btn btn-danger btn-sm" onclick="deleteOvertimeRecord('${record.id}')">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
-                                </div>
-                                ` : ''}
-                            </td>
+                            <td>${actionCell}</td>
                         `;
                         tbody.appendChild(row);
                     });
                 } else {
                     // Jika tidak ada data tabel, tampilkan satu baris saja
                     const row = document.createElement('tr');
+                    
+                    // PERBAIKAN: Hapus tombol edit dan delete untuk user biasa
+                    let actionCell = '';
+                    if (currentUser.role === 'admin') {
+                        actionCell = `
+                            <div class="btn-group">
+                                <button class="btn btn-warning btn-sm" onclick="editOvertimeRecord('${record.id}')">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn btn-danger btn-sm" onclick="deleteOvertimeRecord('${record.id}')">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        `;
+                    }
+                    
                     row.innerHTML = `
-                        <td>${rowNumber++}</td>
+                        <td class="no-column">${rowNumber++}</td>
                         <td>${record.employeeName}</td>
                         <td>${record.date}</td>
                         <td>${record.startTime}</td>
@@ -4302,16 +4309,7 @@
                         <td></td>
                         <td></td>
                         <td>${record.taskDescription}</td>
-                        <td>
-                            <div class="btn-group">
-                                <button class="btn btn-warning btn-sm" onclick="editOvertimeRecord('${record.id}')">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                                <button class="btn btn-danger btn-sm" onclick="deleteOvertimeRecord('${record.id}')">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </div>
-                        </td>
+                        <td>${actionCell}</td>
                     `;
                     tbody.appendChild(row);
                 }
@@ -4487,7 +4485,7 @@
                 const row = document.createElement('tr');
                 // PERBAIKAN: Tampilkan password user pada list user management
                 row.innerHTML = `
-                    <td>${index + 1}</td>
+                    <td class="no-column">${index + 1}</td>
                     <td>${user.email}</td>
                     <td>${user.name || '-'}</td>
                     <td>${user.position || '-'}</td>
@@ -4855,58 +4853,6 @@
                 });
                 
                 await saveCutiDataToFirestore();
-            });
-            
-            // Event listener untuk tombol change password admin
-            document.getElementById('changePasswordBtn').addEventListener('click', async function() {
-                const currentPassword = document.getElementById('currentPassword').value;
-                const newPassword = document.getElementById('newPassword').value;
-                const confirmPassword = document.getElementById('confirmPassword').value;
-                
-                if (!currentPassword || !newPassword || !confirmPassword) {
-                    showNotification('Please fill all password fields', 'error');
-                    return;
-                }
-                
-                if (newPassword !== confirmPassword) {
-                    showNotification('New password and confirm password do not match', 'error');
-                    return;
-                }
-                
-                if (newPassword.length < 6) {
-                    showNotification('New password must be at least 6 characters', 'error');
-                    return;
-                }
-                
-                try {
-                    showLoading(true);
-                    
-                    // Re-authenticate user
-                    const user = auth.currentUser;
-                    const credential = firebase.auth.EmailAuthProvider.credential(user.email, currentPassword);
-                    
-                    await user.reauthenticateWithCredential(credential);
-                    
-                    // Update password
-                    await user.updatePassword(newPassword);
-                    
-                    showNotification('Password changed successfully', 'success');
-                    
-                    // Reset form
-                    document.getElementById('currentPassword').value = '';
-                    document.getElementById('newPassword').value = '';
-                    document.getElementById('confirmPassword').value = '';
-                    
-                } catch (error) {
-                    console.error('Error changing password:', error);
-                    if (error.code === 'auth/wrong-password') {
-                        showNotification('Current password is incorrect', 'error');
-                    } else {
-                        showNotification('Error changing password: ' + error.message, 'error');
-                    }
-                } finally {
-                    showLoading(false);
-                }
             });
             
             // Event listener untuk tombol save user

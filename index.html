@@ -4489,57 +4489,49 @@
                 // Cari data overtime calculation yang sesuai berdasarkan nama dan tanggal
                 const overtimeSnapshot = await db.collection('overtime')
                     .where('name', '==', overtimeRecord.employeeName)
+                    .where('date', '==', formattedDate)
                     .get();
                 
                 if (!overtimeSnapshot.empty) {
                     const batch = db.batch();
-                    let foundMatch = false;
+                    let updatedCount = 0;
                     
                     overtimeSnapshot.forEach(doc => {
                         const overtimeData = doc.data();
                         
-                        // Cek apakah tanggal cocok (format DD/MM/YYYY)
-                        if (overtimeData.date === formattedDate) {
-                            foundMatch = true;
-                            
-                            // Update existing record
-                            const docRef = db.collection('overtime').doc(doc.id);
-                            
-                            console.log('Data ditemukan, mengupdate RKP PIC dan Remarks:', {
-                                id: doc.id,
-                                rkpPIC: overtimeRecord.overtimeDuration,
-                                remarks: overtimeRecord.taskDescription || 'Overtime recorded'
-                            });
-                            
-                            // PERBAIKAN: Update RKP PIC dengan durasi overtime
-                            batch.update(docRef, {
-                                rkpPIC: overtimeRecord.overtimeDuration,
-                                // PERBAIKAN: Update Remarks dengan summary uraian tugas
-                                remarks: overtimeRecord.taskDescription || 'Overtime recorded',
-                                lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
-                            });
-                            
-                            // Update local data
-                            const localItem = overtimeCalcData.find(d => d.id === doc.id);
-                            if (localItem) {
-                                localItem.rkpPIC = overtimeRecord.overtimeDuration;
-                                localItem.remarks = overtimeRecord.taskDescription || 'Overtime recorded';
-                            }
+                        console.log('Data ditemukan, mengupdate RKP PIC dan Remarks:', {
+                            id: doc.id,
+                            rkpPIC: overtimeRecord.overtimeDuration,
+                            remarks: overtimeRecord.taskDescription || 'Overtime recorded'
+                        });
+                        
+                        // Update existing record
+                        const docRef = db.collection('overtime').doc(doc.id);
+                        
+                        // PERBAIKAN: Update RKP PIC dengan durasi overtime
+                        batch.update(docRef, {
+                            rkpPIC: overtimeRecord.overtimeDuration,
+                            // PERBAIKAN: Update Remarks dengan summary uraian tugas
+                            remarks: overtimeRecord.taskDescription || 'Overtime recorded',
+                            lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                        
+                        // Update local data
+                        const localItem = overtimeCalcData.find(d => d.id === doc.id);
+                        if (localItem) {
+                            localItem.rkpPIC = overtimeRecord.overtimeDuration;
+                            localItem.remarks = overtimeRecord.taskDescription || 'Overtime recorded';
                         }
+                        
+                        updatedCount++;
                     });
                     
-                    // Jika tidak ditemukan record yang cocok, buat record baru
-                    if (!foundMatch) {
-                        console.log('Tidak ditemukan record yang cocok, membuat record baru');
-                        await createNewOvertimeCalculationRecord(overtimeRecord, formattedDate);
-                    } else {
-                        await batch.commit();
-                        console.log('Data berhasil diupdate di Firestore');
-                    }
+                    await batch.commit();
+                    console.log(`Berhasil mengupdate ${updatedCount} record di Firestore`);
                     
                 } else {
-                    // Jika tidak ada data sama sekali untuk employee ini, buat record baru
-                    console.log('Tidak ada data untuk employee ini, membuat record baru');
+                    // Jika tidak ditemukan record yang cocok, buat record baru
+                    console.log('Tidak ditemukan record yang cocok, membuat record baru');
                     await createNewOvertimeCalculationRecord(overtimeRecord, formattedDate);
                 }
                 

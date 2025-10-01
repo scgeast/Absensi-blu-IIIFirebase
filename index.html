@@ -1855,6 +1855,7 @@
                                         <th>Date</th>
                                         <th>Start Time</th>
                                         <th>End Time</th>
+                                        <th>Duration</th> <!-- Kolom baru Duration -->
                                         <th>Total Project</th>
                                         <th>Total Plant</th>
                                         <th>Plant Name</th>
@@ -3904,7 +3905,7 @@
         }
 
         // =============================================
-        // PERBAIKAN OVERTIME FORM
+        // PERBAIKAN OVERTIME FORM DENGAN DURATION
         // =============================================
 
         // PERBAIKAN: Fungsi untuk inisialisasi Overtime Form
@@ -4166,7 +4167,7 @@
                 date,
                 startTime,
                 endTime,
-                overtimeDuration,
+                overtimeDuration, // Kolom Duration yang sudah dihitung
                 tableData,
                 taskDescription,
                 createdAt: firebase.firestore.FieldValue.serverTimestamp()
@@ -4182,7 +4183,7 @@
                 // Tambahkan ke data lokal
                 rekapLemburData.push(overtimeRecord);
                 
-                // PERBAIKAN: Update Overtime Calculation secara otomatis
+                // PERBAIKAN: Update Overtime Calculation secara otomatis dengan Duration
                 await updateOvertimeCalculation(overtimeRecord);
                 
                 // Update tampilan
@@ -4253,7 +4254,7 @@
             }
         }
 
-        // PERBAIKAN: Fungsi untuk update tabel detail overtime
+        // PERBAIKAN: Fungsi untuk update tabel detail overtime dengan kolom Duration
         function updateOvertimeDetailTable() {
             const tbody = document.getElementById('overtimeDetailTableBody');
             tbody.innerHTML = '';
@@ -4293,7 +4294,7 @@
             
             if (filteredData.length === 0) {
                 const row = document.createElement('tr');
-                row.innerHTML = `<td colspan="11" class="text-center">No overtime data found</td>`;
+                row.innerHTML = `<td colspan="12" class="text-center">No overtime data found</td>`;
                 tbody.appendChild(row);
                 return;
             }
@@ -4310,6 +4311,7 @@
                             <td>${index === 0 ? record.date : ''}</td>
                             <td>${index === 0 ? record.startTime : ''}</td>
                             <td>${index === 0 ? record.endTime : ''}</td>
+                            <td>${index === 0 ? record.overtimeDuration : ''}</td> <!-- Kolom Duration -->
                             <td>${tableRow.totalProject || ''}</td>
                             <td>${tableRow.totalPlant || ''}</td>
                             <td>${tableRow.plantNames || ''}</td>
@@ -4339,6 +4341,7 @@
                         <td>${record.date}</td>
                         <td>${record.startTime}</td>
                         <td>${record.endTime}</td>
+                        <td>${record.overtimeDuration}</td> <!-- Kolom Duration -->
                         <td></td>
                         <td></td>
                         <td></td>
@@ -4471,7 +4474,7 @@
             addRekapRow();
         }
 
-        // PERBAIKAN: Fungsi untuk integrasi dengan Overtime Calculation - DIPERBAIKI
+        // PERBAIKAN: Fungsi untuk integrasi dengan Overtime Calculation - DIPERBAIKI DENGAN DURATION
         async function updateOvertimeCalculation(overtimeRecord) {
             if (!currentUser) return;
             
@@ -4499,19 +4502,19 @@
                     overtimeSnapshot.forEach(doc => {
                         const overtimeData = doc.data();
                         
-                        console.log('Data ditemukan, mengupdate RKP PIC dan Remarks:', {
+                        console.log('Data ditemukan, mengupdate RKP PIC dengan Duration dan Remarks dengan uraian tugas:', {
                             id: doc.id,
-                            rkpPIC: overtimeRecord.overtimeDuration,
-                            remarks: overtimeRecord.taskDescription || 'Overtime recorded'
+                            rkpPIC: overtimeRecord.overtimeDuration, // Duration dari Overtime Form
+                            remarks: overtimeRecord.taskDescription || 'Overtime recorded' // Uraian tugas dari Overtime Form
                         });
                         
                         // Update existing record
                         const docRef = db.collection('overtime').doc(doc.id);
                         
-                        // PERBAIKAN: Update RKP PIC dengan durasi overtime
+                        // PERBAIKAN: Update RKP PIC dengan durasi overtime dari kolom Duration
                         batch.update(docRef, {
-                            rkpPIC: overtimeRecord.overtimeDuration,
-                            // PERBAIKAN: Update Remarks dengan summary uraian tugas
+                            rkpPIC: overtimeRecord.overtimeDuration, // Ambil dari kolom Duration
+                            // PERBAIKAN: Update Remarks dengan uraian tugas dari Overtime Form
                             remarks: overtimeRecord.taskDescription || 'Overtime recorded',
                             lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
                         });
@@ -4519,7 +4522,7 @@
                         // Update local data
                         const localItem = overtimeCalcData.find(d => d.id === doc.id);
                         if (localItem) {
-                            localItem.rkpPIC = overtimeRecord.overtimeDuration;
+                            localItem.rkpPIC = overtimeRecord.overtimeDuration; // Ambil dari kolom Duration
                             localItem.remarks = overtimeRecord.taskDescription || 'Overtime recorded';
                         }
                         
@@ -4552,7 +4555,7 @@
             }
         }
 
-        // PERBAIKAN: Fungsi untuk membuat record overtime calculation baru
+        // PERBAIKAN: Fungsi untuk membuat record overtime calculation baru dengan Duration
         async function createNewOvertimeCalculationRecord(overtimeRecord, formattedDate) {
             try {
                 // Buat data dasar untuk overtime calculation
@@ -4569,10 +4572,10 @@
                     actualCheckOut: "",
                     overTime: "",
                     cekRMC: "",
-                    // PERBAIKAN: Isi otomatis RKP PIC dan Remarks
-                    rkpPIC: overtimeRecord.overtimeDuration,
+                    // PERBAIKAN: Isi otomatis RKP PIC dengan Duration dan Remarks dengan uraian tugas
+                    rkpPIC: overtimeRecord.overtimeDuration, // Ambil dari kolom Duration
                     rmcShiftCheckOut: "",
-                    remarks: overtimeRecord.taskDescription || 'Overtime recorded',
+                    remarks: overtimeRecord.taskDescription || 'Overtime recorded', // Ambil dari uraian tugas
                     createdFromOvertimeForm: true,
                     createdAt: firebase.firestore.FieldValue.serverTimestamp()
                 };

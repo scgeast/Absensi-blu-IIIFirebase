@@ -2678,15 +2678,14 @@
                 tbody.appendChild(row);
             });
             
-            // Add event listeners untuk perhitungan otomatis
-            document.querySelectorAll('.actual-check-in, .actual-check-out, .cek-rmc').forEach(input => {
+            // PERBAIKAN: Add event listeners untuk perhitungan otomatis - DIPERBAIKI
+            document.querySelectorAll('.actual-check-out, .cek-rmc').forEach(input => {
                 input.addEventListener('change', function() {
                     calculateOvertime(this);
                 });
             });
-        }
 
-        // Fungsi untuk menghitung overtime secara otomatis
+        // Fungsi untuk menghitung overtime secara otomatis - DIPERBAIKI
         function calculateOvertime(input) {
             const row = input.closest('tr');
             const shiftCheckOut = row.querySelector('td:nth-child(8)').textContent;
@@ -2694,19 +2693,23 @@
             const actualCheckOut = row.querySelector('.actual-check-out').value;
             const cekRMC = row.querySelector('.cek-rmc').value;
             
-            // Hitung overtime
-            if (actualCheckIn && actualCheckOut) {
-                const actualIn = new Date(`2000-01-01T${actualCheckIn}`);
+            // PERBAIKAN: Hitung overtime berdasarkan Actual Check Out - Shift Check Out
+            if (actualCheckOut && shiftCheckOut) {
                 const actualOut = new Date(`2000-01-01T${actualCheckOut}`);
-                
-                // Jika check out di hari berikutnya (setelah tengah malam)
-                if (actualOut < actualIn) {
+                const shiftOut = new Date(`2000-01-01T${shiftCheckOut}`);
+        
+                // Jika actual check out di hari berikutnya (setelah tengah malam)
+                if (actualOut < shiftOut) {
                     actualOut.setDate(actualOut.getDate() + 1);
                 }
                 
-                const diffMs = actualOut - actualIn;
-                const diffHrs = Math.floor(diffMs / (1000 * 60 * 60));
-                const diffMins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+                const diffMs = actualOut - shiftOut;
+        
+                // Hanya hitung jika actual check out setelah shift check out
+                if (diffMs > 0) {
+                    const diffHrs = Math.floor(diffMs / (1000 * 60 * 60));
+                    const diffMins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+
                 
                 const overtime = `${String(diffHrs).padStart(2, '0')}:${String(diffMins).padStart(2, '0')}`;
                 row.querySelector('.over-time').value = overtime;
@@ -2719,36 +2722,71 @@
                         item.overTime = overtime;
                     }
                 }
-            }
+            } else {
+                // Jika actual check out sebelum atau sama dengan shift check out, tidak ada overtime
+                row.querySelector('.over-time').value = "00:00";
             
-            // Hitung Rmc - Shift Check Out
-            if (cekRMC && shiftCheckOut) {
-                const rmcTime = new Date(`2000-01-01T${cekRMC}`);
-                const shiftOutTime = new Date(`2000-01-01T${shiftCheckOut}`);
-                
-                // Jika RMC di hari berikutnya (setelah tengah malam)
-                if (rmcTime < shiftOutTime) {
-                    rmcTime.setDate(rmcTime.getDate() + 1);
-                }
-                
-                const diffMs = rmcTime - shiftOutTime;
-                const diffHrs = Math.floor(diffMs / (1000 * 60 * 60));
-                const diffMins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-                
-                const rmcDiff = `${String(diffHrs).padStart(2, '0')}:${String(diffMins).padStart(2, '0')}`;
-                row.querySelector('.rmc-shift-check-out').value = rmcDiff;
-                
                 // Update data
                 const dataId = input.getAttribute('data-id');
                 if (dataId) {
                     const item = overtimeCalcData.find(d => d.id === dataId);
                     if (item) {
-                        item.rmcShiftCheckOut = rmcDiff;
+                        item.overTime = "00:00";
                     }
                 }
             }
+        } else if (!actualCheckOut) {
+            // Jika actual check out kosong, reset overtime
+            row.querySelector('.over-time').value = "";
+        
+            // Update data
+            const dataId = input.getAttribute('data-id');
+            if (dataId) {
+                const item = overtimeCalcData.find(d => d.id === dataId);
+                if (item) {
+                    item.overTime = "";
+                }
+            }
         }
-
+        // PERBAIKAN: Hitung Rmc - Shift Check Out (Actual Check Out - Cek RMC)
+        if (actualCheckOut && cekRMC) {
+            const actualOut = new Date(`2000-01-01T${actualCheckOut}`);
+            const rmcTime = new Date(`2000-01-01T${cekRMC}`);
+                
+            // Jika actual check out di hari berikutnya (setelah tengah malam)
+            if (actualOut < rmcTime) {
+                actualOut.setDate(actualOut.getDate() + 1);
+            }
+        
+            const diffMs = actualOut - rmcTime;
+            const diffHrs = Math.floor(diffMs / (1000 * 60 * 60));
+            const diffMins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+        
+            const rmcDiff = `${String(diffHrs).padStart(2, '0')}:${String(diffMins).padStart(2, '0')}`;
+            row.querySelector('.rmc-shift-check-out').value = rmcDiff;
+        
+            // Update data
+            const dataId = input.getAttribute('data-id');
+            if (dataId) {
+                const item = overtimeCalcData.find(d => d.id === dataId);
+                if (item) {
+                    item.rmcShiftCheckOut = rmcDiff;
+                }
+            }
+        } else if (!actualCheckOut || !cekRMC) {
+            // Jika salah satu kosong, reset Rmc - Shift Check Out
+            row.querySelector('.rmc-shift-check-out').value = "";
+        
+            // Update data
+            const dataId = input.getAttribute('data-id');
+            if (dataId) {
+                const item = overtimeCalcData.find(d => d.id === dataId);
+                if (item) {
+                    item.rmcShiftCheckOut = "";
+                }
+            }
+        }
+    }
         // PERBAIKAN: Fungsi untuk menyimpan data output ke Firestore
         async function saveOutputDataToFirestore() {
             if (!isOnline) {

@@ -388,6 +388,17 @@
             margin-bottom: 10px;
         }
 
+        /* PERBAIKAN: Style untuk filter terpisah */
+        .filter-section-overtime-output {
+            background-color: #e9ecef;
+            border-left: 4px solid #17a2b8;
+        }
+        
+        .filter-section-absen-tabel {
+            background-color: #e9ecef;
+            border-left: 4px solid #28a745;
+        }
+
         /* Tab Styles - Mobile Friendly */
         .nav-tabs {
             background: linear-gradient(to right, var(--secondary-color), var(--primary-color));
@@ -1314,6 +1325,11 @@
         .btn-delete-cuti:hover {
             background-color: #c82333;
         }
+        
+        /* PERBAIKAN: Sembunyikan tombol edit/delete untuk user biasa di overtime detail */
+        .user-overtime-detail .btn-group {
+            display: none !important;
+        }
     </style>
 </head>
 <body>
@@ -1499,30 +1515,60 @@
                 </div>
             </div>
 
-            <!-- Filter Section for General Folder -->
-            <div class="filter-section filter-section-general" id="filterSectionGeneral" style="display: none;">
-                <h6>General Folder Filter</h6>
+            <!-- PERBAIKAN: Filter Section untuk Overtime Calculation dan Attendance Output -->
+            <div class="filter-section filter-section-overtime-output" id="filterSectionOvertimeOutput" style="display: none;">
+                <h6>Overtime & Output Filter</h6>
                 <div class="row g-2">
                     <div class="col-12 col-md-6 col-lg-4">
-                        <label for="dateRangeGeneral" class="form-label">Date Range</label>
+                        <label for="dateRangeOvertimeOutput" class="form-label">Date Range</label>
                         <div class="input-group input-group-sm">
-                            <input type="date" class="form-control" id="startDateGeneral">
+                            <input type="date" class="form-control" id="startDateOvertimeOutput">
                             <span class="input-group-text">to</span>
-                            <input type="date" class="form-control" id="endDateGeneral">
+                            <input type="date" class="form-control" id="endDateOvertimeOutput">
                         </div>
                     </div>
-                    <div class="col-12 col-md-6 col-lg-4" id="employeeFilterContainerGeneral">
-                        <label for="employeeNameGeneral" class="form-label">Employee Name</label>
-                        <select class="form-select form-select-sm" id="employeeNameGeneral">
+                    <div class="col-12 col-md-6 col-lg-4" id="employeeFilterContainerOvertimeOutput">
+                        <label for="employeeNameOvertimeOutput" class="form-label">Employee Name</label>
+                        <select class="form-select form-select-sm" id="employeeNameOvertimeOutput">
                             <option value="all">Select All</option>
                             <!-- Options will be filled by JavaScript -->
                         </select>
                     </div>
                     <div class="col-12 col-lg-4 d-flex align-items-end gap-2">
-                        <button class="btn btn-futuristic btn-sm flex-fill" id="applyFilterGeneral">
+                        <button class="btn btn-futuristic btn-sm flex-fill" id="applyFilterOvertimeOutput">
                             <i class="fas fa-filter me-1"></i> Apply
                         </button>
-                        <button class="btn btn-futuristic btn-sm flex-fill" id="exportExcelGeneral">
+                        <button class="btn btn-futuristic btn-sm flex-fill" id="exportExcelOvertimeOutput">
+                            <i class="fas fa-file-excel me-1"></i> Export
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PERBAIKAN: Filter Section untuk Attendance Table -->
+            <div class="filter-section filter-section-absen-tabel" id="filterSectionAbsenTabel" style="display: none;">
+                <h6>Attendance Table Filter</h6>
+                <div class="row g-2">
+                    <div class="col-12 col-md-6 col-lg-4">
+                        <label for="dateRangeAbsenTabel" class="form-label">Date Range</label>
+                        <div class="input-group input-group-sm">
+                            <input type="date" class="form-control" id="startDateAbsenTabel">
+                            <span class="input-group-text">to</span>
+                            <input type="date" class="form-control" id="endDateAbsenTabel">
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-6 col-lg-4" id="employeeFilterContainerAbsenTabel">
+                        <label for="employeeNameAbsenTabel" class="form-label">Employee Name</label>
+                        <select class="form-select form-select-sm" id="employeeNameAbsenTabel">
+                            <option value="all">Select All</option>
+                            <!-- Options will be filled by JavaScript -->
+                        </select>
+                    </div>
+                    <div class="col-12 col-lg-4 d-flex align-items-end gap-2">
+                        <button class="btn btn-futuristic btn-sm flex-fill" id="applyFilterAbsenTabel">
+                            <i class="fas fa-filter me-1"></i> Apply
+                        </button>
+                        <button class="btn btn-futuristic btn-sm flex-fill" id="exportExcelAbsenTabel">
                             <i class="fas fa-file-excel me-1"></i> Export
                         </button>
                     </div>
@@ -1854,7 +1900,7 @@
                         </div>
                     </div>
 
-                    <!-- PERBAIKAN: Overtime Detail untuk admin -->
+                    <!-- PERBAIKAN: Overtime Detail untuk admin dan user -->
                     <div class="overtime-form-container" id="adminOvertimeDetail">
                         <div class="overtime-controls">
                             <div class="overtime-filter" id="overtimeFilterSection">
@@ -2177,7 +2223,8 @@
         let outputData = []; // Data untuk output table
         let overtimeCalcData = []; // Data untuk overtime calculation table
         let dateRangeMain = []; // Date range untuk Main folder
-        let dateRangeGeneral = []; // Date range untuk General folder
+        let dateRangeOvertimeOutput = []; // PERBAIKAN: Date range untuk Overtime & Output
+        let dateRangeAbsenTabel = []; // PERBAIKAN: Date range untuk Attendance Table
         let remarksData = {};
         let overtimeData = {};
         let currentTab = "entry";
@@ -2341,9 +2388,13 @@
                 document.getElementById('startDateMain').valueAsDate = firstDayOfMonth;
                 document.getElementById('endDateMain').valueAsDate = today;
                 
-                // Set default dates untuk General folder
-                document.getElementById('startDateGeneral').valueAsDate = firstDayOfMonth;
-                document.getElementById('endDateGeneral').valueAsDate = today;
+                // PERBAIKAN: Set default dates untuk Overtime & Output
+                document.getElementById('startDateOvertimeOutput').valueAsDate = firstDayOfMonth;
+                document.getElementById('endDateOvertimeOutput').valueAsDate = today;
+                
+                // PERBAIKAN: Set default dates untuk Attendance Table
+                document.getElementById('startDateAbsenTabel').valueAsDate = firstDayOfMonth;
+                document.getElementById('endDateAbsenTabel').valueAsDate = today;
                 
                 // Try to load data from Firestore
                 try {
@@ -2601,21 +2652,21 @@
             }
         }
 
-        // Fungsi untuk update output table dengan filter
+        // PERBAIKAN: Fungsi untuk update output table dengan filter terpisah
         function updateOutputTable() {
             const tbody = document.querySelector('#outputTable tbody');
             tbody.innerHTML = '';
             
-            // Filter data berdasarkan date range General folder
-            const startDateGeneral = document.getElementById('startDateGeneral').valueAsDate;
-            const endDateGeneral = document.getElementById('endDateGeneral').valueAsDate;
-            const employeeFilterGeneral = document.getElementById('employeeNameGeneral').value;
+            // PERBAIKAN: Filter data berdasarkan date range Overtime & Output
+            const startDateOvertimeOutput = document.getElementById('startDateOvertimeOutput').valueAsDate;
+            const endDateOvertimeOutput = document.getElementById('endDateOvertimeOutput').valueAsDate;
+            const employeeFilterOvertimeOutput = document.getElementById('employeeNameOvertimeOutput').value;
             
             let filteredOutputData = outputData.filter(data => {
                 const dataDate = parseDateFromString(data.date);
-                const dateInRange = (!startDateGeneral || !endDateGeneral) || 
-                                  (dataDate >= startDateGeneral && dataDate <= endDateGeneral);
-                const employeeMatch = employeeFilterGeneral === 'all' || data.name === employeeFilterGeneral;
+                const dateInRange = (!startDateOvertimeOutput || !endDateOvertimeOutput) || 
+                                  (dataDate >= startDateOvertimeOutput && dataDate <= endDateOvertimeOutput);
+                const employeeMatch = employeeFilterOvertimeOutput === 'all' || data.name === employeeFilterOvertimeOutput;
                 
                 return dateInRange && employeeMatch;
             });
@@ -2658,21 +2709,21 @@
             });
         }
 
-        // PERBAIKAN: Fungsi untuk update overtime calculation table dengan perhitungan yang benar
+        // PERBAIKAN: Fungsi untuk update overtime calculation table dengan filter terpisah
         function updateOvertimeTable() {
             const tbody = document.querySelector('#overtimeTableBody');
             tbody.innerHTML = '';
             
-            // Filter data berdasarkan date range General folder
-            const startDateGeneral = document.getElementById('startDateGeneral').valueAsDate;
-            const endDateGeneral = document.getElementById('endDateGeneral').valueAsDate;
-            const employeeFilterGeneral = document.getElementById('employeeNameGeneral').value;
+            // PERBAIKAN: Filter data berdasarkan date range Overtime & Output
+            const startDateOvertimeOutput = document.getElementById('startDateOvertimeOutput').valueAsDate;
+            const endDateOvertimeOutput = document.getElementById('endDateOvertimeOutput').valueAsDate;
+            const employeeFilterOvertimeOutput = document.getElementById('employeeNameOvertimeOutput').value;
             
             let filteredOvertimeData = overtimeCalcData.filter(data => {
                 const dataDate = parseDateFromString(data.date);
-                const dateInRange = (!startDateGeneral || !endDateGeneral) || 
-                                  (dataDate >= startDateGeneral && dataDate <= endDateGeneral);
-                const employeeMatch = employeeFilterGeneral === 'all' || data.name === employeeFilterGeneral;
+                const dateInRange = (!startDateOvertimeOutput || !endDateOvertimeOutput) || 
+                                  (dataDate >= startDateOvertimeOutput && dataDate <= endDateOvertimeOutput);
+                const employeeMatch = employeeFilterOvertimeOutput === 'all' || data.name === employeeFilterOvertimeOutput;
                 
                 return dateInRange && employeeMatch;
             });
@@ -2958,14 +3009,14 @@
             }
         }
 
-        // PERBAIKAN: Fungsi untuk update tabel absen tabel
+        // PERBAIKAN: Fungsi untuk update tabel absen tabel dengan filter terpisah
         function updateAbsenTabelTable() {
             const thead = document.querySelector('#absenTabelTable thead tr');
             const tbody = document.querySelector('#absenTabelTable tbody');
             
             // Update header - make it exactly the same as entry table
             let headerHTML = '<th>Work Area</th><th>Employee Name</th><th>Job Position</th>';
-            dateRangeGeneral.forEach(date => {
+            dateRangeAbsenTabel.forEach(date => {
                 headerHTML += `<th>${formatDateForHeader(date)}</th>`;
             });
             headerHTML += '<th>Action</th>';
@@ -2984,7 +3035,7 @@
                     <td><input type="text" value="${employee.position || ''}" class="position-input read-only-input" readonly ondblclick="makeEditable(this)"></td>
                 `;
                 
-                dateRangeGeneral.forEach(date => {
+                dateRangeAbsenTabel.forEach(date => {
                     const dateStr = formatDateForShift(date);
                     const shiftValue = employee.shifts && employee.shifts[dateStr] ? employee.shifts[dateStr] : '';
                     rowHTML += `<td><input type="text" value="${shiftValue}" class="shift-input read-only-input" readonly></td>`;
@@ -3103,11 +3154,13 @@
         // Setup filter berdasarkan role
         function setupFilterByRole(role) {
             const employeeFilterContainerMain = document.getElementById('employeeFilterContainerMain');
-            const employeeFilterContainerGeneral = document.getElementById('employeeFilterContainerGeneral');
+            const employeeFilterContainerOvertimeOutput = document.getElementById('employeeFilterContainerOvertimeOutput');
+            const employeeFilterContainerAbsenTabel = document.getElementById('employeeFilterContainerAbsenTabel');
             
             // PERBAIKAN: Sembunyikan filter employee untuk semua role
             employeeFilterContainerMain.style.display = 'none';
-            employeeFilterContainerGeneral.style.display = 'none';
+            employeeFilterContainerOvertimeOutput.style.display = 'none';
+            employeeFilterContainerAbsenTabel.style.display = 'none';
         }
 
         // Fungsi untuk apply filter tanggal Main folder
@@ -3135,43 +3188,68 @@
             updateEntryTable();
         }
 
-        // Fungsi untuk apply filter tanggal General folder
-        function applyDateFilterGeneral() {
-            const startDate = document.getElementById('startDateGeneral').valueAsDate;
-            const endDate = document.getElementById('endDateGeneral').valueAsDate;
+        // PERBAIKAN: Fungsi untuk apply filter tanggal Overtime & Output
+        function applyDateFilterOvertimeOutput() {
+            const startDate = document.getElementById('startDateOvertimeOutput').valueAsDate;
+            const endDate = document.getElementById('endDateOvertimeOutput').valueAsDate;
             
             if (!startDate || !endDate) return;
             
-            dateRangeGeneral = [];
+            dateRangeOvertimeOutput = [];
             let currentDate = new Date(startDate);
             
             while (currentDate <= endDate) {
-                dateRangeGeneral.push(new Date(currentDate));
+                dateRangeOvertimeOutput.push(new Date(currentDate));
                 currentDate.setDate(currentDate.getDate() + 1);
             }
             
             // Batasi maksimal 31 hari untuk performa
-            if (dateRangeGeneral.length > 31) {
+            if (dateRangeOvertimeOutput.length > 31) {
                 alert('Date range limited to 31 days for better performance');
-                dateRangeGeneral = dateRangeGeneral.slice(0, 31);
-                document.getElementById('endDateGeneral').valueAsDate = dateRangeGeneral[dateRangeGeneral.length - 1];
+                dateRangeOvertimeOutput = dateRangeOvertimeOutput.slice(0, 31);
+                document.getElementById('endDateOvertimeOutput').valueAsDate = dateRangeOvertimeOutput[dateRangeOvertimeOutput.length - 1];
             }
             
-            // Update tables yang menggunakan filter General
-            if (currentTab === "absen-tabel") {
-                updateAbsenTabelTable();
-            }
+            // Update tables yang menggunakan filter Overtime & Output
             if (currentTab === "output") {
                 updateOutputTable();
             }
             if (currentTab === "overtime") {
                 updateOvertimeTable();
             }
-            if (currentTab === "cuti-detail") {
-                generateCutiDetailData();
-            }
             if (currentTab === "form-rekap-lembur") {
                 updateOvertimeDetailTable();
+            }
+        }
+
+        // PERBAIKAN: Fungsi untuk apply filter tanggal Attendance Table
+        function applyDateFilterAbsenTabel() {
+            const startDate = document.getElementById('startDateAbsenTabel').valueAsDate;
+            const endDate = document.getElementById('endDateAbsenTabel').valueAsDate;
+            
+            if (!startDate || !endDate) return;
+            
+            dateRangeAbsenTabel = [];
+            let currentDate = new Date(startDate);
+            
+            while (currentDate <= endDate) {
+                dateRangeAbsenTabel.push(new Date(currentDate));
+                currentDate.setDate(currentDate.getDate() + 1);
+            }
+            
+            // Batasi maksimal 31 hari untuk performa
+            if (dateRangeAbsenTabel.length > 31) {
+                alert('Date range limited to 31 days for better performance');
+                dateRangeAbsenTabel = dateRangeAbsenTabel.slice(0, 31);
+                document.getElementById('endDateAbsenTabel').valueAsDate = dateRangeAbsenTabel[dateRangeAbsenTabel.length - 1];
+            }
+            
+            // Update tables yang menggunakan filter Absen Tabel
+            if (currentTab === "absen-tabel") {
+                updateAbsenTabelTable();
+            }
+            if (currentTab === "cuti-detail") {
+                generateCutiDetailData();
             }
         }
 
@@ -3335,13 +3413,17 @@
         // Update employee dropdown
         function updateEmployeeDropdown() {
             const employeeDropdownMain = document.getElementById('employeeNameMain');
-            const employeeDropdownGeneral = document.getElementById('employeeNameGeneral');
+            const employeeDropdownOvertimeOutput = document.getElementById('employeeNameOvertimeOutput');
+            const employeeDropdownAbsenTabel = document.getElementById('employeeNameAbsenTabel');
             
             // Update Main folder dropdown
             updateEmployeeDropdownForElement(employeeDropdownMain);
             
-            // Update General folder dropdown
-            updateEmployeeDropdownForElement(employeeDropdownGeneral);
+            // Update Overtime & Output dropdown
+            updateEmployeeDropdownForElement(employeeDropdownOvertimeOutput);
+            
+            // Update Attendance Table dropdown
+            updateEmployeeDropdownForElement(employeeDropdownAbsenTabel);
         }
 
         function updateEmployeeDropdownForElement(dropdownElement) {
@@ -3478,21 +3560,26 @@
                         targetTab.classList.add('show', 'active');
                     }
                     
-                    // Tampilkan/sembunyikan filter yang sesuai
-                    if (tabName === 'entry' || tabName === 'output' || tabName === 'overtime' || tabName === 'cuti') {
+                    // PERBAIKAN: Tampilkan/sembunyikan filter yang sesuai
+                    if (tabName === 'entry' || tabName === 'cuti') {
                         // Main folder tabs
                         document.getElementById('filterSectionMain').style.display = 'block';
-                        document.getElementById('filterSectionGeneral').style.display = 'none';
+                        document.getElementById('filterSectionOvertimeOutput').style.display = 'none';
+                        document.getElementById('filterSectionAbsenTabel').style.display = 'none';
+                    } else if (tabName === 'output' || tabName === 'overtime' || tabName === 'form-rekap-lembur') {
+                        // Overtime & Output tabs
+                        document.getElementById('filterSectionMain').style.display = 'none';
+                        document.getElementById('filterSectionOvertimeOutput').style.display = 'block';
+                        document.getElementById('filterSectionAbsenTabel').style.display = 'none';
+                    } else if (tabName === 'absen-tabel' || tabName === 'cuti-detail') {
+                        // Attendance Table tabs
+                        document.getElementById('filterSectionMain').style.display = 'none';
+                        document.getElementById('filterSectionOvertimeOutput').style.display = 'none';
+                        document.getElementById('filterSectionAbsenTabel').style.display = 'block';
                     } else if (tabName === 'setting') {
                         document.getElementById('filterSectionMain').style.display = 'none';
-                        document.getElementById('filterSectionGeneral').style.display = 'none';
-                    } else if (tabName === 'cuti-detail') {
-                        document.getElementById('filterSectionMain').style.display = 'none';
-                        document.getElementById('filterSectionGeneral').style.display = 'none';
-                    } else {
-                        // General folder tabs
-                        document.getElementById('filterSectionMain').style.display = 'none';
-                        document.getElementById('filterSectionGeneral').style.display = 'block';
+                        document.getElementById('filterSectionOvertimeOutput').style.display = 'none';
+                        document.getElementById('filterSectionAbsenTabel').style.display = 'none';
                     }
                     
                     // Load absen tabel data when switching to that tab
@@ -3702,7 +3789,7 @@
             const tableBody = document.getElementById('cutiTableBody');
             const rowCount = tableBody.rows.length;
             
-            const row = tableBody.insertRow();
+            const row = document.createElement('tr');
             row.innerHTML = `
                 <td>${rowCount + 1}</td>
                 <td>${employeeName}</td>
@@ -4083,8 +4170,8 @@
             }
             
             // Event listener untuk filter date change
-            document.getElementById('startDateGeneral').addEventListener('change', updateOvertimeDisplay);
-            document.getElementById('endDateGeneral').addEventListener('change', updateOvertimeDisplay);
+            document.getElementById('startDateOvertimeOutput').addEventListener('change', updateOvertimeDisplay);
+            document.getElementById('endDateOvertimeOutput').addEventListener('change', updateOvertimeDisplay);
         }
 
         // PERBAIKAN: Fungsi untuk setup filter employee pada overtime detail
@@ -4392,8 +4479,8 @@
             tbody.innerHTML = '';
             
             // Filter data berdasarkan date range
-            const startDate = document.getElementById('startDateGeneral').valueAsDate;
-            const endDate = document.getElementById('endDateGeneral').valueAsDate;
+            const startDate = document.getElementById('startDateOvertimeOutput').valueAsDate;
+            const endDate = document.getElementById('endDateOvertimeOutput').valueAsDate;
             
             // Filter berdasarkan employee (untuk admin) atau user saat ini (untuk user biasa)
             let filteredData = rekapLemburData;
@@ -4437,6 +4524,10 @@
                 if (record.tableData && record.tableData.length > 0) {
                     record.tableData.forEach((tableRow, index) => {
                         const row = document.createElement('tr');
+                        // PERBAIKAN: Tambahkan class untuk user biasa
+                        if (currentUser.role === 'user') {
+                            row.classList.add('user-overtime-detail');
+                        }
                         row.innerHTML = `
                             <td>${rowNumber++}</td>
                             <td>${record.employeeName}</td>
@@ -4467,6 +4558,10 @@
                 } else {
                     // Jika tidak ada data tabel, tampilkan satu baris saja
                     const row = document.createElement('tr');
+                    // PERBAIKAN: Tambahkan class untuk user biasa
+                    if (currentUser.role === 'user') {
+                        row.classList.add('user-overtime-detail');
+                    }
                     row.innerHTML = `
                         <td>${rowNumber++}</td>
                         <td>${record.employeeName}</td>
@@ -4522,6 +4617,11 @@
 
         // Fungsi untuk menghapus record overtime
         async function deleteOvertimeRecord(recordId, showConfirm = true) {
+            if (currentUser.role !== 'admin') {
+                showNotification('Only admin can delete overtime records', 'error');
+                return;
+            }
+            
             if (showConfirm && !confirm('Are you sure you want to delete this overtime record?')) {
                 return;
             }
@@ -4551,8 +4651,8 @@
             const totalOvertimeElement = document.getElementById('totalOvertimeValue');
             
             // Filter data berdasarkan date range
-            const startDate = document.getElementById('startDateGeneral').valueAsDate;
-            const endDate = document.getElementById('endDateGeneral').valueAsDate;
+            const startDate = document.getElementById('startDateOvertimeOutput').valueAsDate;
+            const endDate = document.getElementById('endDateOvertimeOutput').valueAsDate;
             
             // Filter berdasarkan employee (untuk admin)
             let filteredData = rekapLemburData;
@@ -5017,8 +5117,11 @@
             // Filter button Main folder
             document.getElementById('applyFilterMain').addEventListener('click', applyDateFilterMain);
             
-            // Filter button General folder
-            document.getElementById('applyFilterGeneral').addEventListener('click', applyDateFilterGeneral);
+            // PERBAIKAN: Filter button Overtime & Output
+            document.getElementById('applyFilterOvertimeOutput').addEventListener('click', applyDateFilterOvertimeOutput);
+            
+            // PERBAIKAN: Filter button Attendance Table
+            document.getElementById('applyFilterAbsenTabel').addEventListener('click', applyDateFilterAbsenTabel);
             
             // Header size button
             document.getElementById('applyHeaderSize').addEventListener('click', function() {

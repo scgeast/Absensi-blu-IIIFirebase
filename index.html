@@ -1298,6 +1298,22 @@
         .setting-password-section {
             display: none !important;
         }
+        
+        /* PERBAIKAN: Style untuk tombol delete di tabel cuti */
+        .btn-delete-cuti {
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            padding: 4px 8px;
+            cursor: pointer;
+            margin-left: 5px;
+            font-size: 0.8rem;
+        }
+
+        .btn-delete-cuti:hover {
+            background-color: #c82333;
+        }
     </style>
 </head>
 <body>
@@ -1695,7 +1711,7 @@
                     </div>
                 </div>
 
-                <!-- Cuti Tab -->
+                <!-- Cuti Tab - PERBAIKAN: Tambah tombol delete -->
                 <div class="tab-pane fade" id="cuti" role="tabpanel">
                     <button type="button" class="collapsible">Leave Management <i class="fas fa-chevron-down"></i></button>
                     <div class="collapsible-content">
@@ -2065,7 +2081,7 @@
         </div>
     </div>
 
-    <!-- Modal untuk View Leave Details -->
+    <!-- Modal untuk View Leave Details - PERBAIKAN: Tambah tombol delete -->
     <div class="modal fade leave-detail-modal" id="viewLeaveDetailModal" tabindex="-1" aria-labelledby="viewLeaveDetailModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
@@ -2082,6 +2098,7 @@
                                     <th>End Date</th>
                                     <th>Duration (Days)</th>
                                     <th>Remarks</th>
+                                    <th>Action</th> <!-- PERBAIKAN: Kolom Action baru -->
                                 </tr>
                             </thead>
                             <tbody id="leaveDetailTableBody">
@@ -2641,7 +2658,7 @@
             });
         }
 
-        // Fungsi untuk update overtime calculation table dengan filter
+        // PERBAIKAN: Fungsi untuk update overtime calculation table dengan perhitungan yang benar
         function updateOvertimeTable() {
             const tbody = document.querySelector('#overtimeTableBody');
             tbody.innerHTML = '';
@@ -2691,33 +2708,31 @@
                 tbody.appendChild(row);
             });
             
-            // Add event listeners untuk perhitungan otomatis
-            document.querySelectorAll('.actual-check-in, .actual-check-out, .cek-rmc').forEach(input => {
+            // PERBAIKAN: Add event listeners untuk perhitungan otomatis berdasarkan Actual Check Out
+            document.querySelectorAll('.actual-check-out').forEach(input => {
                 input.addEventListener('change', function() {
                     calculateOvertime(this);
                 });
             });
         }
 
-        // Fungsi untuk menghitung overtime secara otomatis
+        // PERBAIKAN: Fungsi untuk menghitung overtime berdasarkan (Actual Check Out - Shift Check Out)
         function calculateOvertime(input) {
             const row = input.closest('tr');
             const shiftCheckOut = row.querySelector('td:nth-child(8)').textContent;
-            const actualCheckIn = row.querySelector('.actual-check-in').value;
             const actualCheckOut = row.querySelector('.actual-check-out').value;
-            const cekRMC = row.querySelector('.cek-rmc').value;
             
-            // Hitung overtime
-            if (actualCheckIn && actualCheckOut) {
-                const actualIn = new Date(`2000-01-01T${actualCheckIn}`);
+            // PERBAIKAN: Hitung overtime berdasarkan (Actual Check Out - Shift Check Out)
+            if (actualCheckOut && shiftCheckOut) {
                 const actualOut = new Date(`2000-01-01T${actualCheckOut}`);
+                const shiftOut = new Date(`2000-01-01T${shiftCheckOut}`);
                 
-                // Jika check out di hari berikutnya (setelah tengah malam)
-                if (actualOut < actualIn) {
+                // Jika actual check out di hari berikutnya (setelah tengah malam)
+                if (actualOut < shiftOut) {
                     actualOut.setDate(actualOut.getDate() + 1);
                 }
                 
-                const diffMs = actualOut - actualIn;
+                const diffMs = actualOut - shiftOut;
                 const diffHrs = Math.floor(diffMs / (1000 * 60 * 60));
                 const diffMins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
                 
@@ -2734,7 +2749,8 @@
                 }
             }
             
-            // Hitung Rmc - Shift Check Out
+            // PERBAIKAN: Hitung Rmc - Shift Check Out
+            const cekRMC = row.querySelector('.cek-rmc').value;
             if (cekRMC && shiftCheckOut) {
                 const rmcTime = new Date(`2000-01-01T${cekRMC}`);
                 const shiftOutTime = new Date(`2000-01-01T${shiftCheckOut}`);
@@ -3681,8 +3697,8 @@
             return Math.max(0, remaining);
         }
 
-        // PERBAIKAN: Fungsi untuk menambahkan data cuti ke tabel dengan validasi
-        function addCutiToTable(employeeName, startDate, endDate, duration, remarks = "") {
+        // PERBAIKAN: Fungsi untuk menambahkan data cuti ke tabel dengan tombol delete
+        function addCutiToTable(employeeName, startDate, endDate, duration, cutiId) {
             const tableBody = document.getElementById('cutiTableBody');
             const rowCount = tableBody.rows.length;
             
@@ -3693,10 +3709,13 @@
                 <td>${startDate}</td>
                 <td>${endDate}</td>
                 <td>${duration}</td>
-                <td><input type="text" class="form-control form-control-sm remarks-input" value="${remarks}" placeholder="Enter remarks"></td>
+                <td><input type="text" class="form-control form-control-sm remarks-input" value="" placeholder="Enter remarks"></td>
                 <td>
                     <button class="btn btn-futuristic btn-sm edit-cuti-btn">
                         <i class="fas fa-edit"></i> Edit
+                    </button>
+                    <button class="btn-delete-cuti" onclick="deleteCutiRow('${cutiId}')">
+                        <i class="fas fa-trash"></i> Delete
                     </button>
                 </td>
             `;
@@ -3720,8 +3739,43 @@
                     this.innerHTML = '<i class="fas fa-edit"></i> Edit';
                     this.classList.remove('save-cuti-btn');
                     this.classList.add('edit-cuti-btn');
+                    
+                    // Update data cuti
+                    const cuti = cutiData.find(c => c.id === cutiId);
+                    if (cuti) {
+                        cuti.remarks = remarksInput.value;
+                    }
                 });
             });
+        }
+
+        // PERBAIKAN: Fungsi untuk menghapus baris cuti
+        async function deleteCutiRow(cutiId) {
+            if (!confirm('Are you sure you want to delete this leave record?')) {
+                return;
+            }
+            
+            try {
+                showLoading(true);
+                
+                // Hapus dari Firestore
+                await db.collection('cuti').doc(cutiId).delete();
+                
+                // Hapus dari data lokal
+                cutiData = cutiData.filter(cuti => cuti.id !== cutiId);
+                
+                // Update tampilan
+                updateCutiTable();
+                generateCutiDetailData();
+                
+                showNotification('Leave record deleted successfully', 'success');
+                
+            } catch (error) {
+                console.error('Error deleting leave record:', error);
+                showNotification('Error deleting leave record: ' + error.message, 'error');
+            } finally {
+                showLoading(false);
+            }
         }
 
         // =============================================
@@ -3785,7 +3839,7 @@
             `;
         }
 
-        // Fungsi untuk melihat detail leave
+        // PERBAIKAN: Fungsi untuk melihat detail leave dengan tombol delete
         function viewLeaveDetails(employeeName) {
             // Filter cuti data berdasarkan employeeName
             const employeeLeaves = cutiData.filter(cuti => cuti.employeeName === employeeName);
@@ -3798,7 +3852,7 @@
             tbody.innerHTML = '';
             
             if (employeeLeaves.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="4" class="text-center">No leave data found</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center">No leave data found</td></tr>';
             } else {
                 employeeLeaves.forEach(leave => {
                     const row = document.createElement('tr');
@@ -3807,6 +3861,11 @@
                         <td>${leave.endDate}</td>
                         <td>${leave.duration}</td>
                         <td>${leave.remarks || '-'}</td>
+                        <td>
+                            <button class="btn-delete-cuti" onclick="deleteCutiRow('${leave.id}')">
+                                <i class="fas fa-trash"></i> Delete
+                            </button>
+                        </td>
                     `;
                     tbody.appendChild(row);
                 });
@@ -3817,7 +3876,7 @@
             modal.show();
         }
 
-        // Fungsi untuk update tabel cuti
+        // PERBAIKAN: Fungsi untuk update tabel cuti dengan tombol delete
         function updateCutiTable() {
             const tableBody = document.getElementById('cutiTableBody');
             tableBody.innerHTML = '';
@@ -3834,6 +3893,9 @@
                     <td>
                         <button class="btn btn-futuristic btn-sm edit-cuti-btn">
                             <i class="fas fa-edit"></i> Edit
+                        </button>
+                        <button class="btn-delete-cuti" onclick="deleteCutiRow('${cuti.id}')">
+                            <i class="fas fa-trash"></i> Delete
                         </button>
                     </td>
                 `;
@@ -3865,7 +3927,7 @@
             });
         }
 
-        // PERBAIKAN: Fungsi untuk memuat data cuti dari Firestore dengan filter tahun
+        // PERBAIKAN: Fungsi untuk memuat data cuti dari Firestore
         async function loadCutiData() {
             try {
                 const cutiSnapshot = await db.collection('cuti').get();
@@ -3908,8 +3970,15 @@
                 
                 // Tambahkan data cuti baru
                 cutiData.forEach(cuti => {
-                    const docRef = db.collection('cuti').doc();
-                    batch.set(docRef, cuti);
+                    const docRef = db.collection('cuti').doc(cuti.id);
+                    batch.set(docRef, {
+                        employeeName: cuti.employeeName,
+                        startDate: cuti.startDate,
+                        endDate: cuti.endDate,
+                        duration: cuti.duration,
+                        remarks: cuti.remarks || '',
+                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
                 });
                 
                 await batch.commit();
@@ -5014,7 +5083,7 @@
                 await saveOvertimeDataToFirestore();
             });
             
-            // Event listener untuk tombol Add Cuti
+            // PERBAIKAN: Event listener untuk tombol Add Cuti
             document.getElementById('addCuti').addEventListener('click', function() {
                 const employeeName = document.getElementById('cutiEmployee').value;
                 const startDate = document.getElementById('cutiStartDate').value;
@@ -5044,7 +5113,11 @@
                     return;
                 }
                 
+                // Buat ID unik untuk cuti baru
+                const newCutiId = 'cuti-' + Date.now();
+                
                 const newCuti = {
+                    id: newCutiId,
                     employeeName,
                     startDate,
                     endDate,
@@ -5053,7 +5126,7 @@
                 };
                 
                 cutiData.push(newCuti);
-                addCutiToTable(employeeName, startDate, endDate, duration);
+                addCutiToTable(employeeName, startDate, endDate, duration, newCutiId);
                 
                 // PERBAIKAN: Update sisa cuti yang ditampilkan
                 updateRemainingLeaveDisplay(employeeName);
@@ -5070,7 +5143,7 @@
                 document.getElementById('remainingLeaveValue').textContent = remainingLeave;
             }
             
-            // Event listener untuk tombol Save Cuti
+            // PERBAIKAN: Event listener untuk tombol Save Cuti
             document.getElementById('saveCuti').addEventListener('click', async function() {
                 const rows = document.querySelectorAll('#cutiTableBody tr');
                 rows.forEach((row, index) => {
@@ -5089,6 +5162,9 @@
             // PERBAIKAN: Inisialisasi change password sidebar
             initChangePasswordSidebar();
             
+            // Load cuti data saat aplikasi dimulai
+            loadCutiData();
+            
             // Cek jika ada data backup di localStorage
             const backupData = localStorage.getItem('absensiDataBackup');
             if (backupData) {
@@ -5100,7 +5176,7 @@
                 }
             }
             
-            console.log('Application initialized successfully');
+            console.log('Application initialized successfully with overtime and leave improvements');
         });
 
     </script>

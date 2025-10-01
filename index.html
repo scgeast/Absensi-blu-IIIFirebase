@@ -1356,6 +1356,43 @@
             opacity: 1;
             color: white;
         }
+
+        /* NEW: Styles for summary tables */
+        .summary-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background-color: white;
+        }
+        
+        .summary-table th, .summary-table td {
+            padding: 8px;
+            text-align: center;
+            border: 1px solid #dee2e6;
+            font-size: 0.75rem;
+        }
+        
+        .summary-table th {
+            background-color: var(--secondary-color);
+            color: white;
+            font-weight: bold;
+        }
+        
+        .summary-section {
+            margin-top: 30px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .summary-title {
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: var(--primary-color);
+            text-align: center;
+        }
     </style>
 </head>
 <body>
@@ -1465,6 +1502,12 @@
                         <a href="#" data-tab="cuti">
                             <i class="fas fa-calendar-alt"></i>
                             <span>Leave Management</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" data-tab="summary-overtime">
+                            <i class="fas fa-chart-bar"></i>
+                            <span>Summary Overtime</span>
                         </a>
                     </li>
                 </ul>
@@ -1758,7 +1801,7 @@
                     </div>
                 </div>
 
-                <!-- Absen Tabel Tab -->
+                <!-- Absen Tabel Tab - MODIFIED: Added Attendance Summary -->
                 <div class="tab-pane fade" id="absen-tabel" role="tabpanel">
                     <button type="button" class="collapsible">Attendance Table Data <i class="fas fa-chevron-down"></i></button>
                     <div class="collapsible-content">
@@ -1780,6 +1823,32 @@
                                 <!-- Data will be filled by JavaScript -->
                             </tbody>
                         </table>
+                    </div>
+                    
+                    <!-- NEW: Attendance Summary Section -->
+                    <div class="summary-section">
+                        <div class="summary-title">Attendance Summary</div>
+                        <div class="table-responsive">
+                            <table class="summary-table table-striped table-sm" id="attendanceSummaryTable">
+                                <thead>
+                                    <tr>
+                                        <th>No</th>
+                                        <th>Employee Name</th>
+                                        <th>Off</th>
+                                        <th>Morning</th>
+                                        <th>Afternoon</th>
+                                        <th>Morning Part</th>
+                                        <th>Afternoon Part</th>
+                                        <th>Leave</th>
+                                        <th>Total Attendance</th>
+                                        <th>Total Work Day</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="attendanceSummaryTableBody">
+                                    <!-- Data will be filled by JavaScript -->
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
 
@@ -1966,6 +2035,32 @@
                                 </tbody>
                             </table>
                         </div>
+                    </div>
+                </div>
+
+                <!-- NEW: Summary Overtime Tab in Main Folder -->
+                <div class="tab-pane fade" id="summary-overtime" role="tabpanel">
+                    <button type="button" class="collapsible">Overtime Summary <i class="fas fa-chevron-down"></i></button>
+                    <div class="collapsible-content">
+                        <p class="small">Summary of overtime data for all employees. This summary is affected by date filter in Overtime Calculation.</p>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="summary-table table-striped table-sm" id="overtimeSummaryTable">
+                            <thead>
+                                <tr>
+                                    <th>No</th>
+                                    <th>Employee Name</th>
+                                    <th>Total Work Day</th>
+                                    <th>Total Work Time</th>
+                                    <th>Total RKP PIC</th>
+                                    <th>Total Rmc-Shift Check Out</th>
+                                </tr>
+                            </thead>
+                            <tbody id="overtimeSummaryTableBody">
+                                <!-- Data will be filled by JavaScript -->
+                            </tbody>
+                        </table>
                     </div>
                 </div>
 
@@ -2276,6 +2371,215 @@
 
         // PERBAIKAN: Variabel untuk mengelola cuti per tahun
         let leaveYearlyData = {};
+
+        // =============================================
+        // NEW: ATTENDANCE SUMMARY FUNCTIONS
+        // =============================================
+
+        // Function to generate attendance summary data
+        function generateAttendanceSummary() {
+            const summaryData = {};
+            
+            // Process each employee in absenTabelData
+            absenTabelData.forEach(employee => {
+                if (!employee.name) return;
+                
+                // Initialize employee summary if not exists
+                if (!summaryData[employee.name]) {
+                    summaryData[employee.name] = {
+                        name: employee.name,
+                        off: 0,
+                        morning: 0,
+                        afternoon: 0,
+                        morningPart: 0,
+                        afternoonPart: 0,
+                        leave: 0,
+                        totalAttendance: 0,
+                        totalWorkDay: 0
+                    };
+                }
+                
+                // Count shifts for this employee
+                if (employee.shifts) {
+                    Object.values(employee.shifts).forEach(shiftCode => {
+                        const shift = shiftCode.toUpperCase();
+                        
+                        switch(shift) {
+                            case 'O':
+                                summaryData[employee.name].off++;
+                                break;
+                            case '1':
+                                summaryData[employee.name].morning++;
+                                summaryData[employee.name].totalWorkDay++;
+                                break;
+                            case '2':
+                                summaryData[employee.name].afternoon++;
+                                summaryData[employee.name].totalWorkDay++;
+                                break;
+                            case '11':
+                                summaryData[employee.name].morningPart++;
+                                summaryData[employee.name].totalWorkDay++;
+                                break;
+                            case '22':
+                                summaryData[employee.name].afternoonPart++;
+                                summaryData[employee.name].totalWorkDay++;
+                                break;
+                            case 'C':
+                                summaryData[employee.name].leave++;
+                                break;
+                        }
+                        
+                        // Count total attendance (all shifts except empty)
+                        if (shift && shift !== 'O' && shift !== 'C') {
+                            summaryData[employee.name].totalAttendance++;
+                        }
+                    });
+                }
+            });
+            
+            return Object.values(summaryData);
+        }
+
+        // Function to update attendance summary table
+        function updateAttendanceSummaryTable() {
+            const tbody = document.getElementById('attendanceSummaryTableBody');
+            tbody.innerHTML = '';
+            
+            const summaryData = generateAttendanceSummary();
+            
+            if (summaryData.length === 0) {
+                const row = document.createElement('tr');
+                row.innerHTML = `<td colspan="10" class="text-center">No attendance data available</td>`;
+                tbody.appendChild(row);
+                return;
+            }
+            
+            summaryData.forEach((employee, index) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${index + 1}</td>
+                    <td>${employee.name}</td>
+                    <td>${employee.off}</td>
+                    <td>${employee.morning}</td>
+                    <td>${employee.afternoon}</td>
+                    <td>${employee.morningPart}</td>
+                    <td>${employee.afternoonPart}</td>
+                    <td>${employee.leave}</td>
+                    <td>${employee.totalAttendance}</td>
+                    <td>${employee.totalWorkDay}</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        // =============================================
+        // NEW: OVERTIME SUMMARY FUNCTIONS
+        // =============================================
+
+        // Function to generate overtime summary data
+        function generateOvertimeSummary() {
+            const summaryData = {};
+            
+            // Get date filter from Overtime Calculation
+            const startDateOvertimeOutput = document.getElementById('startDateOvertimeOutput').valueAsDate;
+            const endDateOvertimeOutput = document.getElementById('endDateOvertimeOutput').valueAsDate;
+            
+            // Filter overtime data based on date range
+            let filteredOvertimeData = overtimeCalcData;
+            if (startDateOvertimeOutput && endDateOvertimeOutput) {
+                filteredOvertimeData = overtimeCalcData.filter(data => {
+                    const dataDate = parseDateFromString(data.date);
+                    return dataDate >= startDateOvertimeOutput && dataDate <= endDateOvertimeOutput;
+                });
+            }
+            
+            // Process each employee in filtered overtime data
+            filteredOvertimeData.forEach(data => {
+                if (!data.name) return;
+                
+                // Initialize employee summary if not exists
+                if (!summaryData[data.name]) {
+                    summaryData[data.name] = {
+                        name: data.name,
+                        totalWorkDay: 0,
+                        totalWorkTime: 0, // in minutes
+                        totalRkpPic: 0,   // in minutes
+                        totalRmcShiftCheckOut: 0 // in minutes
+                    };
+                }
+                
+                // Count work days (only if there's actual work data)
+                if (data.shift && data.shift !== 'O' && data.shift !== 'C') {
+                    summaryData[data.name].totalWorkDay++;
+                }
+                
+                // Calculate total work time from WT/Normal
+                if (data.wtNormal) {
+                    const [hours, minutes] = data.wtNormal.split(':').map(Number);
+                    summaryData[data.name].totalWorkTime += (hours * 60) + minutes;
+                }
+                
+                // Calculate total RKP PIC (convert HH:MM to minutes)
+                if (data.rkpPIC) {
+                    const [hours, minutes] = data.rkpPIC.split(':').map(Number);
+                    summaryData[data.name].totalRkpPic += (hours * 60) + minutes;
+                }
+                
+                // Calculate total Rmc-Shift Check Out (convert HH:MM to minutes)
+                if (data.rmcShiftCheckOut) {
+                    const [hours, minutes] = data.rmcShiftCheckOut.split(':').map(Number);
+                    summaryData[data.name].totalRmcShiftCheckOut += (hours * 60) + minutes;
+                }
+            });
+            
+            // Convert minutes back to HH:MM format for display
+            Object.values(summaryData).forEach(employee => {
+                employee.totalWorkTime = formatMinutesToTime(employee.totalWorkTime);
+                employee.totalRkpPic = formatMinutesToTime(employee.totalRkpPic);
+                employee.totalRmcShiftCheckOut = formatMinutesToTime(employee.totalRmcShiftCheckOut);
+            });
+            
+            return Object.values(summaryData);
+        }
+
+        // Function to format minutes to HH:MM time string
+        function formatMinutesToTime(totalMinutes) {
+            const hours = Math.floor(totalMinutes / 60);
+            const minutes = totalMinutes % 60;
+            return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+        }
+
+        // Function to update overtime summary table
+        function updateOvertimeSummaryTable() {
+            const tbody = document.getElementById('overtimeSummaryTableBody');
+            tbody.innerHTML = '';
+            
+            const summaryData = generateOvertimeSummary();
+            
+            if (summaryData.length === 0) {
+                const row = document.createElement('tr');
+                row.innerHTML = `<td colspan="6" class="text-center">No overtime data available</td>`;
+                tbody.appendChild(row);
+                return;
+            }
+            
+            summaryData.forEach((employee, index) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${index + 1}</td>
+                    <td>${employee.name}</td>
+                    <td>${employee.totalWorkDay}</td>
+                    <td>${employee.totalWorkTime}</td>
+                    <td>${employee.totalRkpPic}</td>
+                    <td>${employee.totalRmcShiftCheckOut}</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        // =============================================
+        // EXISTING FUNCTIONS (modified to include new features)
+        // =============================================
 
         // Fungsi untuk mengecek koneksi
         function checkConnection() {
@@ -2680,6 +2984,9 @@
             if (currentTab === "overtime") {
                 updateOvertimeTable();
             }
+            if (currentTab === "summary-overtime") {
+                updateOvertimeSummaryTable(); // NEW: Update overtime summary
+            }
         }
 
         // PERBAIKAN: Fungsi untuk update output table dengan filter terpisah
@@ -2794,6 +3101,11 @@
             
             // PERBAIKAN: Update icon sorting
             updateSortIcons();
+            
+            // NEW: Update overtime summary if we're on that tab
+            if (currentTab === 'summary-overtime') {
+                updateOvertimeSummaryTable();
+            }
         }
 
         // PERBAIKAN: Fungsi untuk sorting data overtime
@@ -3132,6 +3444,9 @@
             shiftInputs.forEach(input => {
                 updateShiftColor(input);
             });
+            
+            // NEW: Update attendance summary table
+            updateAttendanceSummaryTable();
         }
 
         // PERBAIKAN: Fungsi untuk melihat detail row (tanpa mengedit)
@@ -3298,6 +3613,9 @@
             }
             if (currentTab === "form-rekap-lembur") {
                 updateOvertimeDetailTable();
+            }
+            if (currentTab === "summary-overtime") {
+                updateOvertimeSummaryTable(); // NEW: Update overtime summary
             }
         }
 
@@ -3640,7 +3958,7 @@
                     }
                     
                     // PERBAIKAN: Tampilkan/sembunyikan filter yang sesuai
-                    if (tabName === 'entry' || tabName === 'cuti') {
+                    if (tabName === 'entry' || tabName === 'cuti' || tabName === 'summary-overtime') {
                         // Main folder tabs
                         document.getElementById('filterSectionMain').style.display = 'block';
                         document.getElementById('filterSectionOvertimeOutput').style.display = 'none';
@@ -3664,6 +3982,12 @@
                     // Load absen tabel data when switching to that tab
                     if (tabName === 'absen-tabel') {
                         loadAbsenTabelData();
+                        updateAttendanceSummaryTable(); // NEW: Update attendance summary
+                    }
+                    
+                    // Load overtime summary when switching to that tab
+                    if (tabName === 'summary-overtime') {
+                        updateOvertimeSummaryTable(); // NEW: Update overtime summary
                     }
                     
                     // Load output data when switching to output tab
@@ -5363,6 +5687,15 @@
                     // Update table
                     updateOvertimeTable();
                 });
+            });
+            
+            // NEW: Event listener for Overtime & Output filter to update overtime summary
+            document.getElementById('applyFilterOvertimeOutput').addEventListener('click', function() {
+                applyDateFilterOvertimeOutput();
+                // Update overtime summary if we're on that tab
+                if (currentTab === 'summary-overtime') {
+                    updateOvertimeSummaryTable();
+                }
             });
             
             // Load cuti data saat aplikasi dimulai

@@ -1293,6 +1293,11 @@
         .overtime-filter.hidden {
             display: none !important;
         }
+        
+        /* PERBAIKAN: Hilangkan bagian Change Password di setting admin */
+        .setting-password-section {
+            display: none !important;
+        }
     </style>
 </head>
 <body>
@@ -1329,7 +1334,7 @@
             </div>
             <div class="login-error" id="loginError">Email or password is incorrect!</div>
             <button class="btn btn-futuristic w-100" id="loginBtn">Login</button>
-            <div class="provider-text">Powered by L23-51Xe</div>
+            <div class="provider-text">Provide by L23-51Xe</div>
         </div>
     </div>
 
@@ -1720,6 +1725,10 @@
                                 </button>
                             </div>
                         </div>
+                        <!-- PERBAIKAN: Tampilkan sisa cuti -->
+                        <div class="mt-2" id="remainingLeaveInfo">
+                            <small class="text-muted">Remaining leave: <span id="remainingLeaveValue">12</span> days</small>
+                        </div>
                     </div>
 
                     <div class="table-responsive">
@@ -1908,9 +1917,9 @@
                         </div>
                     </div>
 
-                    <hr>
-
-                    <div class="row">
+                    <!-- PERBAIKAN: Hilangkan bagian Change Password di setting admin -->
+                    <hr class="setting-password-section">
+                    <div class="row setting-password-section">
                         <div class="col-12">
                             <h5>Change Password</h5>
                             <div class="row g-2">
@@ -2171,6 +2180,9 @@
         let currentRekapRows = [];
         let plantOptions = ["Denpasar2", "Gianyar", "Manyar", "Manukan", "Gempol", "Kediri", "Krian"];
 
+        // PERBAIKAN: Variabel untuk mengelola cuti per tahun
+        let leaveYearlyData = {};
+
         // Fungsi untuk mengecek koneksi
         function checkConnection() {
             const statusElement = document.getElementById('connectionStatus');
@@ -2344,14 +2356,15 @@
                         });
                     }
                     
-                    // Load cuti data
+                    // PERBAIKAN: Load data cuti dengan filter tahun
                     cutiData = [];
                     if (cutiSnapshot) {
                         cutiSnapshot.forEach(doc => {
-                            cutiData.push({
+                            const cutiItem = {
                                 id: doc.id,
                                 ...doc.data()
-                            });
+                            };
+                            cutiData.push(cutiItem);
                         });
                     }
                     
@@ -3630,7 +3643,7 @@
             }
         }
 
-        // Fungsi untuk menghitung durasi cuti
+        // PERBAIKAN: Fungsi untuk menghitung durasi cuti berdasarkan tahun
         function calculateDuration(startDate, endDate) {
             const start = new Date(startDate);
             const end = new Date(endDate);
@@ -3639,15 +3652,23 @@
             return diffDays;
         }
 
-        // Fungsi untuk menghitung sisa cuti
+        // PERBAIKAN: Fungsi untuk menghitung sisa cuti berdasarkan tahun
         function calculateRemainingLeave(employeeName) {
-            // Total awal cuti adalah 12 hari
+            const currentYear = new Date().getFullYear();
+            
+            // Total awal cuti adalah 12 hari per tahun
             const totalLeave = 12;
             
-            // Cari semua cuti untuk karyawan ini
-            const employeeLeaves = cutiData.filter(cuti => cuti.employeeName === employeeName);
+            // Cari semua cuti untuk karyawan ini di tahun ini
+            const employeeLeaves = cutiData.filter(cuti => {
+                if (cuti.employeeName !== employeeName) return false;
+                
+                // Filter berdasarkan tahun
+                const startYear = new Date(cuti.startDate).getFullYear();
+                return startYear === currentYear;
+            });
             
-            // Hitung total durasi cuti yang sudah diambil
+            // Hitung total durasi cuti yang sudah diambil di tahun ini
             let totalTaken = 0;
             employeeLeaves.forEach(leave => {
                 totalTaken += leave.duration;
@@ -3660,7 +3681,7 @@
             return Math.max(0, remaining);
         }
 
-        // Fungsi untuk menambahkan data cuti ke tabel
+        // PERBAIKAN: Fungsi untuk menambahkan data cuti ke tabel dengan validasi
         function addCutiToTable(employeeName, startDate, endDate, duration, remarks = "") {
             const tableBody = document.getElementById('cutiTableBody');
             const rowCount = tableBody.rows.length;
@@ -3844,7 +3865,7 @@
             });
         }
 
-        // Fungsi untuk memuat data cuti dari Firestore
+        // PERBAIKAN: Fungsi untuk memuat data cuti dari Firestore dengan filter tahun
         async function loadCutiData() {
             try {
                 const cutiSnapshot = await db.collection('cuti').get();
@@ -3868,7 +3889,7 @@
             }
         }
 
-        // Fungsi untuk menyimpan data cuti ke Firestore
+        // PERBAIKAN: Fungsi untuk menyimpan data cuti ke Firestore dan update tabel attendance
         async function saveCutiDataToFirestore() {
             if (!isOnline) {
                 console.log('Offline - data will be saved when connection is restored');
@@ -3893,14 +3914,56 @@
                 
                 await batch.commit();
                 
+                // PERBAIKAN: Update tabel attendance dengan shift 'C' untuk hari cuti
+                await updateAttendanceWithCuti();
+                
                 // Generate data cuti detail
                 generateCutiDetailData();
                 
-                showNotification('Leave data saved successfully', 'success');
+                showNotification('Leave data saved successfully and attendance updated', 'success');
                 
             } catch (error) {
                 console.error('Error saving leave data:', error);
                 showNotification('Error saving leave data: ' + error.message, 'error');
+            }
+        }
+
+        // PERBAIKAN: Fungsi untuk update tabel attendance dengan shift 'C' untuk hari cuti
+        async function updateAttendanceWithCuti() {
+            try {
+                // Loop melalui semua data cuti
+                for (const cuti of cutiData) {
+                    const startDate = new Date(cuti.startDate);
+                    const endDate = new Date(cuti.endDate);
+                    const employeeName = cuti.employeeName;
+                    
+                    // Loop melalui setiap hari dalam periode cuti
+                    let currentDate = new Date(startDate);
+                    while (currentDate <= endDate) {
+                        const dateStr = formatDateForShift(currentDate);
+                        
+                        // Cari karyawan di absensiData
+                        const employee = absensiData.find(emp => emp.name === employeeName);
+                        if (employee) {
+                            // Update shift menjadi 'C' untuk tanggal tersebut
+                            if (!employee.shifts) employee.shifts = {};
+                            employee.shifts[dateStr] = 'C';
+                        }
+                        
+                        // Pindah ke hari berikutnya
+                        currentDate.setDate(currentDate.getDate() + 1);
+                    }
+                }
+                
+                // Simpan perubahan ke Firestore
+                await saveDataToFirestore();
+                
+                // Update tampilan tabel
+                updateEntryTable();
+                updateAbsenTabelTable();
+                
+            } catch (error) {
+                console.error('Error updating attendance with leave data:', error);
             }
         }
 
@@ -4967,7 +5030,20 @@
                     return;
                 }
                 
+                // PERBAIKAN: Validasi sisa cuti
+                const remainingLeave = calculateRemainingLeave(employeeName);
                 const duration = calculateDuration(startDate, endDate);
+                
+                if (remainingLeave <= 0) {
+                    showNotification('No remaining leave available for this employee', 'error');
+                    return;
+                }
+                
+                if (duration > remainingLeave) {
+                    showNotification(`Not enough remaining leave. Available: ${remainingLeave} days, Requested: ${duration} days`, 'error');
+                    return;
+                }
+                
                 const newCuti = {
                     employeeName,
                     startDate,
@@ -4979,11 +5055,20 @@
                 cutiData.push(newCuti);
                 addCutiToTable(employeeName, startDate, endDate, duration);
                 
+                // PERBAIKAN: Update sisa cuti yang ditampilkan
+                updateRemainingLeaveDisplay(employeeName);
+                
                 document.getElementById('cutiStartDate').value = '';
                 document.getElementById('cutiEndDate').value = '';
                 
                 showNotification('Leave added successfully', 'success');
             });
+            
+            // PERBAIKAN: Fungsi untuk update tampilan sisa cuti
+            function updateRemainingLeaveDisplay(employeeName) {
+                const remainingLeave = calculateRemainingLeave(employeeName);
+                document.getElementById('remainingLeaveValue').textContent = remainingLeave;
+            }
             
             // Event listener untuk tombol Save Cuti
             document.getElementById('saveCuti').addEventListener('click', async function() {
@@ -4997,115 +5082,6 @@
                 
                 await saveCutiDataToFirestore();
             });
-            
-            // Event listener untuk tombol change password admin
-            document.getElementById('changePasswordBtn').addEventListener('click', async function() {
-                const currentPassword = document.getElementById('currentPassword').value;
-                const newPassword = document.getElementById('newPassword').value;
-                const confirmPassword = document.getElementById('confirmPassword').value;
-                
-                if (!currentPassword || !newPassword || !confirmPassword) {
-                    showNotification('Please fill all password fields', 'error');
-                    return;
-                }
-                
-                if (newPassword !== confirmPassword) {
-                    showNotification('New password and confirm password do not match', 'error');
-                    return;
-                }
-                
-                if (newPassword.length < 6) {
-                    showNotification('New password must be at least 6 characters', 'error');
-                    return;
-                }
-                
-                try {
-                    showLoading(true);
-                    
-                    // Re-authenticate user
-                    const user = auth.currentUser;
-                    const credential = firebase.auth.EmailAuthProvider.credential(user.email, currentPassword);
-                    
-                    await user.reauthenticateWithCredential(credential);
-                    
-                    // Update password
-                    await user.updatePassword(newPassword);
-                    
-                    showNotification('Password changed successfully', 'success');
-                    
-                    // Reset form
-                    document.getElementById('currentPassword').value = '';
-                    document.getElementById('newPassword').value = '';
-                    document.getElementById('confirmPassword').value = '';
-                    
-                } catch (error) {
-                    console.error('Error changing password:', error);
-                    if (error.code === 'auth/wrong-password') {
-                        showNotification('Current password is incorrect', 'error');
-                    } else {
-                        showNotification('Error changing password: ' + error.message, 'error');
-                    }
-                } finally {
-                    showLoading(false);
-                }
-            });
-            
-            // Event listener untuk tombol save user
-            document.getElementById('saveUserBtn').addEventListener('click', async function() {
-                const email = document.getElementById('newUserEmail').value;
-                const password = document.getElementById('newUserPassword').value;
-                const name = document.getElementById('newUserName').value;
-                const position = document.getElementById('newUserPosition').value;
-                const role = document.getElementById('newUserRole').value;
-                
-                if (!email || !password || !role) {
-                    showNotification('Email, password, and role must be filled', 'error');
-                    return;
-                }
-                
-                try {
-                    showLoading(true);
-                    
-                    // Create user in Firebase Authentication
-                    const userCredential = await auth.createUserWithEmailAndPassword(email, password);
-                    const user = userCredential.user;
-                    
-                    // Save user data to Firestore
-                    await db.collection('users').doc(user.uid).set({
-                        email,
-                        name,
-                        position,
-                        role,
-                        password, // Storing password in plaintext is not recommended for production
-                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                    });
-                    
-                    showNotification('User created successfully', 'success');
-                    
-                    // Close modal
-                    const modal = bootstrap.Modal.getInstance(document.getElementById('addUserModal'));
-                    modal.hide();
-                    
-                    // Reset form
-                    document.getElementById('newUserEmail').value = '';
-                    document.getElementById('newUserPassword').value = '';
-                    document.getElementById('newUserName').value = '';
-                    document.getElementById('newUserPosition').value = '';
-                    document.getElementById('newUserRole').value = 'user';
-                    
-                    // Reload user data
-                    await loadUsers();
-                    
-                } catch (error) {
-                    console.error('Error creating user:', error);
-                    showNotification('Error creating user: ' + error.message, 'error');
-                } finally {
-                    showLoading(false);
-                }
-            });
-            
-            // Event listener untuk tombol update user
-            document.getElementById('updateUserBtn').addEventListener('click', updateUser);
             
             // PERBAIKAN: Event listener untuk change password dari sidebar
             document.getElementById('userChangePasswordBtn').addEventListener('click', changeUserPassword);

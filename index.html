@@ -1423,6 +1423,22 @@
         .btn-refresh:active {
             transform: translateY(0);
         }
+
+        /* PERBAIKAN: Modal untuk edit data overtime calculation */
+        .modal-body .form-group {
+            margin-bottom: 15px;
+        }
+
+        .modal-body label {
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .modal-body input, .modal-body select {
+            border-radius: 5px;
+            border: 1px solid #ced4da;
+            padding: 8px 12px;
+        }
     </style>
 </head>
 <body>
@@ -1823,6 +1839,7 @@
                                     <th class="sortable-header" data-column="rkpPIC">RKP PIC <span class="sort-icon"><i class="fas fa-sort"></i></span></th>
                                     <th class="sortable-header" data-column="rmcShiftCheckOut">Rmc - Shift Check Out <span class="sort-icon"><i class="fas fa-sort"></i></span></th>
                                     <th class="sortable-header" data-column="remarks">Remarks <span class="sort-icon"><i class="fas fa-sort"></i></span></th>
+                                    <th>Action</th> <!-- PERBAIKAN: Tambah kolom Action -->
                                 </tr>
                             </thead>
                             <tbody id="overtimeTableBody">
@@ -2314,6 +2331,117 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PERBAIKAN: Modal untuk Edit Overtime Calculation -->
+    <div class="modal fade" id="editOvertimeCalculationModal" tabindex="-1" aria-labelledby="editOvertimeCalculationModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editOvertimeCalculationModalLabel">Edit Overtime Calculation</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="editOvertimeCalculationId">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="editOvertimeArea">Work Area</label>
+                                <input type="text" class="form-control" id="editOvertimeArea">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="editOvertimeName">Employee Name</label>
+                                <input type="text" class="form-control" id="editOvertimeName">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="editOvertimePosition">Job Position</label>
+                                <input type="text" class="form-control" id="editOvertimePosition">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="editOvertimeDate">Date</label>
+                                <input type="text" class="form-control" id="editOvertimeDate" readonly>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="editOvertimeShift">Shift</label>
+                                <input type="text" class="form-control" id="editOvertimeShift" readonly>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="editOvertimeShiftCheckIn">Shift Check In</label>
+                                <input type="text" class="form-control" id="editOvertimeShiftCheckIn" readonly>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="editOvertimeShiftCheckOut">Shift Check Out</label>
+                                <input type="text" class="form-control" id="editOvertimeShiftCheckOut" readonly>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="editOvertimeActualCheckIn">Actual Check In</label>
+                                <input type="time" class="form-control" id="editOvertimeActualCheckIn">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="editOvertimeActualCheckOut">Actual Check Out</label>
+                                <input type="time" class="form-control" id="editOvertimeActualCheckOut">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="editOvertimeOverTime">Over Time</label>
+                                <input type="text" class="form-control" id="editOvertimeOverTime" readonly>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="editOvertimeCekRMC">Cek RMC</label>
+                                <input type="time" class="form-control" id="editOvertimeCekRMC">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="editOvertimeRkpPIC">RKP PIC</label>
+                                <input type="text" class="form-control" id="editOvertimeRkpPIC">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="editOvertimeRmcShiftCheckOut">Rmc - Shift Check Out</label>
+                                <input type="text" class="form-control" id="editOvertimeRmcShiftCheckOut" readonly>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="editOvertimeRemarks">Remarks</label>
+                        <textarea class="form-control" id="editOvertimeRemarks" rows="2"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-futuristic btn-sm" id="updateOvertimeCalculationBtn">Update</button>
                 </div>
             </div>
         </div>
@@ -3029,7 +3157,7 @@
                     absensiData.push({ area, name, position, shifts });
                 });
                 
-                // Save to Firestore in batch
+                // PERBAIKAN: Hapus data lama terlebih dahulu sebelum menambah yang baru
                 const batch = db.batch();
                 
                 // Clear existing data
@@ -3199,7 +3327,7 @@
             });
         }
 
-        // PERBAIKAN: Fungsi untuk update overtime calculation table dengan filter terpisah
+        // PERBAIKAN: Fungsi untuk update overtime calculation table dengan filter terpisah dan tombol edit/delete
         function updateOvertimeTable() {
             const tbody = document.querySelector('#overtimeTableBody');
             tbody.innerHTML = '';
@@ -3237,10 +3365,18 @@
                     <td><input type="time" class="actual-check-in" value="${data.actualCheckIn}" data-id="${data.id}"></td>
                     <td><input type="time" class="actual-check-out" value="${data.actualCheckOut}" data-id="${data.id}"></td>
                     <td><input type="text" class="over-time" value="${data.overTime}" data-id="${data.id}" readonly></td>
-                    <td><input type="text" class="cek-rmc" value="${data.cekRMC}" data-id="${data.id}"></td>
+                    <td><input type="time" class="cek-rmc" value="${data.cekRMC}" data-id="${data.id}"></td>
                     <td><input type="text" class="rkp-pic" value="${data.rkpPIC}" data-id="${data.id}"></td>
                     <td><input type="text" class="rmc-shift-check-out" value="${data.rmcShiftCheckOut}" data-id="${data.id}" readonly></td>
                     <td><input type="text" class="remarks-input" value="${data.remarks}" data-id="${data.id}"></td>
+                    <td>
+                        <button class="btn btn-edit btn-sm" onclick="editOvertimeCalculation('${data.id}')">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn btn-delete btn-sm" onclick="deleteOvertimeCalculation('${data.id}')">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
                 `;
                 tbody.appendChild(row);
             });
@@ -5631,6 +5767,152 @@
                 } else {
                     showNotification('Error changing password: ' + error.message, 'error');
                 }
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // =============================================
+        // PERBAIKAN FUNGSI EDIT DAN DELETE OVERTIME CALCULATION
+        // =============================================
+
+        // PERBAIKAN: Fungsi untuk edit data overtime calculation
+        function editOvertimeCalculation(id) {
+            // Cari data berdasarkan ID
+            const data = overtimeCalcData.find(item => item.id === id);
+            if (!data) {
+                showNotification('Data not found', 'error');
+                return;
+            }
+            
+            // Isi form modal dengan data yang akan diedit
+            document.getElementById('editOvertimeCalculationId').value = data.id;
+            document.getElementById('editOvertimeArea').value = data.area;
+            document.getElementById('editOvertimeName').value = data.name;
+            document.getElementById('editOvertimePosition').value = data.position;
+            document.getElementById('editOvertimeDate').value = data.date;
+            document.getElementById('editOvertimeShift').value = data.shift;
+            document.getElementById('editOvertimeShiftCheckIn').value = data.shiftCheckIn;
+            document.getElementById('editOvertimeShiftCheckOut').value = data.shiftCheckOut;
+            document.getElementById('editOvertimeActualCheckIn').value = data.actualCheckIn;
+            document.getElementById('editOvertimeActualCheckOut').value = data.actualCheckOut;
+            document.getElementById('editOvertimeOverTime').value = data.overTime;
+            document.getElementById('editOvertimeCekRMC').value = data.cekRMC;
+            document.getElementById('editOvertimeRkpPIC').value = data.rkpPIC;
+            document.getElementById('editOvertimeRmcShiftCheckOut').value = data.rmcShiftCheckOut;
+            document.getElementById('editOvertimeRemarks').value = data.remarks;
+            
+            // Tampilkan modal
+            const modal = new bootstrap.Modal(document.getElementById('editOvertimeCalculationModal'));
+            modal.show();
+        }
+
+        // PERBAIKAN: Fungsi untuk update data overtime calculation setelah edit
+        async function updateOvertimeCalculationData() {
+            const id = document.getElementById('editOvertimeCalculationId').value;
+            const actualCheckIn = document.getElementById('editOvertimeActualCheckIn').value;
+            const actualCheckOut = document.getElementById('editOvertimeActualCheckOut').value;
+            const cekRMC = document.getElementById('editOvertimeCekRMC').value;
+            const rkpPIC = document.getElementById('editOvertimeRkpPIC').value;
+            const remarks = document.getElementById('editOvertimeRemarks').value;
+            
+            try {
+                showLoading(true);
+                
+                // Update data di Firestore
+                await db.collection('overtime').doc(id).update({
+                    actualCheckIn,
+                    actualCheckOut,
+                    cekRMC,
+                    rkpPIC,
+                    remarks,
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                
+                // Update data lokal
+                const data = overtimeCalcData.find(item => item.id === id);
+                if (data) {
+                    data.actualCheckIn = actualCheckIn;
+                    data.actualCheckOut = actualCheckOut;
+                    data.cekRMC = cekRMC;
+                    data.rkpPIC = rkpPIC;
+                    data.remarks = remarks;
+                    
+                    // Hitung overtime berdasarkan actual check out
+                    if (actualCheckOut && data.shiftCheckOut) {
+                        const actualOut = new Date(`2000-01-01T${actualCheckOut}`);
+                        const shiftOut = new Date(`2000-01-01T${data.shiftCheckOut}`);
+                        
+                        // Jika actual check out di hari berikutnya (setelah tengah malam)
+                        if (actualOut < shiftOut) {
+                            actualOut.setDate(actualOut.getDate() + 1);
+                        }
+                        
+                        const diffMs = actualOut - shiftOut;
+                        const diffHrs = Math.floor(diffMs / (1000 * 60 * 60));
+                        const diffMins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+                        
+                        data.overTime = `${String(diffHrs).padStart(2, '0')}:${String(diffMins).padStart(2, '0')}`;
+                    }
+                    
+                    // Hitung Rmc - Shift Check Out
+                    if (cekRMC && data.shiftCheckOut) {
+                        const rmcTime = new Date(`2000-01-01T${cekRMC}`);
+                        const shiftOutTime = new Date(`2000-01-01T${data.shiftCheckOut}`);
+                        
+                        // Jika RMC di hari berikutnya (setelah tengah malam)
+                        if (rmcTime < shiftOutTime) {
+                            rmcTime.setDate(rmcTime.getDate() + 1);
+                        }
+                        
+                        const diffMs = rmcTime - shiftOutTime;
+                        const diffHrs = Math.floor(diffMs / (1000 * 60 * 60));
+                        const diffMins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+                        
+                        data.rmcShiftCheckOut = `${String(diffHrs).padStart(2, '0')}:${String(diffMins).padStart(2, '0')}`;
+                    }
+                }
+                
+                // Update tampilan tabel
+                updateOvertimeTable();
+                
+                // Tutup modal
+                const modal = bootstrap.Modal.getInstance(document.getElementById('editOvertimeCalculationModal'));
+                modal.hide();
+                
+                showNotification('Overtime calculation data updated successfully', 'success');
+                
+            } catch (error) {
+                console.error('Error updating overtime calculation data:', error);
+                showNotification('Error updating overtime calculation data: ' + error.message, 'error');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // PERBAIKAN: Fungsi untuk delete data overtime calculation
+        async function deleteOvertimeCalculation(id) {
+            if (!confirm('Are you sure you want to delete this overtime calculation data?')) {
+                return;
+            }
+            
+            try {
+                showLoading(true);
+                
+                // Hapus data dari Firestore
+                await db.collection('overtime').doc(id).delete();
+                
+                // Hapus data dari array lokal
+                overtimeCalcData = overtimeCalcData.filter(item => item.id !== id);
+                
+                // Update tampilan tabel
+                updateOvertimeTable();
+                
+                showNotification('Overtime calculation data deleted successfully', 'success');
+                
+            } catch (error) {
+                console.error('Error deleting overtime calculation data:', error);
+                showNotification('Error deleting overtime calculation data: ' + error.message, 'error');
             } finally {
                 showLoading(false);
             }

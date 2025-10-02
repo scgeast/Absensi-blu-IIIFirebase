@@ -1393,6 +1393,36 @@
             color: var(--primary-color);
             text-align: center;
         }
+
+        /* NEW: Refresh button styles */
+        .refresh-button-container {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 15px;
+        }
+        
+        .btn-refresh {
+            background: linear-gradient(to right, #28a745, #20c997);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 8px 15px;
+            transition: all 0.3s;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .btn-refresh:hover {
+            background: linear-gradient(to right, #20c997, #28a745);
+            transform: translateY(-1px);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+        
+        .btn-refresh:active {
+            transform: translateY(0);
+        }
     </style>
 </head>
 <body>
@@ -1761,6 +1791,13 @@
 
                 <!-- Overtime Tab -->
                 <div class="tab-pane fade" id="overtime" role="tabpanel">
+                    <!-- NEW: Refresh Button Container -->
+                    <div class="refresh-button-container">
+                        <button class="btn btn-refresh" id="refreshOvertimeData">
+                            <i class="fas fa-sync-alt"></i> Refresh Overtime Data
+                        </button>
+                    </div>
+
                     <button type="button" class="collapsible">Overtime Calculation <i class="fas fa-chevron-down"></i></button>
                     <div class="collapsible-content">
                         <p class="small">Here you can manage employee overtime calculation.</p>
@@ -1837,6 +1874,7 @@
                                         <th>Off</th>
                                         <th>Morning</th>
                                         <th>Afternoon</th>
+                                        <th>Night</th>
                                         <th>Morning Part</th>
                                         <th>Afternoon Part</th>
                                         <th>Leave</th>
@@ -2373,10 +2411,10 @@
         let leaveYearlyData = {};
 
         // =============================================
-        // NEW: ATTENDANCE SUMMARY FUNCTIONS
+        // NEW: ATTENDANCE SUMMARY FUNCTIONS - DIPERBAIKI
         // =============================================
 
-        // Function to generate attendance summary data
+        // Function to generate attendance summary data - DIPERBAIKI
         function generateAttendanceSummary() {
             const summaryData = {};
             
@@ -2391,6 +2429,7 @@
                         off: 0,
                         morning: 0,
                         afternoon: 0,
+                        night: 0,
                         morningPart: 0,
                         afternoonPart: 0,
                         leave: 0,
@@ -2410,27 +2449,31 @@
                                 break;
                             case '1':
                                 summaryData[employee.name].morning++;
-                                summaryData[employee.name].totalWorkDay++;
                                 break;
                             case '2':
                                 summaryData[employee.name].afternoon++;
-                                summaryData[employee.name].totalWorkDay++;
+                                break;
+                            case '3':
+                                summaryData[employee.name].night++;
                                 break;
                             case '11':
                                 summaryData[employee.name].morningPart++;
-                                summaryData[employee.name].totalWorkDay++;
                                 break;
                             case '22':
                                 summaryData[employee.name].afternoonPart++;
-                                summaryData[employee.name].totalWorkDay++;
                                 break;
                             case 'C':
                                 summaryData[employee.name].leave++;
                                 break;
                         }
                         
-                        // Count total attendance (all shifts except empty)
-                        if (shift && shift !== 'O' && shift !== 'C') {
+                        // PERBAIKAN: Total Work Day = sum dari semua kolom kecuali empty
+                        if (shift && shift !== '') {
+                            summaryData[employee.name].totalWorkDay++;
+                        }
+                        
+                        // Count total attendance (all shifts except empty, O, and C)
+                        if (shift && shift !== 'O' && shift !== 'C' && shift !== '') {
                             summaryData[employee.name].totalAttendance++;
                         }
                     });
@@ -2449,12 +2492,15 @@
             
             if (summaryData.length === 0) {
                 const row = document.createElement('tr');
-                row.innerHTML = `<td colspan="10" class="text-center">No attendance data available</td>`;
+                row.innerHTML = `<td colspan="11" class="text-center">No attendance data available</td>`;
                 tbody.appendChild(row);
                 return;
             }
             
-            summaryData.forEach((employee, index) => {
+            // Sort employees by default order
+            const sortedData = sortEmployeesByDefaultOrder(summaryData);
+            
+            sortedData.forEach((employee, index) => {
                 const row = document.createElement('tr');
                 row.innerHTML = `
                     <td>${index + 1}</td>
@@ -2462,6 +2508,7 @@
                     <td>${employee.off}</td>
                     <td>${employee.morning}</td>
                     <td>${employee.afternoon}</td>
+                    <td>${employee.night}</td>
                     <td>${employee.morningPart}</td>
                     <td>${employee.afternoonPart}</td>
                     <td>${employee.leave}</td>
@@ -2473,10 +2520,10 @@
         }
 
         // =============================================
-        // NEW: OVERTIME SUMMARY FUNCTIONS
+        // NEW: OVERTIME SUMMARY FUNCTIONS - DIPERBAIKI
         // =============================================
 
-        // Function to generate overtime summary data
+        // Function to generate overtime summary data - DIPERBAIKI
         function generateOvertimeSummary() {
             const summaryData = {};
             
@@ -2508,9 +2555,13 @@
                     };
                 }
                 
-                // Count work days (only if there's actual work data)
-                if (data.shift && data.shift !== 'O' && data.shift !== 'C') {
-                    summaryData[data.name].totalWorkDay++;
+                // PERBAIKAN: Count work days (only count Morning, Afternoon, Night, Morning Part, Afternoon Part)
+                // Jangan count Off dan Leave karena tidak bekerja
+                if (data.shift) {
+                    const shift = data.shift.toUpperCase();
+                    if (shift === '1' || shift === '2' || shift === '3' || shift === '11' || shift === '22') {
+                        summaryData[data.name].totalWorkDay++;
+                    }
                 }
                 
                 // Calculate total work time from WT/Normal
@@ -2563,7 +2614,10 @@
                 return;
             }
             
-            summaryData.forEach((employee, index) => {
+            // Sort employees by default order
+            const sortedData = sortEmployeesByDefaultOrder(summaryData);
+            
+            sortedData.forEach((employee, index) => {
                 const row = document.createElement('tr');
                 row.innerHTML = `
                     <td>${index + 1}</td>
@@ -2575,6 +2629,102 @@
                 `;
                 tbody.appendChild(row);
             });
+        }
+
+        // =============================================
+        // NEW: REFRESH BUTTON FUNCTIONALITY
+        // =============================================
+
+        // Function to refresh overtime data from Overtime Form
+        async function refreshOvertimeData() {
+            try {
+                showLoading(true);
+                
+                // Load all overtime records
+                const querySnapshot = await db.collection('overtimeRecords').get();
+                
+                rekapLemburData = [];
+                querySnapshot.forEach(doc => {
+                    rekapLemburData.push({
+                        id: doc.id,
+                        ...doc.data()
+                    });
+                });
+                
+                // Update Overtime Calculation dengan data terbaru dari Overtime Form
+                await updateOvertimeCalculationFromForm();
+                
+                // Update tampilan
+                updateOvertimeTable();
+                updateOvertimeSummaryTable();
+                
+                showNotification('Overtime data refreshed successfully from Overtime Form', 'success');
+                
+            } catch (error) {
+                console.error('Error refreshing overtime data:', error);
+                showNotification('Error refreshing overtime data: ' + error.message, 'error');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // Function to update Overtime Calculation dengan data dari Overtime Form
+        async function updateOvertimeCalculationFromForm() {
+            try {
+                const batch = db.batch();
+                let updatedCount = 0;
+                
+                // Loop melalui semua data overtime form
+                for (const overtimeRecord of rekapLemburData) {
+                    // Format tanggal untuk pencarian (DD/MM/YYYY)
+                    const formattedDate = formatDateForShift(new Date(overtimeRecord.date));
+                    
+                    // Cari data overtime calculation yang sesuai
+                    const overtimeSnapshot = await db.collection('overtime')
+                        .where('name', '==', overtimeRecord.employeeName)
+                        .where('date', '==', formattedDate)
+                        .get();
+                    
+                    if (!overtimeSnapshot.empty) {
+                        overtimeSnapshot.forEach(doc => {
+                            const overtimeData = doc.data();
+                            
+                            // Update existing record dengan data dari Overtime Form
+                            const docRef = db.collection('overtime').doc(doc.id);
+                            
+                            batch.update(docRef, {
+                                rkpPIC: overtimeRecord.overtimeDuration, // Duration dari Overtime Form
+                                remarks: overtimeRecord.taskDescription || 'Overtime recorded',
+                                lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+                            });
+                            
+                            // Update local data
+                            const localItem = overtimeCalcData.find(d => d.id === doc.id);
+                            if (localItem) {
+                                localItem.rkpPIC = overtimeRecord.overtimeDuration;
+                                localItem.remarks = overtimeRecord.taskDescription || 'Overtime recorded';
+                            }
+                            
+                            updatedCount++;
+                        });
+                    } else {
+                        // Jika tidak ditemukan, buat record baru
+                        await createNewOvertimeCalculationRecord(overtimeRecord, formattedDate);
+                        updatedCount++;
+                    }
+                }
+                
+                if (updatedCount > 0) {
+                    await batch.commit();
+                    console.log(`Berhasil mengupdate ${updatedCount} record di Firestore`);
+                }
+                
+                // Refresh data overtime calculation
+                await loadOvertimeCalculationData();
+                
+            } catch (error) {
+                console.error('Error updating overtime calculation from form:', error);
+            }
         }
 
         // =============================================
@@ -2789,6 +2939,9 @@
                 // Load overtime calculation data
                 await loadOvertimeCalculationData();
                 
+                // Load overtime form data
+                await loadAllOvertimeData();
+                
                 // Setup UI components
                 initCollapsible();
                 applyDateFilterMain(); // Apply filter untuk Main folder
@@ -2960,7 +3113,7 @@
                                 name,
                                 position,
                                 date: dateStr,
-                                shift: shiftCode, // we keep the code for overtime
+                                shift: shiftDetails.name, // PERBAIKAN: Gunakan nama shift, bukan kode
                                 shiftCheckIn: shiftDetails.checkIn,
                                 shiftCheckOut: shiftDetails.checkOut,
                                 wtNormal: shiftDetails.hours,
@@ -5591,6 +5744,11 @@
                 await saveOvertimeDataToFirestore();
             });
             
+            // NEW: Refresh overtime data button
+            document.getElementById('refreshOvertimeData').addEventListener('click', async function() {
+                await refreshOvertimeData();
+            });
+            
             // PERBAIKAN: Event listener untuk tombol Add Cuti
             document.getElementById('addCuti').addEventListener('click', function() {
                 const employeeName = document.getElementById('cutiEmployee').value;
@@ -5712,7 +5870,7 @@
                 }
             }
             
-            console.log('Application initialized successfully with overtime and leave improvements');
+            console.log('Application initialized successfully with all improvements');
         });
 
     </script>

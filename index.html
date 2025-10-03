@@ -1823,6 +1823,7 @@
                                     <th class="sortable-header" data-column="rkpPIC">RKP PIC <span class="sort-icon"><i class="fas fa-sort"></i></span></th>
                                     <th class="sortable-header" data-column="rmcShiftCheckOut">Rmc - Shift Check Out <span class="sort-icon"><i class="fas fa-sort"></i></span></th>
                                     <th class="sortable-header" data-column="remarks">Remarks <span class="sort-icon"><i class="fas fa-sort"></i></span></th>
+                                    <th>Action</th> <!-- NEW: Kolom Action untuk edit/delete -->
                                 </tr>
                             </thead>
                             <tbody id="overtimeTableBody">
@@ -2065,7 +2066,7 @@
                                         <th>Plant Name</th>
                                         <th>Volume (m3)</th>
                                         <th>Task Description</th>
-                                        <th>Action</th>
+                                        <!-- PERBAIKAN: Hilangkan kolom Action untuk admin di overtime detail -->
                                     </tr>
                                 </thead>
                                 <tbody id="overtimeDetailTableBody">
@@ -3241,6 +3242,14 @@
                     <td><input type="text" class="rkp-pic" value="${data.rkpPIC}" data-id="${data.id}"></td>
                     <td><input type="text" class="rmc-shift-check-out" value="${data.rmcShiftCheckOut}" data-id="${data.id}" readonly></td>
                     <td><input type="text" class="remarks-input" value="${data.remarks}" data-id="${data.id}"></td>
+                    <td>
+                        <button class="btn-edit" onclick="editOvertimeCalculationRow('${data.id}')">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn-delete" onclick="deleteOvertimeCalculationRow('${data.id}')">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
                 `;
                 tbody.appendChild(row);
             });
@@ -3258,6 +3267,51 @@
             // NEW: Update overtime summary if we're on that tab
             if (currentTab === 'summary-overtime') {
                 updateOvertimeSummaryTable();
+            }
+        }
+
+        // PERBAIKAN: Fungsi untuk edit row di overtime calculation
+        function editOvertimeCalculationRow(rowId) {
+            const row = document.querySelector(`[data-id="${rowId}"]`).closest('tr');
+            const inputs = row.querySelectorAll('input');
+            
+            // Enable editing for all inputs except readonly ones
+            inputs.forEach(input => {
+                if (!input.readOnly) {
+                    input.readOnly = false;
+                    input.style.backgroundColor = '#f8f9fa';
+                }
+            });
+            
+            showNotification('Row is now editable. Make changes and save when done.', 'info');
+        }
+
+        // PERBAIKAN: Fungsi untuk delete row di overtime calculation
+        async function deleteOvertimeCalculationRow(rowId) {
+            if (!confirm('Are you sure you want to delete this overtime calculation record?')) {
+                return;
+            }
+            
+            try {
+                showLoading(true);
+                
+                // Hapus dari Firestore
+                await db.collection('overtime').doc(rowId).delete();
+                
+                // Hapus dari data lokal
+                overtimeCalcData = overtimeCalcData.filter(data => data.id !== rowId);
+                
+                // Update tampilan
+                updateOvertimeTable();
+                updateOvertimeSummaryTable();
+                
+                showNotification('Overtime calculation record deleted successfully', 'success');
+                
+            } catch (error) {
+                console.error('Error deleting overtime calculation record:', error);
+                showNotification('Error deleting overtime calculation record: ' + error.message, 'error');
+            } finally {
+                showLoading(false);
             }
         }
 
@@ -5067,7 +5121,7 @@
             
             if (filteredData.length === 0) {
                 const row = document.createElement('tr');
-                row.innerHTML = `<td colspan="12" class="text-center">No overtime data found</td>`;
+                row.innerHTML = `<td colspan="11" class="text-center">No overtime data found</td>`;
                 tbody.appendChild(row);
                 return;
             }
@@ -5094,18 +5148,6 @@
                             <td>${tableRow.plantNames || ''}</td>
                             <td>${tableRow.volume || ''}</td>
                             <td>${index === 0 ? record.taskDescription : ''}</td>
-                            <td>
-                                ${index === 0 ? `
-                                <div class="btn-group">
-                                    <button class="btn btn-warning btn-sm" onclick="editOvertimeRecord('${record.id}')">
-                                        <i class="fas fa-edit"></i>
-                                    </button>
-                                    <button class="btn btn-danger btn-sm" onclick="deleteOvertimeRecord('${record.id}')">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
-                                </div>
-                                ` : ''}
-                            </td>
                         `;
                         tbody.appendChild(row);
                     });
@@ -5128,16 +5170,6 @@
                         <td></td>
                         <td></td>
                         <td>${record.taskDescription}</td>
-                        <td>
-                            <div class="btn-group">
-                                <button class="btn btn-warning btn-sm" onclick="editOvertimeRecord('${record.id}')">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                                <button class="btn btn-danger btn-sm" onclick="deleteOvertimeRecord('${record.id}')">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </div>
-                        </td>
                     `;
                     tbody.appendChild(row);
                 }

@@ -2411,6 +2411,197 @@
         // PERBAIKAN: Variabel untuk mengelola cuti per tahun
         let leaveYearlyData = {};
 
+        // PERBAIKAN: Variabel untuk real-time listeners
+        let firestoreListeners = {
+            overtime: null,
+            overtimeRecords: null,
+            absensi: null,
+            absenTabel: null,
+            cuti: null,
+            users: null
+        };
+
+        // =============================================
+        // PERBAIKAN: REAL-TIME FIREBASE LISTENERS
+        // =============================================
+
+        // PERBAIKAN: Fungsi untuk memuat data overtime calculation dengan real-time listener
+        function loadOvertimeCalculationData() {
+            try {
+                // Hapus listener sebelumnya jika ada
+                if (firestoreListeners.overtime) {
+                    firestoreListeners.overtime();
+                }
+                
+                firestoreListeners.overtime = db.collection('overtime').onSnapshot((snapshot) => {
+                    overtimeCalcData = [];
+                    snapshot.forEach(doc => {
+                        overtimeCalcData.push({
+                            id: doc.id,
+                            ...doc.data()
+                        });
+                    });
+                    
+                    console.log('Data overtime calculation real-time update:', overtimeCalcData.length, 'records');
+                    
+                    // Update UI jika tab aktif
+                    if (currentTab === "overtime") {
+                        updateOvertimeTable();
+                    }
+                    if (currentTab === "summary-overtime") {
+                        updateOvertimeSummaryTable();
+                    }
+                }, (error) => {
+                    console.error('Error in overtime real-time listener:', error);
+                });
+                
+            } catch (error) {
+                console.error('Error setting up overtime listener:', error);
+            }
+        }
+
+        // PERBAIKAN: Fungsi untuk memuat data overtime records dengan real-time listener
+        function loadAllOvertimeData() {
+            try {
+                // Hapus listener sebelumnya jika ada
+                if (firestoreListeners.overtimeRecords) {
+                    firestoreListeners.overtimeRecords();
+                }
+                
+                firestoreListeners.overtimeRecords = db.collection('overtimeRecords')
+                    .orderBy('date', 'desc')
+                    .onSnapshot((querySnapshot) => {
+                        rekapLemburData = [];
+                        querySnapshot.forEach(doc => {
+                            rekapLemburData.push({
+                                id: doc.id,
+                                ...doc.data()
+                            });
+                        });
+                        
+                        updateOvertimeDetailTable();
+                        updateTotalOvertime();
+                        
+                        console.log('Overtime records real-time update:', rekapLemburData.length, 'records');
+                    }, (error) => {
+                        console.error('Error in overtime records listener:', error);
+                    });
+                    
+            } catch (error) {
+                console.error('Error setting up overtime records listener:', error);
+            }
+        }
+
+        // PERBAIKAN: Fungsi untuk memuat data absensi dengan real-time listener
+        function loadAbsensiData() {
+            try {
+                if (firestoreListeners.absensi) {
+                    firestoreListeners.absensi();
+                }
+                
+                firestoreListeners.absensi = db.collection('absensi').onSnapshot((snapshot) => {
+                    absensiData = [];
+                    snapshot.forEach(doc => {
+                        absensiData.push({
+                            id: doc.id,
+                            ...doc.data()
+                        });
+                    });
+                    
+                    console.log('Absensi data real-time update:', absensiData.length, 'records');
+                    
+                    // Update UI jika diperlukan
+                    if (currentTab === "entry") {
+                        updateEntryTable();
+                    }
+                    updateEmployeeDropdown();
+                    updateCutiEmployeeDropdown();
+                    
+                }, (error) => {
+                    console.error('Error in absensi listener:', error);
+                });
+                
+            } catch (error) {
+                console.error('Error setting up absensi listener:', error);
+            }
+        }
+
+        // PERBAIKAN: Fungsi untuk memuat data absen tabel dengan real-time listener
+        function loadAbsenTabelData() {
+            try {
+                if (firestoreListeners.absenTabel) {
+                    firestoreListeners.absenTabel();
+                }
+                
+                firestoreListeners.absenTabel = db.collection('absenTabel').onSnapshot((snapshot) => {
+                    absenTabelData = [];
+                    snapshot.forEach(doc => {
+                        absenTabelData.push({
+                            id: doc.id,
+                            ...doc.data()
+                        });
+                    });
+                    
+                    console.log('Absen tabel data real-time update:', absenTabelData.length, 'records');
+                    
+                    // Update UI jika tab aktif
+                    if (currentTab === "absen-tabel") {
+                        updateAbsenTabelTable();
+                    }
+                    if (currentTab === "cuti-detail") {
+                        generateCutiDetailData();
+                    }
+                    
+                }, (error) => {
+                    console.error('Error in absenTabel listener:', error);
+                });
+                
+            } catch (error) {
+                console.error('Error setting up absenTabel listener:', error);
+            }
+        }
+
+        // PERBAIKAN: Fungsi untuk memuat data cuti dengan real-time listener
+        function loadCutiData() {
+            try {
+                if (firestoreListeners.cuti) {
+                    firestoreListeners.cuti();
+                }
+                
+                firestoreListeners.cuti = db.collection('cuti').onSnapshot((snapshot) => {
+                    cutiData = [];
+                    snapshot.forEach(doc => {
+                        cutiData.push({
+                            id: doc.id,
+                            ...doc.data()
+                        });
+                    });
+                    
+                    console.log('Cuti data real-time update:', cutiData.length, 'records');
+                    
+                    // Update UI
+                    updateCutiTable();
+                    generateCutiDetailData();
+                    
+                }, (error) => {
+                    console.error('Error in cuti listener:', error);
+                });
+                
+            } catch (error) {
+                console.error('Error setting up cuti listener:', error);
+            }
+        }
+
+        // PERBAIKAN: Fungsi untuk membersihkan semua listeners saat logout
+        function cleanupFirestoreListeners() {
+            Object.keys(firestoreListeners).forEach(key => {
+                if (firestoreListeners[key]) {
+                    firestoreListeners[key]();
+                    firestoreListeners[key] = null;
+                }
+            });
+        }
+
         // =============================================
         // NEW: ATTENDANCE SUMMARY FUNCTIONS - DIPERBAIKI
         // =============================================
@@ -2848,7 +3039,7 @@
                 setupMenuByRole(currentUser.role);
                 setupFilterByRole(currentUser.role);
                 
-                // Load initial data
+                // Load initial data dengan real-time listeners
                 await loadInitialData();
                 
                 showLoading(false);
@@ -2881,67 +3072,15 @@
                 document.getElementById('startDateAbsenTabel').valueAsDate = firstDayOfMonth;
                 document.getElementById('endDateAbsenTabel').valueAsDate = today;
                 
-                // Try to load data from Firestore
-                try {
-                    const [absensiSnapshot, settingsSnapshot, absenTabelSnapshot, cutiSnapshot] = await Promise.all([
-                        db.collection('absensi').limit(50).get(),
-                        db.collection('settings').doc('dateRange').get().catch(() => null),
-                        db.collection('absenTabel').limit(50).get().catch(() => null),
-                        db.collection('cuti').limit(50).get().catch(() => null)
-                    ]);
-                    
-                    absensiData = [];
-                    absensiSnapshot.forEach(doc => {
-                        absensiData.push({
-                            id: doc.id,
-                            ...doc.data()
-                        });
-                    });
-                    
-                    // Load absen tabel data
-                    absenTabelData = [];
-                    if (absenTabelSnapshot) {
-                        absenTabelSnapshot.forEach(doc => {
-                            absenTabelData.push({
-                                id: doc.id,
-                                ...doc.data()
-                            });
-                        });
-                    }
-                    
-                    // PERBAIKAN: Load data cuti dengan filter tahun
-                    cutiData = [];
-                    if (cutiSnapshot) {
-                        cutiSnapshot.forEach(doc => {
-                            const cutiItem = {
-                                id: doc.id,
-                                ...doc.data()
-                            };
-                            cutiData.push(cutiItem);
-                        });
-                    }
-                    
-                    // Apply date settings if available
-                    if (settingsSnapshot && settingsSnapshot.exists) {
-                        const settings = settingsSnapshot.data();
-                        if (settings.startDate) document.getElementById('startDateMain').value = settings.startDate;
-                        if (settings.endDate) document.getElementById('endDateMain').value = settings.endDate;
-                    }
-                    
-                } catch (firestoreError) {
-                    console.warn('Could not load data from Firestore:', firestoreError);
-                    // Use initial employees if Firestore is unavailable
-                    absensiData = [...initialEmployees];
-                }
+                // Setup real-time listeners
+                loadAbsensiData();
+                loadAbsenTabelData();
+                loadCutiData();
+                loadOvertimeCalculationData();
+                loadAllOvertimeData();
                 
                 // Load users data
                 await loadUsers();
-                
-                // Load overtime calculation data
-                await loadOvertimeCalculationData();
-                
-                // Load overtime form data
-                await loadAllOvertimeData();
                 
                 // Setup UI components
                 initCollapsible();
@@ -2962,26 +3101,6 @@
                 console.error('Error loading initial data:', error);
             } finally {
                 showLoading(false);
-            }
-        }
-
-        // PERBAIKAN: Fungsi untuk memuat data overtime calculation
-        async function loadOvertimeCalculationData() {
-            try {
-                const overtimeSnapshot = await db.collection('overtime').get();
-                
-                overtimeCalcData = [];
-                overtimeSnapshot.forEach(doc => {
-                    overtimeCalcData.push({
-                        id: doc.id,
-                        ...doc.data()
-                    });
-                });
-                
-                console.log('Data overtime calculation dimuat:', overtimeCalcData.length, 'records');
-                
-            } catch (error) {
-                console.error('Error loading overtime calculation data:', error);
             }
         }
 
@@ -3586,27 +3705,6 @@
             }
         }
 
-        // PERBAIKAN: Fungsi untuk memuat data absen tabel
-        async function loadAbsenTabelData() {
-            try {
-                const absenTabelSnapshot = await db.collection('absenTabel').get();
-                
-                absenTabelData = [];
-                absenTabelSnapshot.forEach(doc => {
-                    absenTabelData.push({
-                        id: doc.id,
-                        ...doc.data()
-                    });
-                });
-                
-                // Update absen tabel table
-                updateAbsenTabelTable();
-                
-            } catch (error) {
-                console.error('Error loading absen tabel data:', error);
-            }
-        }
-
         // PERBAIKAN: Fungsi untuk update tabel absen tabel dengan filter terpisah
         function updateAbsenTabelTable() {
             const thead = document.querySelector('#absenTabelTable thead tr');
@@ -4102,6 +4200,9 @@
 
         // Fungsi untuk logout
         function logout() {
+            // Cleanup semua listeners Firebase
+            cleanupFirestoreListeners();
+            
             auth.signOut().then(() => {
                 currentUser = null;
                 // Reset UI ke state login
@@ -4188,7 +4289,7 @@
                     
                     // Load absen tabel data when switching to that tab
                     if (tabName === 'absen-tabel') {
-                        loadAbsenTabelData();
+                        updateAbsenTabelTable();
                         updateAttendanceSummaryTable(); // NEW: Update attendance summary
                     }
                     
@@ -4624,30 +4725,6 @@
             });
         }
 
-        // PERBAIKAN: Fungsi untuk memuat data cuti dari Firestore
-        async function loadCutiData() {
-            try {
-                const cutiSnapshot = await db.collection('cuti').get();
-                
-                cutiData = [];
-                cutiSnapshot.forEach(doc => {
-                    cutiData.push({
-                        id: doc.id,
-                        ...doc.data()
-                    });
-                });
-                
-                // Update tabel cuti
-                updateCutiTable();
-                
-                // Generate data cuti detail
-                generateCutiDetailData();
-                
-            } catch (error) {
-                console.error('Error loading leave data:', error);
-            }
-        }
-
         // PERBAIKAN: Fungsi untuk menyimpan data cuti ke Firestore dan update tabel attendance
         async function saveCutiDataToFirestore() {
             if (!isOnline) {
@@ -4815,12 +4892,23 @@
             overtimeEmployeeFilter.addEventListener('change', updateOvertimeDetailTable);
         }
 
-        // PERBAIKAN: Fungsi untuk memuat semua data overtime (untuk admin)
-        async function loadAllOvertimeData() {
+        // PERBAIKAN: Fungsi untuk memuat data overtime user
+        async function loadUserOvertimeData() {
+            if (!currentUser) return;
+            
             try {
-                const querySnapshot = await db.collection('overtimeRecords')
-                    .orderBy('date', 'desc')
-                    .get();
+                let query;
+                if (currentUser.role === 'admin') {
+                    // Admin bisa melihat semua data
+                    query = db.collection('overtimeRecords').orderBy('date', 'desc');
+                } else {
+                    // User biasa hanya bisa melihat data sendiri
+                    query = db.collection('overtimeRecords')
+                        .where('employeeEmail', '==', currentUser.email)
+                        .orderBy('date', 'desc');
+                }
+                
+                const querySnapshot = await query.get();
                 
                 rekapLemburData = [];
                 querySnapshot.forEach(doc => {
@@ -4834,7 +4922,7 @@
                 updateTotalOvertime();
                 
             } catch (error) {
-                console.error('Error loading all overtime data:', error);
+                console.error('Error loading overtime data:', error);
             }
         }
 
@@ -4926,7 +5014,7 @@
             }
         }
 
-        // PERBAIKAN: Fungsi untuk menyimpan data overtime - DIPERBAIKI
+        // PERBAIKAN: Fungsi untuk menyimpan data overtime - LEBIH CEPAT
         async function saveRekapLembur() {
             if (!currentUser) {
                 showNotification('Please login first', 'error');
@@ -5045,40 +5133,6 @@
             const diffMins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
             
             return `${String(diffHrs).padStart(2, '0')}:${String(diffMins).padStart(2, '0')}`;
-        }
-
-        // PERBAIKAN: Fungsi untuk memuat data overtime user
-        async function loadUserOvertimeData() {
-            if (!currentUser) return;
-            
-            try {
-                let query;
-                if (currentUser.role === 'admin') {
-                    // Admin bisa melihat semua data
-                    query = db.collection('overtimeRecords').orderBy('date', 'desc');
-                } else {
-                    // User biasa hanya bisa melihat data sendiri
-                    query = db.collection('overtimeRecords')
-                        .where('employeeEmail', '==', currentUser.email)
-                        .orderBy('date', 'desc');
-                }
-                
-                const querySnapshot = await query.get();
-                
-                rekapLemburData = [];
-                querySnapshot.forEach(doc => {
-                    rekapLemburData.push({
-                        id: doc.id,
-                        ...doc.data()
-                    });
-                });
-                
-                updateOvertimeDetailTable();
-                updateTotalOvertime();
-                
-            } catch (error) {
-                console.error('Error loading overtime data:', error);
-            }
         }
 
         // PERBAIKAN: Fungsi untuk update tabel detail overtime dengan kolom Duration
@@ -5296,7 +5350,7 @@
         // PERBAIKAN INTEGRASI OVERTIME FORM KE OVERTIME CALCULATION
         // =============================================
 
-        // PERBAIKAN: Fungsi untuk integrasi dengan Overtime Calculation - DIPERBAIKI DENGAN LOOKUP OTOMATIS
+        // PERBAIKAN: Fungsi untuk integrasi dengan Overtime Calculation - LEBIH EFISIEN
         async function updateOvertimeCalculation(overtimeRecord) {
             if (!currentUser) return;
             
@@ -5304,76 +5358,39 @@
                 // Format tanggal untuk pencarian (DD/MM/YYYY)
                 const formattedDate = formatDateForShift(new Date(overtimeRecord.date));
                 
-                console.log('Mencari data overtime calculation untuk:', {
+                console.log('Integrasi real-time overtime calculation untuk:', {
                     employee: overtimeRecord.employeeName,
-                    date: formattedDate,
-                    duration: overtimeRecord.overtimeDuration,
-                    task: overtimeRecord.taskDescription
+                    date: formattedDate
                 });
-                
-                // Cari data overtime calculation yang sesuai berdasarkan nama dan tanggal
-                const overtimeSnapshot = await db.collection('overtime')
+
+                // Cari data yang cocok berdasarkan nama dan tanggal
+                const querySnapshot = await db.collection('overtime')
                     .where('name', '==', overtimeRecord.employeeName)
                     .where('date', '==', formattedDate)
                     .get();
-                
-                if (!overtimeSnapshot.empty) {
+
+                if (!querySnapshot.empty) {
+                    // Update existing records
                     const batch = db.batch();
-                    let updatedCount = 0;
-                    
-                    overtimeSnapshot.forEach(doc => {
-                        const overtimeData = doc.data();
-                        
-                        console.log('Data ditemukan, mengupdate RKP PIC dan Remarks dengan data dari Overtime Form:', {
-                            id: doc.id,
-                            rkpPIC: overtimeRecord.overtimeDuration, // Duration dari Overtime Form
-                            remarks: overtimeRecord.taskDescription || 'Overtime recorded' // Uraian tugas dari Overtime Form
-                        });
-                        
-                        // Update existing record
+                    querySnapshot.forEach(doc => {
                         const docRef = db.collection('overtime').doc(doc.id);
-                        
-                        // PERBAIKAN: Update RKP PIC dengan durasi overtime dari kolom Duration
                         batch.update(docRef, {
-                            rkpPIC: overtimeRecord.overtimeDuration, // Ambil dari kolom Duration
-                            // PERBAIKAN: Update Remarks dengan uraian tugas dari Overtime Form
+                            rkpPIC: overtimeRecord.overtimeDuration,
                             remarks: overtimeRecord.taskDescription || 'Overtime recorded',
                             lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
                         });
-                        
-                        // Update local data
-                        const localItem = overtimeCalcData.find(d => d.id === doc.id);
-                        if (localItem) {
-                            localItem.rkpPIC = overtimeRecord.overtimeDuration; // Ambil dari kolom Duration
-                            localItem.remarks = overtimeRecord.taskDescription || 'Overtime recorded';
-                        }
-                        
-                        updatedCount++;
                     });
-                    
                     await batch.commit();
-                    console.log(`Berhasil mengupdate ${updatedCount} record di Firestore`);
-                    
+                    console.log('Berhasil update overtime calculation records');
                 } else {
-                    // Jika tidak ditemukan record yang cocok, buat record baru
-                    console.log('Tidak ditemukan record yang cocok, membuat record baru');
+                    // Buat record baru jika tidak ditemukan
                     await createNewOvertimeCalculationRecord(overtimeRecord, formattedDate);
                 }
-                
-                // PERBAIKAN: Refresh data overtime calculation
-                await loadOvertimeCalculationData();
-                
-                // Update table if currently viewing overtime tab
-                if (currentTab === "overtime") {
-                    updateOvertimeTable();
-                }
-                
-                console.log('Integrasi overtime calculation selesai');
-                
+
+                // Tidak perlu memanggil loadOvertimeCalculationData() lagi karena listener akan otomatis update
+
             } catch (error) {
                 console.error('Error updating overtime calculation:', error);
-                // Tetap lanjutkan meski ada error di integrasi
-                console.log('Continuing without overtime calculation integration');
             }
         }
 

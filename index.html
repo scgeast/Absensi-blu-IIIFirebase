@@ -2702,9 +2702,15 @@
                 });
             }
             
+            // PERBAIKAN: Gunakan Set untuk melacak employee yang sudah diproses
+            const processedEmployees = new Set();
+            
             // Process each employee in filtered overtime data
             filteredOvertimeData.forEach(data => {
-                if (!data.name) return;
+                if (!data.name || processedEmployees.has(data.name)) return;
+                
+                // Tandai employee sebagai sudah diproses
+                processedEmployees.add(data.name);
                 
                 // Initialize employee summary if not exists
                 if (!summaryData[data.name]) {
@@ -2717,11 +2723,11 @@
                     };
                 }
                 
-                // PERBAIKAN: Count work days (only count Morning, Afternoon, Night, Morning Part, Afternoon Part)
-                // Jangan count Off dan Leave karena tidak bekerja
+                // PERBAIKAN: Hitung work days (hanya shift yang valid)
                 if (data.shift) {
                     const shift = data.shift.toUpperCase();
-                    if (shift === '1' || shift === '2' || shift === '3' || shift === '11' || shift === '22') {
+                    if (shift === 'MORNING' || shift === 'AFTERNOON' || shift === 'NIGHT' || 
+                        shift === 'MORNING PART' || shift === 'AFTERNOON PART') {
                         summaryData[data.name].totalWorkDay++;
                     }
                 }
@@ -2805,13 +2811,18 @@
                 // Load all overtime records
                 const querySnapshot = await db.collection('overtimeRecords').get();
                 
+                // PERBAIKAN: Kosongkan array sebelum memuat data baru untuk menghindari duplikasi
                 rekapLemburData = [];
+                
                 querySnapshot.forEach(doc => {
                     rekapLemburData.push({
                         id: doc.id,
                         ...doc.data()
                     });
                 });
+                
+                // PERBAIKAN: Hapus dulu semua data overtime calculation sebelum membuat yang baru
+                await clearOvertimeCalculationData();
                 
                 // Update Overtime Calculation dengan data terbaru dari Overtime Form
                 await updateOvertimeCalculationFromForm();
@@ -2830,6 +2841,28 @@
             }
         }
 
+        // PERBAIKAN: Fungsi untuk menghapus semua data overtime calculation
+        async function clearOvertimeCalculationData() {
+            try {
+                const batch = db.batch();
+                const overtimeSnapshot = await db.collection('overtime').get();
+                
+                overtimeSnapshot.forEach(doc => {
+                    batch.delete(doc.ref);
+                });
+                
+                await batch.commit();
+                console.log('All overtime calculation data cleared');
+                
+                // Kosongkan juga data lokal
+                overtimeCalcData = [];
+                
+            } catch (error) {
+                console.error('Error clearing overtime calculation data:', error);
+                throw error;
+            }
+        }
+
         // Function to update Overtime Calculation dengan data dari Overtime Form
         async function updateOvertimeCalculationFromForm() {
             try {
@@ -2841,48 +2874,48 @@
                     // Format tanggal untuk pencarian (DD/MM/YYYY)
                     const formattedDate = formatDateForShift(new Date(overtimeRecord.date));
                     
-                    // Cari data overtime calculation yang sesuai
-                    const overtimeSnapshot = await db.collection('overtime')
-                        .where('name', '==', overtimeRecord.employeeName)
-                        .where('date', '==', formattedDate)
-                        .get();
+                    // Cari data di absensiData untuk mendapatkan informasi shift
+                    const employeeData = absensiData.find(emp => emp.name === overtimeRecord.employeeName);
                     
-                    if (!overtimeSnapshot.empty) {
-                        overtimeSnapshot.forEach(doc => {
-                            const overtimeData = doc.data();
-                            
-                            // Update existing record dengan data dari Overtime Form
-                            const docRef = db.collection('overtime').doc(doc.id);
-                            
-                            batch.update(docRef, {
+                    if (employeeData && employeeData.shifts && employeeData.shifts[formattedDate]) {
+                        const shiftCode = employeeData.shifts[formattedDate];
+                        const shiftDetails = shiftMatrix[employeeData.position] && shiftMatrix[employeeData.position][shiftCode];
+                        
+                        if (shiftDetails) {
+                            // Buat record baru di overtime calculation
+                            const newOvertimeCalc = {
+                                area: employeeData.area || "CDC East",
+                                name: overtimeRecord.employeeName,
+                                position: employeeData.position || "",
+                                date: formattedDate,
+                                shift: shiftDetails.name,
+                                shiftCheckIn: shiftDetails.checkIn,
+                                shiftCheckOut: shiftDetails.checkOut,
+                                wtNormal: shiftDetails.hours,
+                                actualCheckIn: "",
+                                actualCheckOut: "",
+                                overTime: "",
+                                cekRMC: "",
                                 rkpPIC: overtimeRecord.overtimeDuration, // Duration dari Overtime Form
+                                rmcShiftCheckOut: "",
                                 remarks: overtimeRecord.taskDescription || 'Overtime recorded',
-                                lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
-                            });
+                                createdFromOvertimeForm: true,
+                                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                            };
                             
-                            // Update local data
-                            const localItem = overtimeCalcData.find(d => d.id === doc.id);
-                            if (localItem) {
-                                localItem.rkpPIC = overtimeRecord.overtimeDuration;
-                                localItem.remarks = overtimeRecord.taskDescription || 'Overtime recorded';
-                            }
+                            // Simpan ke Firestore
+                            const docRef = await db.collection('overtime').add(newOvertimeCalc);
+                            newOvertimeCalc.id = docRef.id;
+                            
+                            // Tambahkan ke data lokal
+                            overtimeCalcData.push(newOvertimeCalc);
                             
                             updatedCount++;
-                        });
-                    } else {
-                        // Jika tidak ditemukan, buat record baru
-                        await createNewOvertimeCalculationRecord(overtimeRecord, formattedDate);
-                        updatedCount++;
+                        }
                     }
                 }
                 
-                if (updatedCount > 0) {
-                    await batch.commit();
-                    console.log(`Berhasil mengupdate ${updatedCount} record di Firestore`);
-                }
-                
-                // Refresh data overtime calculation
-                await loadOvertimeCalculationData();
+                console.log(`Created ${updatedCount} new overtime calculation records`);
                 
             } catch (error) {
                 console.error('Error updating overtime calculation from form:', error);
@@ -3131,7 +3164,9 @@
             try {
                 const overtimeSnapshot = await db.collection('overtime').get();
                 
+                // PERBAIKAN: Kosongkan array sebelum memuat data baru
                 overtimeCalcData = [];
+                
                 overtimeSnapshot.forEach(doc => {
                     overtimeCalcData.push({
                         id: doc.id,
@@ -3241,6 +3276,8 @@
         // Fungsi untuk generate output dan overtime calculation data
         function generateOutputAndOvertimeData() {
             outputData = [];
+            
+            // PERBAIKAN: Kosongkan array sebelum mengisi data baru
             overtimeCalcData = [];
             
             absensiData.forEach(employee => {
@@ -5493,7 +5530,7 @@
                     console.log(`Berhasil mengupdate ${updatedCount} record di Firestore`);
                     
                 } else {
-                    // Jika tidak ditemukan record yang cocok, buat record baru
+                    // Jika tidak ditemukan, buat record baru
                     console.log('Tidak ditemukan record yang cocok, membuat record baru');
                     await createNewOvertimeCalculationRecord(overtimeRecord, formattedDate);
                 }
@@ -5838,7 +5875,7 @@
             modal.show();
         }
 
-        // Fungsi untuk update record overtime calculation
+        // PERBAIKAN: Fungsi untuk update record overtime calculation
         async function updateOvertimeRecord() {
             const recordId = document.getElementById('editOvertimeId').value;
             
@@ -5850,8 +5887,8 @@
             try {
                 showLoading(true);
                 
-                // Update data di Firestore
-                await db.collection('overtime').doc(recordId).update({
+                // Siapkan data update
+                const updateData = {
                     area: document.getElementById('editOvertimeArea').value,
                     name: document.getElementById('editOvertimeName').value,
                     position: document.getElementById('editOvertimePosition').value,
@@ -5868,26 +5905,16 @@
                     rmcShiftCheckOut: document.getElementById('editOvertimeRmcShiftCheckOut').value,
                     remarks: document.getElementById('editOvertimeRemarks').value,
                     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-                });
+                };
+                
+                // Update data di Firestore
+                await db.collection('overtime').doc(recordId).update(updateData);
                 
                 // Update data lokal
-                const record = overtimeCalcData.find(r => r.id === recordId);
-                if (record) {
-                    record.area = document.getElementById('editOvertimeArea').value;
-                    record.name = document.getElementById('editOvertimeName').value;
-                    record.position = document.getElementById('editOvertimePosition').value;
-                    record.date = document.getElementById('editOvertimeDate').value;
-                    record.shift = document.getElementById('editOvertimeShift').value;
-                    record.shiftCheckIn = document.getElementById('editOvertimeShiftCheckIn').value;
-                    record.shiftCheckOut = document.getElementById('editOvertimeShiftCheckOut').value;
-                    record.wtNormal = document.getElementById('editOvertimeWtNormal').value;
-                    record.actualCheckIn = document.getElementById('editOvertimeActualCheckIn').value;
-                    record.actualCheckOut = document.getElementById('editOvertimeActualCheckOut').value;
-                    record.overTime = document.getElementById('editOvertimeOverTime').value;
-                    record.cekRMC = document.getElementById('editOvertimeCekRMC').value;
-                    record.rkpPIC = document.getElementById('editOvertimeRkpPIC').value;
-                    record.rmcShiftCheckOut = document.getElementById('editOvertimeRmcShiftCheckOut').value;
-                    record.remarks = document.getElementById('editOvertimeRemarks').value;
+                const recordIndex = overtimeCalcData.findIndex(r => r.id === recordId);
+                if (recordIndex !== -1) {
+                    // PERBAIKAN: Gunakan Object.assign untuk memperbarui semua properti
+                    Object.assign(overtimeCalcData[recordIndex], updateData);
                 }
                 
                 // Update tampilan

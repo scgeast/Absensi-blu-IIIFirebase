@@ -3818,26 +3818,57 @@
         async function applyDateFilterOvertimeOutput() {
             const startDate = document.getElementById('startDateOvertimeOutput').valueAsDate;
             const endDate = document.getElementById('endDateOvertimeOutput').valueAsDate;
-            
-            if (!startDate || !endDate) return;
-            
+
+            if (!startDate || !endDate) {
+                showNotification('Please select a valid date range', 'error');
+                return;
+            }
+
+            if (startDate > endDate) {
+                showNotification('Start date cannot be greater than end date', 'error');
+                return;
+            }
+
             dateRangeOvertimeOutput = [];
-            let currentDate = new Date(startDate);
-            
+            const currentDate = new Date(startDate);
             while (currentDate <= endDate) {
                 dateRangeOvertimeOutput.push(new Date(currentDate));
                 currentDate.setDate(currentDate.getDate() + 1);
             }
-            
-            // Batasi maksimal 31 hari untuk performa
+
             if (dateRangeOvertimeOutput.length > 31) {
-                alert('Date range limited to 31 days for better performance');
-                dateRangeOvertimeOutput = dateRangeOvertimeOutput.slice(0, 31);
-                document.getElementById('endDateOvertimeOutput').valueAsDate = dateRangeOvertimeOutput[dateRangeOvertimeOutput.length - 1];
+                showNotification('Date range is limited to 31 days for better performance', 'error');
+                return;
             }
-            
-            // Load data untuk periode yang difilter
-            await loadOvertimeDataByPeriod(startDate, endDate);
+
+            try {
+                showLoading(true);
+
+                // 1. Attendance Entry adalah sumber utama untuk Attendance Output
+                //    dan kolom Shift/Check In/Check Out pada Overtime Calculation.
+                await loadAttendanceDataByPeriod(startDate, endDate);
+
+                // 2. Ambil data overtime yang sudah pernah disimpan agar input Actual,
+                //    RMC, PIC dan Remarks tidak hilang.
+                await loadOvertimeCalculationData();
+
+                // 3. Gabungkan data attendance + shift matrix + overtime lama.
+                generateOutputAndOvertimeData();
+
+                updateEmployeeDropdown();
+                outputDataLoaded = true;
+                overtimeDataLoaded = true;
+
+                if (currentTab === 'output') updateOutputTable();
+                if (currentTab === 'overtime') updateOvertimeTable();
+
+                showNotification(`Loaded ${outputData.length} attendance output records`, 'success');
+            } catch (error) {
+                console.error('Error loading Output/Overtime data:', error);
+                showNotification('Error loading Output/Overtime data: ' + error.message, 'error');
+            } finally {
+                showLoading(false);
+            }
         }
 
         // PERBAIKAN: Fungsi untuk apply filter tanggal Attendance Table
@@ -4171,74 +4202,115 @@
             }
         }
 
-        // Fungsi untuk generate output dan overtime calculation data
+        // Generate Attendance Output dan Overtime Calculation dari Attendance Entry.
+        // Attendance Entry adalah single source of truth untuk PIC + tanggal + kode shift.
         function generateOutputAndOvertimeData() {
             outputData = [];
-            overtimeCalcData = [];
-            
+
+            // Simpan semua overtime lama berdasarkan PIC + tanggal.
+            // Ini mencegah Actual Check In/Out, RMC, PIC dan Remarks hilang saat data di-refresh.
+            const overtimeByKey = new Map();
+            overtimeCalcData.forEach(item => {
+                if (item && item.name && item.date) {
+                    overtimeByKey.set(`${item.name}|${item.date}`, item);
+                }
+            });
+
+            const generatedKeys = new Set();
+
             absensiData.forEach(employee => {
-                const area = employee.area;
-                const name = employee.name;
-                const position = employee.position;
-                
-                // Loop through the shifts
+                const area = employee.area || '';
+                const name = employee.name || '';
+                const position = employee.position || '';
+                if (!name || !position) return;
+
                 Object.keys(employee.shifts || {}).forEach(dateStr => {
                     const shiftCode = employee.shifts[dateStr];
-                    if (shiftCode) { // if not empty
-                        // Get shift details from shiftMatrix
-                        const shiftDetails = shiftMatrix[position] && shiftMatrix[position][shiftCode];
-                        
-                        if (shiftDetails) {
-                            // For outputData
-                            outputData.push({
-                                area,
-                                name,
-                                position,
-                                date: dateStr,
-                                shift: shiftDetails.name, // use the name (without code)
-                                shiftCheckIn: shiftDetails.checkIn,
-                                shiftCheckOut: shiftDetails.checkOut,
-                                remarks: "" // initially empty
-                            });
-                            
-                            // For overtimeCalcData: jangan overwrite record Firestore yang sudah ada
-                            const overtimeKey = `${name}|${dateStr}`;
-                            if (!existingOvertimeByKey.has(overtimeKey)) {
-                                overtimeCalcData.push({
-                                    id: `generated-${name}-${dateStr}`,
-                                    generated: true,
-                                    area,
-                                    name,
-                                    position,
-                                    date: dateStr,
-                                    shift: shiftDetails.name,
-                                    shiftCheckIn: shiftDetails.checkIn,
-                                    shiftCheckOut: shiftDetails.checkOut,
-                                    wtNormal: shiftDetails.hours,
-                                    actualCheckIn: "",
-                                    actualCheckOut: "",
-                                    overTime: "",
-                                    cekRMC: "",
-                                    rkpPIC: "",
-                                    rmcShiftCheckOut: "",
-                                    remarks: ""
-                                });
-                            }
-                        }
+                    if (!shiftCode) return;
+
+                    const shiftDetails = shiftMatrix[position] && shiftMatrix[position][shiftCode];
+                    if (!shiftDetails) {
+                        console.warn(`Shift matrix not found: ${position} / ${shiftCode} / ${name} / ${dateStr}`);
+                        return;
+                    }
+
+                    // ===== Attendance Output =====
+                    outputData.push({
+                        area,
+                        name,
+                        position,
+                        date: dateStr,
+                        shift: shiftDetails.name || shiftCode,
+                        shiftCheckIn: shiftDetails.checkIn || '',
+                        shiftCheckOut: shiftDetails.checkOut || '',
+                        remarks: ''
+                    });
+
+                    // ===== Overtime Calculation =====
+                    const key = `${name}|${dateStr}`;
+                    generatedKeys.add(key);
+                    const existing = overtimeByKey.get(key);
+
+                    const scheduleData = {
+                        area,
+                        name,
+                        position,
+                        date: dateStr,
+                        shift: shiftDetails.name || shiftCode,
+                        shiftCheckIn: shiftDetails.checkIn || '',
+                        shiftCheckOut: shiftDetails.checkOut || '',
+                        wtNormal: shiftDetails.hours || ''
+                    };
+
+                    if (existing) {
+                        // Update jadwal dari Attendance Entry, tetapi pertahankan hasil/input overtime.
+                        overtimeByKey.set(key, {
+                            ...existing,
+                            ...scheduleData,
+                            actualCheckIn: existing.actualCheckIn || '',
+                            actualCheckOut: existing.actualCheckOut || '',
+                            overTime: existing.overTime || '',
+                            cekRMC: existing.cekRMC || '',
+                            rkpPIC: existing.rkpPIC || '',
+                            rmcShiftCheckOut: existing.rmcShiftCheckOut || '',
+                            remarks: existing.remarks || ''
+                        });
+                    } else {
+                        overtimeByKey.set(key, {
+                            id: `generated-${name}-${dateStr}`,
+                            generated: true,
+                            ...scheduleData,
+                            actualCheckIn: '',
+                            actualCheckOut: '',
+                            overTime: '',
+                            cekRMC: '',
+                            rkpPIC: '',
+                            rmcShiftCheckOut: '',
+                            remarks: ''
+                        });
                     }
                 });
             });
-            
-            // Update the tables if the tabs are active
-            if (currentTab === "output") {
-                updateOutputTable();
-            }
-            if (currentTab === "overtime") {
-                updateOvertimeTable();
-            }
-            if (currentTab === "summary-overtime") {
-                updateOvertimeSummaryTable();
-            }
+
+            // Jangan hapus record overtime lama di luar range attendance yang sedang dimuat.
+            overtimeCalcData = Array.from(overtimeByKey.values());
+
+            // Urutkan agar Output dan Overtime konsisten.
+            outputData.sort((a, b) => {
+                const da = parseDateFromString(a.date);
+                const db = parseDateFromString(b.date);
+                return (da - db) || a.name.localeCompare(b.name);
+            });
+
+            overtimeCalcData.sort((a, b) => {
+                const da = parseDateFromString(a.date);
+                const db = parseDateFromString(b.date);
+                return (da - db) || String(a.name || '').localeCompare(String(b.name || ''));
+            });
+
+            if (currentTab === 'output') updateOutputTable();
+            if (currentTab === 'overtime') updateOvertimeTable();
+            if (currentTab === 'summary-overtime') updateOvertimeSummaryTable();
         }
 
         // PERBAIKAN: Fungsi untuk update output table dengan filter terpisah
@@ -4345,8 +4417,11 @@
                 tbody.appendChild(row);
             });
             
-            // PERBAIKAN: Add event listeners untuk perhitungan otomatis berdasarkan Actual Check Out
-            document.querySelectorAll('.actual-check-out').forEach(input => {
+            // Perhitungan otomatis saat Actual Check Out atau Cek RMC berubah
+            document.querySelectorAll('.actual-check-out, .cek-rmc').forEach(input => {
+                input.addEventListener('input', function() {
+                    calculateOvertime(this);
+                });
                 input.addEventListener('change', function() {
                     calculateOvertime(this);
                 });
@@ -5093,24 +5168,17 @@
                         updateOvertimeSummaryTable();
                     }
                     
-                    // Load output data when switching to output tab
-                    if (tabName === 'output') {
-                        if (!outputDataLoaded) {
-                            generateOutputAndOvertimeData();
-                            outputDataLoaded = true;
+                    // Output dan Overtime menggunakan Attendance Entry sebagai sumber jadwal.
+                    if (tabName === 'output' || tabName === 'overtime') {
+                        if (!outputDataLoaded || !overtimeDataLoaded) {
+                            // async; tidak perlu menunggu agar UI navigasi tetap responsif
+                            applyDateFilterOvertimeOutput();
+                        } else {
+                            if (tabName === 'output') updateOutputTable();
+                            if (tabName === 'overtime') updateOvertimeTable();
                         }
-                        updateOutputTable();
                     }
-                    
-                    // Load overtime data when switching to overtime tab
-                    if (tabName === 'overtime') {
-                        if (!overtimeDataLoaded) {
-                            generateOutputAndOvertimeData();
-                            overtimeDataLoaded = true;
-                        }
-                        updateOvertimeTable();
-                    }
-                    
+
                     // Load cuti detail data when switching to cuti-detail tab
                     if (tabName === 'cuti-detail') {
                         generateCutiDetailData();
@@ -5377,7 +5445,18 @@
         async function refreshOvertimeData() {
             try {
                 showLoading(true);
-                
+
+                // Refresh schedule dari Attendance Entry sesuai filter yang sedang dipilih.
+                const startDate = document.getElementById('startDateOvertimeOutput').valueAsDate;
+                const endDate = document.getElementById('endDateOvertimeOutput').valueAsDate;
+                if (startDate && endDate) {
+                    await loadAttendanceDataByPeriod(startDate, endDate);
+                    await loadOvertimeCalculationData();
+                    generateOutputAndOvertimeData();
+                    outputDataLoaded = true;
+                    overtimeDataLoaded = true;
+                }
+
                 // Load all overtime records
                 const querySnapshot = await db.collection('overtimeRecords').get();
                 

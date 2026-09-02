@@ -1629,6 +1629,10 @@ body { background: var(--pro-bg); }
 @media(max-width:992px){ .dashboard-grid{grid-template-columns:repeat(2,1fr)} .dashboard-lower{grid-template-columns:1fr} }
 @media(max-width:576px){ .dashboard-grid{grid-template-columns:1fr} .dashboard-hero{padding:20px} .dashboard-title{font-size:1.35rem} }
 
+
+        /* PRO V4.1 role/access polish */
+        .pro-brand{display:flex;align-items:center;gap:12px;padding:2px 0}.pro-brand-mark{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;background:rgba(255,255,255,.12)}.pro-brand h3{margin:0;font-size:17px;letter-spacing:1.5px}.pro-brand small{opacity:.65;font-size:9px;letter-spacing:1.4px}
+        .sidebar-folder-header{letter-spacing:.8px;font-size:11px;text-transform:uppercase}
 </style>
 </head>
 <body>
@@ -1673,14 +1677,15 @@ body { background: var(--pro-bg); }
     <!-- Sidebar -->
     <div class="sidebar" id="sidebar">
         <div class="sidebar-header">
-            <h3>Attendance Menu</h3>
+            <div class="pro-brand"><span class="pro-brand-mark"><i class="fas fa-layer-group"></i></span><div><h3>CDC EAST</h3><small>WORKFORCE MANAGEMENT</small></div></div>
             <button class="sidebar-toggle" id="sidebarToggle">
                 <i class="fas fa-bars"></i>
             </button>
         </div>
         
         <ul class="sidebar-menu pro-dashboard-menu">
-            <li><a href="#" data-tab="dashboard" class="active"><i class="fas fa-grid-2"></i><span>Dashboard</span></a></li>
+            <li id="dashboardMenuItem"><a href="#" data-tab="dashboard" class="active"><i class="fas fa-grid-2"></i><span>Dashboard</span></a></li>
+            <li id="analyticsMenuItem" style="display:none;"><a href="#" data-tab="analytics"><i class="fas fa-chart-line"></i><span>Dashboard Analytics</span></a></li>
         </ul>
 
         <!-- General Folder (User & Admin) -->
@@ -1830,6 +1835,32 @@ body { background: var(--pro-bg); }
                         <button class="btn btn-outline-primary w-100 mb-2" id="dashOpenOutput"><i class="fas fa-file-export me-2"></i>Load Attendance Output</button>
                         <button class="btn btn-outline-success w-100" id="dashOpenOvertime"><i class="fas fa-calculator me-2"></i>Open Overtime Calculation</button>
                         <div class="activity-empty mt-2"><i class="fas fa-circle-check d-block mb-2"></i>Firebase data will synchronize into this dashboard.</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Admin-only Dashboard Analytics -->
+            <section class="dashboard-shell" id="analyticsShell" style="display:none;">
+                <div class="dashboard-hero">
+                    <div class="dashboard-eyebrow">CDC East · Management Intelligence</div>
+                    <h2 class="dashboard-title">Dashboard Analytics</h2>
+                    <p class="dashboard-subtitle">Executive overview for attendance, overtime and workforce activity based on the active attendance period.</p>
+                    <div class="dashboard-period"><i class="fas fa-calendar"></i><span id="analyticsPeriodLabel">Current attendance cycle</span></div>
+                </div>
+                <div class="dashboard-grid">
+                    <div class="metric-card"><div class="metric-icon"><i class="fas fa-user-check"></i></div><div class="metric-label">ATTENDANCE RATE</div><div class="metric-value" id="analyticsAttendanceRate">0%</div><div class="metric-foot">Scheduled shift coverage</div></div>
+                    <div class="metric-card"><div class="metric-icon"><i class="fas fa-hourglass-half"></i></div><div class="metric-label">TOTAL OVERTIME</div><div class="metric-value" id="analyticsOvertimeHours">00:00</div><div class="metric-foot">Accumulated overtime duration</div></div>
+                    <div class="metric-card"><div class="metric-icon"><i class="fas fa-users-viewfinder"></i></div><div class="metric-label">ACTIVE CREW</div><div class="metric-value" id="analyticsActiveCrew">0</div><div class="metric-foot">Employees with scheduled shifts</div></div>
+                    <div class="metric-card"><div class="metric-icon"><i class="fas fa-calendar-xmark"></i></div><div class="metric-label">LEAVE IMPACT</div><div class="metric-value" id="analyticsLeaveImpact">0</div><div class="metric-foot">Leave records in current data</div></div>
+                </div>
+                <div class="dashboard-lower">
+                    <div class="dashboard-panel">
+                        <h5><i class="fas fa-ranking-star me-2 text-warning"></i>Top Overtime Employees</h5>
+                        <div id="analyticsTopOvertime" class="analytics-list"></div>
+                    </div>
+                    <div class="dashboard-panel">
+                        <h5><i class="fas fa-chart-column me-2 text-primary"></i>Shift Distribution</h5>
+                        <div id="analyticsShiftDistribution" class="analytics-list"></div>
                     </div>
                 </div>
             </section>
@@ -2445,6 +2476,24 @@ body { background: var(--pro-bg); }
                         </div>
                     </div>
 
+                    <hr>
+                    <div class="row mb-4" id="attendancePeriodSettings">
+                        <div class="col-12">
+                            <div class="card border-0 shadow-sm">
+                                <div class="card-body">
+                                    <h5><i class="fas fa-calendar-range me-2"></i>Attendance Period Settings</h5>
+                                    <p class="small text-muted mb-3">Set the recurring payroll/attendance cycle. Default: 11th of the current month until 10th of the following month.</p>
+                                    <div class="row g-3 align-items-end">
+                                        <div class="col-md-4"><label class="form-label">Period Start Day</label><input type="number" min="1" max="31" class="form-control" id="attendancePeriodStartDay" value="11"></div>
+                                        <div class="col-md-4"><label class="form-label">Period End Day</label><input type="number" min="1" max="31" class="form-control" id="attendancePeriodEndDay" value="10"></div>
+                                        <div class="col-md-4"><button class="btn btn-success w-100" type="button" id="saveAttendancePeriodBtn"><i class="fas fa-save me-1"></i> Save Attendance Period</button></div>
+                                    </div>
+                                    <div class="alert alert-light border mt-3 mb-0 py-2" id="attendancePeriodPreview">Active cycle preview: 11th → 10th of next month</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- PERBAIKAN: Hilangkan bagian Change Password di setting admin -->
                     <hr class="setting-password-section">
                     <div class="row setting-password-section">
@@ -2763,6 +2812,7 @@ body { background: var(--pro-bg); }
         let isSaving = false; // Flag to prevent multiple saves
         let outputDataLoaded = false; // Flag to track if output data has been loaded
         let overtimeDataLoaded = false; // Flag to track if overtime data has been loaded
+        let attendancePeriodConfig = { startDay: 11, endDay: 10 }; // Admin configurable recurring cycle
 
         // PERBAIKAN: Variabel untuk sorting di overtime calculation
         let overtimeSortColumn = 'date';
@@ -4194,6 +4244,8 @@ body { background: var(--pro-bg); }
                 
                 // Load initial data
                 await loadInitialData();
+                if (currentUser.role === 'admin') showDashboard();
+                else document.querySelector('#generalFolder [data-tab="absen-tabel"]')?.click();
                 
                 showLoading(false);
                 checkConnection();
@@ -4206,26 +4258,83 @@ body { background: var(--pro-bg); }
             }
         }
 
+        // Attendance period configuration (Admin controlled)
+        function getAttendanceCycle(referenceDate = new Date()) {
+            const startDay = Number(attendancePeriodConfig.startDay || 11);
+            const endDay = Number(attendancePeriodConfig.endDay || 10);
+            const ref = new Date(referenceDate.getFullYear(), referenceDate.getMonth(), referenceDate.getDate());
+            let start, end;
+            if (startDay > endDay) {
+                // Example 11th current month -> 10th next month
+                if (ref.getDate() >= startDay) {
+                    start = new Date(ref.getFullYear(), ref.getMonth(), startDay);
+                    end = new Date(ref.getFullYear(), ref.getMonth() + 1, endDay);
+                } else {
+                    start = new Date(ref.getFullYear(), ref.getMonth() - 1, startDay);
+                    end = new Date(ref.getFullYear(), ref.getMonth(), endDay);
+                }
+            } else {
+                start = new Date(ref.getFullYear(), ref.getMonth(), startDay);
+                end = new Date(ref.getFullYear(), ref.getMonth(), endDay);
+                if (ref < start) { start = new Date(ref.getFullYear(), ref.getMonth() - 1, startDay); end = new Date(ref.getFullYear(), ref.getMonth() - 1, endDay); }
+            }
+            return { start, end };
+        }
+
+        async function loadAttendancePeriodConfig() {
+            try {
+                const doc = await db.collection('systemSettings').doc('attendancePeriod').get();
+                if (doc.exists) attendancePeriodConfig = { ...attendancePeriodConfig, ...doc.data() };
+            } catch (e) { console.warn('Using default attendance period configuration', e); }
+            updateAttendancePeriodUI();
+        }
+
+        function updateAttendancePeriodUI() {
+            const startInput = document.getElementById('attendancePeriodStartDay');
+            const endInput = document.getElementById('attendancePeriodEndDay');
+            if (startInput) startInput.value = String(attendancePeriodConfig.startDay || 11);
+            if (endInput) endInput.value = String(attendancePeriodConfig.endDay || 10);
+            const cycle = getAttendanceCycle();
+            const preview = document.getElementById('attendancePeriodPreview');
+            if (preview) preview.textContent = `Active cycle preview: ${formatDate(cycle.start)} — ${formatDate(cycle.end)}`;
+        }
+
+        async function saveAttendancePeriodConfig() {
+            if (!currentUser || currentUser.role !== 'admin') return;
+            const startDay = Number(document.getElementById('attendancePeriodStartDay').value);
+            const endDay = Number(document.getElementById('attendancePeriodEndDay').value);
+            if (!Number.isInteger(startDay) || !Number.isInteger(endDay) || startDay < 1 || startDay > 31 || endDay < 1 || endDay > 31) {
+                showNotification('Period start and end day must be between 1 and 31.', 'error'); return;
+            }
+            attendancePeriodConfig = { startDay, endDay, updatedAt: new Date().toISOString(), updatedBy: currentUser.email };
+            try {
+                await db.collection('systemSettings').doc('attendancePeriod').set(attendancePeriodConfig, { merge: true });
+                updateAttendancePeriodUI();
+                applyAttendanceCycleToFilters();
+                showNotification('Attendance period settings saved successfully.', 'success');
+            } catch (e) { console.error(e); showNotification('Failed to save attendance period: ' + e.message, 'error'); }
+        }
+
+        function applyAttendanceCycleToFilters() {
+            const cycle = getAttendanceCycle();
+            ['startDateMain','startDateOvertimeOutput','startDateAbsenTabel'].forEach(id => { const el=document.getElementById(id); if(el) el.valueAsDate = cycle.start; });
+            ['endDateMain','endDateOvertimeOutput','endDateAbsenTabel'].forEach(id => { const el=document.getElementById(id); if(el) el.valueAsDate = cycle.end; });
+            updateDashboardMetrics();
+        }
+
         // Fungsi untuk load data initial dengan error handling
         async function loadInitialData() {
             showLoading(true);
             
             try {
-                // Set default dates untuk Main folder
-                const today = new Date();
-                const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-                document.getElementById('startDateMain').valueAsDate = firstDayOfMonth;
-                document.getElementById('endDateMain').valueAsDate = today;
+                // Load Admin-configured attendance cycle. Default is 11th -> 10th next month.
+                await loadAttendancePeriodConfig();
+                const cycle = getAttendanceCycle();
+                const firstDayOfMonth = cycle.start;
+                const today = cycle.end;
+                applyAttendanceCycleToFilters();
                 
-                // PERBAIKAN: Set default dates untuk Overtime & Output
-                document.getElementById('startDateOvertimeOutput').valueAsDate = firstDayOfMonth;
-                document.getElementById('endDateOvertimeOutput').valueAsDate = today;
-                
-                // PERBAIKAN: Set default dates untuk Attendance Table
-                document.getElementById('startDateAbsenTabel').valueAsDate = firstDayOfMonth;
-                document.getElementById('endDateAbsenTabel').valueAsDate = today;
-                
-                // Load data untuk periode default
+                // Load data for active attendance cycle
                 await loadAttendanceDataByPeriod(firstDayOfMonth, today);
                 
                 // Load users data
@@ -4825,13 +4934,14 @@ body { background: var(--pro-bg); }
             setText('dashScheduledRecords', scheduledCount);
             setText('dashOvertimeRecords', overtimeCount);
             setText('dashLeaveRecords', leaveCount);
-            const startEl = document.getElementById('startDateOvertimeOutput') || document.getElementById('startDateMain');
-            const endEl = document.getElementById('endDateOvertimeOutput') || document.getElementById('endDateMain');
+            const cycle = getAttendanceCycle();
             const label = document.getElementById('dashboardPeriodLabel');
-            if (label && startEl?.value && endEl?.value) label.textContent = `${startEl.value} — ${endEl.value}`;
+            if (label) label.textContent = `${formatDate(cycle.start)} — ${formatDate(cycle.end)}`;
         }
 
         function showDashboard() {
+            if (!currentUser || currentUser.role !== 'admin') { showNotification('Dashboard is available for Admin only.', 'error'); return; }
+            document.getElementById('analyticsShell')?.style.setProperty('display','none');
             currentTab = 'dashboard';
             document.querySelectorAll('.tab-pane').forEach(tab => tab.classList.remove('show','active'));
             document.querySelectorAll('.sidebar-menu a').forEach(a => a.classList.remove('active'));
@@ -4839,6 +4949,43 @@ body { background: var(--pro-bg); }
             document.getElementById('dashboardShell')?.classList.add('active');
             ['filterSectionMain','filterSectionOvertimeOutput','filterSectionAbsenTabel'].forEach(id => { const el=document.getElementById(id); if(el) el.style.display='none'; });
             updateDashboardMetrics();
+        }
+
+        function showAnalytics() {
+            if (!currentUser || currentUser.role !== 'admin') { showNotification('Dashboard Analytics is available for Admin only.', 'error'); return; }
+            currentTab = 'analytics';
+            document.querySelectorAll('.tab-pane').forEach(tab => tab.classList.remove('show','active'));
+            document.getElementById('dashboardShell')?.classList.remove('active');
+            const shell = document.getElementById('analyticsShell');
+            if (shell) { shell.style.display='block'; shell.classList.add('active'); }
+            ['filterSectionMain','filterSectionOvertimeOutput','filterSectionAbsenTabel'].forEach(id => { const el=document.getElementById(id); if(el) el.style.display='none'; });
+            updateAnalytics();
+        }
+
+        function timeToMinutes(value) {
+            if (!value || typeof value !== 'string' || !value.includes(':')) return 0;
+            const [h,m] = value.split(':').map(Number); return (Number(h)||0)*60 + (Number(m)||0);
+        }
+        function minutesToHHMM(minutes) { minutes=Math.max(0,Math.round(minutes||0)); return `${String(Math.floor(minutes/60)).padStart(2,'0')}:${String(minutes%60).padStart(2,'0')}`; }
+        function updateAnalytics() {
+            const scheduled = outputData.length || absensiData.reduce((n,e)=>n+Object.keys(e.shifts||{}).filter(k=>['C','O','OFF',''].indexOf(String(e.shifts[k]).toUpperCase())===-1).length,0);
+            const activeNames = new Set();
+            (outputData.length ? outputData : overtimeCalcData).forEach(x => activeNames.add(x.name || x.employeeName || ''));
+            const totalOtMinutes = overtimeCalcData.reduce((n,x)=>n+timeToMinutes(x.overTime || x.overtime || ''),0);
+            const overtimeByName = {};
+            overtimeCalcData.forEach(x=>{ const name=x.name||x.employeeName||'Unknown'; overtimeByName[name]=(overtimeByName[name]||0)+timeToMinutes(x.overTime||x.overtime||''); });
+            const shiftCounts = {};
+            (outputData.length ? outputData : overtimeCalcData).forEach(x=>{ const sh=x.shift||x.shiftName||'Unassigned'; shiftCounts[sh]=(shiftCounts[sh]||0)+1; });
+            const leaveCount=(cutiData||[]).length+(cutiDetailData||[]).length;
+            const employeeCount=absensiData.length||initialEmployees.length||1;
+            const attendanceRate=Math.min(100,Math.round((scheduled / Math.max(1, employeeCount * Math.max(1, dateRangeMain.length || 31)))*100));
+            const set=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v;};
+            set('analyticsAttendanceRate', attendanceRate+'%'); set('analyticsOvertimeHours', minutesToHHMM(totalOtMinutes)); set('analyticsActiveCrew', [...activeNames].filter(Boolean).length); set('analyticsLeaveImpact', leaveCount);
+            const cycle=getAttendanceCycle(); const label=`${formatDate(cycle.start)} — ${formatDate(cycle.end)}`; set('analyticsPeriodLabel',label);
+            const top=Object.entries(overtimeByName).sort((a,b)=>b[1]-a[1]).slice(0,5);
+            const topEl=document.getElementById('analyticsTopOvertime'); if(topEl) topEl.innerHTML=top.length?top.map(([n,m],i)=>`<div class="d-flex justify-content-between align-items-center border-bottom py-2"><span><strong>#${i+1}</strong> ${n}</span><span class="badge bg-warning text-dark">${minutesToHHMM(m)}</span></div>`).join(''):'<div class="activity-empty">No overtime data available.</div>';
+            const shifts=Object.entries(shiftCounts).sort((a,b)=>b[1]-a[1]).slice(0,6);
+            const shiftEl=document.getElementById('analyticsShiftDistribution'); if(shiftEl) shiftEl.innerHTML=shifts.length?shifts.map(([n,c])=>`<div class="d-flex justify-content-between align-items-center border-bottom py-2"><span>${n}</span><span class="badge bg-primary">${c} records</span></div>`).join(''):'<div class="activity-empty">No shift data available.</div>';
         }
 
         function parseDateFromString(dateStr) {
@@ -4870,18 +5017,36 @@ body { background: var(--pro-bg); }
             // Auto-save hanya dilakukan saat tombol save diklik
         }
 
+        // Access Control: USER hanya boleh membuka modul di folder GENERAL
+        const ROLE_ACCESS = {
+            admin: ['dashboard','analytics','absen-tabel','cuti-detail','overtime-detail-admin','entry','output','overtime','cuti','summary-overtime','setting'],
+            user: ['absen-tabel','cuti-detail','form-rekap-lembur']
+        };
+
+        function canAccessTab(tabName) {
+            const role = (currentUser && currentUser.role) ? currentUser.role : 'user';
+            return (ROLE_ACCESS[role] || ROLE_ACCESS.user).includes(tabName);
+        }
+
+        function denyTabAccess(tabName) {
+            showNotification('Access Denied: menu ini hanya dapat diakses oleh Admin.', 'error');
+            if (currentUser && currentUser.role === 'user') {
+                document.querySelector('#generalFolder [data-tab="absen-tabel"]')?.click();
+            }
+        }
+
         // Setup menu berdasarkan role
         function setupMenuByRole(role) {
             // Sembunyikan semua menu dulu
-            document.querySelectorAll('.sidebar-menu a').forEach(menu => {
-                menu.style.display = menu.getAttribute('data-tab') === 'dashboard' ? 'flex' : 'none';
-            });
+            document.querySelectorAll('.sidebar-menu a').forEach(menu => { menu.style.display = 'none'; });
+            document.getElementById('dashboardMenuItem').style.display = 'none';
+            document.getElementById('analyticsMenuItem').style.display = 'none';
             
             document.querySelectorAll('.sidebar-folder').forEach(folder => {
                 folder.style.display = 'none';
             });
             
-            // Tampilkan menu General untuk semua role
+            // GENERAL adalah area utama USER; Admin juga dapat melihat menu General sesuai hak akses.
             document.getElementById('generalFolder').style.display = 'block';
             document.querySelectorAll('#generalFolder .sidebar-menu a').forEach(menu => {
                 menu.style.display = 'flex';
@@ -4894,6 +5059,10 @@ body { background: var(--pro-bg); }
                     menu.style.display = 'flex';
                 });
                 document.querySelector('[data-tab="setting"]').style.display = 'flex';
+                document.getElementById('dashboardMenuItem').style.display = 'block';
+                document.getElementById('analyticsMenuItem').style.display = 'block';
+                document.querySelector('[data-tab="dashboard"]').style.display = 'flex';
+                document.querySelector('[data-tab="analytics"]').style.display = 'flex';
                 
                 // Untuk admin: sembunyikan Overtime Form, tampilkan Overtime Detail
                 document.getElementById('overtimeFormMenuItem').style.display = 'none';
@@ -5227,20 +5396,30 @@ body { background: var(--pro-bg); }
             document.getElementById('dashOpenEntry')?.addEventListener('click', () => document.querySelector('[data-tab="entry"]')?.click());
             document.getElementById('dashOpenOutput')?.addEventListener('click', () => document.querySelector('[data-tab="output"]')?.click());
             document.getElementById('dashOpenOvertime')?.addEventListener('click', () => document.querySelector('[data-tab="overtime"]')?.click());
+            document.getElementById('saveAttendancePeriodBtn')?.addEventListener('click', saveAttendancePeriodConfig);
 
             // Menu item clicks
             document.querySelectorAll('.sidebar-menu a[data-tab]').forEach(item => {
                 item.addEventListener('click', function(e) {
                     e.preventDefault();
                     
+                    // Server-side UI guard: USER hanya boleh mengakses GENERAL
+                    const tabName = this.getAttribute('data-tab');
+                    if (!canAccessTab(tabName)) {
+                        denyTabAccess(tabName);
+                        return;
+                    }
+
                     // Update active menu
                     document.querySelectorAll('.sidebar-menu a').forEach(i => i.classList.remove('active'));
                     this.classList.add('active');
                     
                     // Show corresponding tab
-                    const tabName = this.getAttribute('data-tab');
                     if (tabName === 'dashboard') { showDashboard(); return; }
+                    if (tabName === 'analytics') { showAnalytics(); return; }
                     document.getElementById('dashboardShell')?.classList.remove('active');
+                    document.getElementById('analyticsShell')?.classList.remove('active');
+                    document.getElementById('analyticsShell')?.style.setProperty('display','none');
                     currentTab = tabName;
                     
                     document.querySelectorAll('.tab-pane').forEach(tab => {

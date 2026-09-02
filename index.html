@@ -3767,8 +3767,9 @@ body { background: var(--pro-bg); }
                         showNotification('New password must be at least 6 characters', 'error');
                         return;
                     }
-                    updateData.password = newPassword;
-                    updateData.passwordUpdatedAt = firebase.firestore.FieldValue.serverTimestamp();
+                    // IMPORTANT V5.4: Browser client tidak dapat mengganti password Firebase Auth milik user lain.
+                    // Jangan simpan password baru hanya di Firestore karena akan membuat login gagal/mismatch.
+                    throw new Error('Admin password reset requires Firebase Auth reset flow. Password was NOT changed to avoid Firestore/Firebase Auth mismatch.');
                 }
                 await db.collection('users').doc(userId).update(updateData);
                 const modal = bootstrap.Modal.getInstance(document.getElementById('editUserModal'));
@@ -4313,41 +4314,73 @@ body { background: var(--pro-bg); }
             return false;
         }
 
-        // Fungsi untuk login dengan error handling
+        // V5.4 LOGIN FIX: User ID dapat memakai username, email, prefix email,
+        // nama lengkap, atau nama pertama untuk kompatibilitas user lama.
+        function normalizeLoginKey(value) {
+            return String(value || '').trim().toLowerCase().replace(/\s+/g, ' ');
+        }
+
+        function resolveUserLoginRecord(userData, docId, inputKey) {
+            const input = normalizeLoginKey(inputKey);
+            const email = String(userData.email || '').trim().toLowerCase();
+            const username = normalizeLoginKey(userData.username || userData.userId || userData.userid || '');
+            const name = normalizeLoginKey(userData.name || userData.displayName || '');
+            const firstName = name ? name.split(' ')[0] : '';
+            const emailPrefix = email.includes('@') ? email.split('@')[0] : '';
+            const documentId = normalizeLoginKey(docId);
+            const aliases = [email, username, emailPrefix, name, firstName, documentId].filter(Boolean);
+            return aliases.includes(input);
+        }
+
         async function login(email, password) {
             showLoading(true);
-            
+            let matchedUserRecord = null;
+            let resolvedEmail = null;
+
             try {
-                // Clear previous errors
                 document.getElementById('loginError').style.display = 'none';
-                
-                // Login dengan User ID custom yang ditentukan Admin. User lama tetap fallback ke nama sebelum @ email.
-                const userIdInput = String(email || '').trim().toLowerCase();
+
+                const userIdInput = normalizeLoginKey(email);
                 if (!userIdInput || !password) throw new Error('User ID and password are required');
-                let resolvedEmail = userIdInput.includes('@') ? userIdInput : null;
-                if (!resolvedEmail) {
-                    try {
-                        const usersSnapshot = await db.collection('users').get();
-                        usersSnapshot.forEach(doc => {
-                            const u = doc.data() || {};
-                            const storedUsername = String(u.username || '').trim().toLowerCase();
-                            const emailPrefix = String(u.email || '').split('@')[0].trim().toLowerCase();
-                            if (!resolvedEmail && (storedUsername === userIdInput || emailPrefix === userIdInput)) resolvedEmail = u.email;
-                        });
-                    } catch (lookupError) {
-                        console.error('User ID lookup failed:', lookupError);
-                        throw new Error('Unable to verify User ID. Please check your internet connection or sign in using your registered email address.');
+
+                // Email login langsung. User ID lama/baru dicari dari seluruh alias user.
+                if (userIdInput.includes('@')) {
+                    resolvedEmail = userIdInput;
+                } else {
+                    const usersSnapshot = await db.collection('users').get();
+                    usersSnapshot.forEach(doc => {
+                        if (resolvedEmail) return;
+                        const u = doc.data() || {};
+                        if (resolveUserLoginRecord(u, doc.id, userIdInput) && u.email) {
+                            matchedUserRecord = { id: doc.id, ...u };
+                            resolvedEmail = String(u.email).trim();
+                        }
+                    });
+                    if (!resolvedEmail) {
+                        throw new Error('User ID not found. Check User ID in User Management. Legacy accounts can use username, email prefix, full name, or first name.');
                     }
-                    if (!resolvedEmail) throw new Error('User ID not found. Please contact Admin.');
                 }
 
-                // Authentication is independent from Firestore offline persistence.
-                const userCredential = await auth.signInWithEmailAndPassword(resolvedEmail, password);
+                // Firebase Authentication tetap menjadi satu-satunya sumber validasi password.
+                let userCredential;
+                try {
+                    userCredential = await auth.signInWithEmailAndPassword(resolvedEmail, password);
+                } catch (authError) {
+                    if (authError && (authError.code === 'auth/invalid-login-credentials' || authError.code === 'auth/wrong-password' || authError.code === 'auth/user-not-found')) {
+                        const storedPassword = matchedUserRecord ? String(matchedUserRecord.password || '') : '';
+                        if (storedPassword && storedPassword === String(password)) {
+                            throw new Error('Password in User Management matches this input, but Firebase Authentication has a different password. This account password was likely changed only in Firestore. Reset/recreate the Firebase Auth password before login.');
+                        }
+                        throw new Error('Invalid User ID/email or password. Firebase Authentication rejected these credentials.');
+                    }
+                    throw authError;
+                }
+
                 currentUser = {
                     uid: userCredential.user.uid,
                     email: userCredential.user.email
                 };
-                
+
                 // Try to get user data from Firestore
                 let userData;
                 try {

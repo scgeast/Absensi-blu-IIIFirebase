@@ -2634,7 +2634,7 @@
             },
             "Booking": {
                 "1": { name: "Morning", checkIn: "08:00", checkOut: "16:00", hours: "07:00" },
-                "2": { name: "Afternoon", checkIn: "16:00", checkOut: "24:00", hours: "08:00" },
+                "2": { name: "Afternoon", checkIn: "16:00", checkOut: "00:00", hours: "08:00" },
                 "3": { name: "Night", checkIn: "00:00", checkOut: "08:00", hours: "08:00" },
                 "11": { name: "Morning Part", checkIn: "08:00", checkOut: "13:00", hours: "05:00" },
                 "22": { name: "Afternoon Part", checkIn: "16:00", checkOut: "21:00", hours: "05:00" },
@@ -3877,32 +3877,26 @@
         async function loadOvertimeDataByPeriod(startDate, endDate) {
             try {
                 showLoading(true);
-                
-                // Reset data
+
+                // Field tanggal menggunakan format DD/MM/YYYY sehingga query range Firestore
+                // secara lexicographic tidak aman. Load lalu filter sebagai Date.
+                const querySnapshot = await db.collection('overtime').get();
+                const start = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
+                const end = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate());
+
                 overtimeCalcData = [];
-                
-                // Format tanggal untuk query
-                const startDateStr = formatDateForShift(startDate);
-                const endDateStr = formatDateForShift(endDate);
-                
-                // Query data overtime dalam rentang tanggal
-                const querySnapshot = await db.collection('overtime')
-                    .where('date', '>=', startDateStr)
-                    .where('date', '<=', endDateStr)
-                    .get();
-                
                 querySnapshot.forEach(doc => {
-                    overtimeCalcData.push({
-                        id: doc.id,
-                        ...doc.data()
-                    });
+                    const item = { id: doc.id, ...doc.data() };
+                    const itemDate = parseDateFromString(item.date);
+                    if (itemDate && itemDate >= start && itemDate <= end) {
+                        overtimeCalcData.push(item);
+                    }
                 });
-                
-                console.log(`Loaded ${overtimeCalcData.length} overtime records for period`);
-                
-                // Update tabel
+
+                overtimeDataLoaded = true;
+                console.log(`Loaded ${overtimeCalcData.length} overtime records for selected period`);
                 updateOvertimeTable();
-                
+
             } catch (error) {
                 console.error('Error loading overtime data:', error);
                 showNotification('Error loading overtime data: ' + error.message, 'error');
@@ -4207,25 +4201,29 @@
                                 remarks: "" // initially empty
                             });
                             
-                            // For overtimeCalcData
-                            overtimeCalcData.push({
-                                id: `${name}-${dateStr}`, // Create unique ID
-                                area,
-                                name,
-                                position,
-                                date: dateStr,
-                                shift: shiftDetails.name, // PERBAIKAN: Gunakan nama shift, bukan kode
-                                shiftCheckIn: shiftDetails.checkIn,
-                                shiftCheckOut: shiftDetails.checkOut,
-                                wtNormal: shiftDetails.hours,
-                                actualCheckIn: "",
-                                actualCheckOut: "",
-                                overTime: "",
-                                cekRMC: "",
-                                rkpPIC: "",
-                                rmcShiftCheckOut: "",
-                                remarks: ""
-                            });
+                            // For overtimeCalcData: jangan overwrite record Firestore yang sudah ada
+                            const overtimeKey = `${name}|${dateStr}`;
+                            if (!existingOvertimeByKey.has(overtimeKey)) {
+                                overtimeCalcData.push({
+                                    id: `generated-${name}-${dateStr}`,
+                                    generated: true,
+                                    area,
+                                    name,
+                                    position,
+                                    date: dateStr,
+                                    shift: shiftDetails.name,
+                                    shiftCheckIn: shiftDetails.checkIn,
+                                    shiftCheckOut: shiftDetails.checkOut,
+                                    wtNormal: shiftDetails.hours,
+                                    actualCheckIn: "",
+                                    actualCheckOut: "",
+                                    overTime: "",
+                                    cekRMC: "",
+                                    rkpPIC: "",
+                                    rmcShiftCheckOut: "",
+                                    remarks: ""
+                                });
+                            }
                         }
                     }
                 });
@@ -4413,64 +4411,46 @@
             }
         }
 
-        // PERBAIKAN: Fungsi untuk menghitung overtime berdasarkan (Actual Check Out - Shift Check Out)
+        // Fungsi menghitung selisih waktu, mendukung shift melewati tengah malam
+        function calculateTimeDifference(startTime, endTime) {
+            if (!startTime || !endTime) return "";
+            const [sh, sm] = startTime.split(':').map(Number);
+            const [eh, em] = endTime.split(':').map(Number);
+            if ([sh, sm, eh, em].some(Number.isNaN)) return "";
+
+            let start = sh * 60 + sm;
+            let end = eh * 60 + em;
+            if (end < start) end += 24 * 60;
+
+            const diff = end - start;
+            return `${String(Math.floor(diff / 60)).padStart(2, '0')}:${String(diff % 60).padStart(2, '0')}`;
+        }
+
+        // Hitung Overtime dan RMC otomatis setiap field berubah
         function calculateOvertime(input) {
             const row = input.closest('tr');
-            const shiftCheckOut = row.querySelector('td:nth-child(8)').textContent;
-            const actualCheckOut = row.querySelector('.actual-check-out').value;
-            
-            // PERBAIKAN: Hitung overtime berdasarkan (Actual Check Out - Shift Check Out)
-            if (actualCheckOut && shiftCheckOut) {
-                const actualOut = new Date(`2000-01-01T${actualCheckOut}`);
-                const shiftOut = new Date(`2000-01-01T${shiftCheckOut}`);
-                
-                // Jika actual check out di hari berikutnya (setelah tengah malam)
-                if (actualOut < shiftOut) {
-                    actualOut.setDate(actualOut.getDate() + 1);
-                }
-                
-                const diffMs = actualOut - shiftOut;
-                const diffHrs = Math.floor(diffMs / (1000 * 60 * 60));
-                const diffMins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-                
-                const overtime = `${String(diffHrs).padStart(2, '0')}:${String(diffMins).padStart(2, '0')}`;
-                row.querySelector('.over-time').value = overtime;
-                
-                // Update data
-                const dataId = input.getAttribute('data-id');
-                if (dataId) {
-                    const item = overtimeCalcData.find(d => d.id === dataId);
-                    if (item) {
-                        item.overTime = overtime;
-                    }
-                }
-            }
-            
-            // PERBAIKAN: Hitung Rmc - Shift Check Out
-            const cekRMC = row.querySelector('.cek-rmc').value;
-            if (cekRMC && shiftCheckOut) {
-                const rmcTime = new Date(`2000-01-01T${cekRMC}`);
-                const shiftOutTime = new Date(`2000-01-01T${shiftCheckOut}`);
-                
-                // Jika RMC di hari berikutnya (setelah tengah malam)
-                if (rmcTime < shiftOutTime) {
-                    rmcTime.setDate(rmcTime.getDate() + 1);
-                }
-                
-                const diffMs = rmcTime - shiftOutTime;
-                const diffHrs = Math.floor(diffMs / (1000 * 60 * 60));
-                const diffMins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-                
-                const rmcDiff = `${String(diffHrs).padStart(2, '0')}:${String(diffMins).padStart(2, '0')}`;
-                row.querySelector('.rmc-shift-check-out').value = rmcDiff;
-                
-                // Update data
-                const dataId = input.getAttribute('data-id');
-                if (dataId) {
-                    const item = overtimeCalcData.find(d => d.id === dataId);
-                    if (item) {
-                        item.rmcShiftCheckOut = rmcDiff;
-                    }
+            if (!row) return;
+
+            const shiftCheckOut = row.querySelector('td:nth-child(8)')?.textContent.trim() || "";
+            const actualCheckOut = row.querySelector('.actual-check-out')?.value || "";
+            const cekRMC = row.querySelector('.cek-rmc')?.value || "";
+            const dataId = row.querySelector('.actual-check-in')?.getAttribute('data-id');
+
+            const overtime = calculateTimeDifference(shiftCheckOut, actualCheckOut);
+            const rmcDiff = calculateTimeDifference(shiftCheckOut, cekRMC);
+
+            const overtimeInput = row.querySelector('.over-time');
+            const rmcOutput = row.querySelector('.rmc-shift-check-out');
+            if (overtimeInput) overtimeInput.value = overtime;
+            if (rmcOutput) rmcOutput.value = rmcDiff;
+
+            if (dataId) {
+                const item = overtimeCalcData.find(d => d.id === dataId);
+                if (item) {
+                    item.actualCheckOut = actualCheckOut;
+                    item.cekRMC = cekRMC;
+                    item.overTime = overtime;
+                    item.rmcShiftCheckOut = rmcDiff;
                 }
             }
         }
@@ -4510,52 +4490,49 @@
             }
         }
 
-        // PERBAIKAN: Fungsi untuk menyimpan data overtime ke Firestore
+        // Simpan data overtime tanpa menghapus seluruh collection
         async function saveOvertimeDataToFirestore() {
             if (!isOnline) {
-                console.log('Offline - data will be saved when connection is restored');
+                showNotification('You are offline. Overtime data cannot be synchronized yet.', 'error');
                 return;
             }
-            
+
             try {
-                // Update data dari input fields
                 document.querySelectorAll('#overtimeTableBody tr').forEach(row => {
-                    const dataId = row.querySelector('.actual-check-in').getAttribute('data-id');
-                    if (dataId) {
-                        const item = overtimeCalcData.find(d => d.id === dataId);
-                        if (item) {
-                            item.actualCheckIn = row.querySelector('.actual-check-in').value;
-                            item.actualCheckOut = row.querySelector('.actual-check-out').value;
-                            item.overTime = row.querySelector('.over-time').value;
-                            item.cekRMC = row.querySelector('.cek-rmc').value;
-                            item.rkpPIC = row.querySelector('.rkp-pic').value;
-                            item.rmcShiftCheckOut = row.querySelector('.rmc-shift-check-out').value;
-                            item.remarks = row.querySelector('.remarks-input').value;
-                        }
+                    const dataId = row.querySelector('.actual-check-in')?.getAttribute('data-id');
+                    const item = overtimeCalcData.find(d => d.id === dataId);
+                    if (item) {
+                        item.actualCheckIn = row.querySelector('.actual-check-in')?.value || "";
+                        item.actualCheckOut = row.querySelector('.actual-check-out')?.value || "";
+                        item.overTime = row.querySelector('.over-time')?.value || "";
+                        item.cekRMC = row.querySelector('.cek-rmc')?.value || "";
+                        item.rkpPIC = row.querySelector('.rkp-pic')?.value || "";
+                        item.rmcShiftCheckOut = row.querySelector('.rmc-shift-check-out')?.value || "";
+                        item.remarks = row.querySelector('.remarks-input')?.value || "";
                     }
                 });
-                
-                // Save to Firestore in batch
+
                 const batch = db.batch();
-                
-                // Clear existing data in overtime collection
-                const overtimeSnapshot = await db.collection('overtime').get();
-                overtimeSnapshot.forEach(doc => {
-                    batch.delete(doc.ref);
+                overtimeCalcData.forEach(item => {
+                    const cleanData = { ...item };
+                    const id = cleanData.id;
+                    delete cleanData.id;
+
+                    // Record generated mendapat ID Firestore baru; record lama mempertahankan ID.
+                    const docRef = (!id || cleanData.generated || String(id).startsWith('generated-'))
+                        ? db.collection('overtime').doc()
+                        : db.collection('overtime').doc(id);
+
+                    delete cleanData.generated;
+                    batch.set(docRef, cleanData, { merge: true });
                 });
-                
-                // Add new data to overtime collection
-                overtimeCalcData.forEach(data => {
-                    const docRef = db.collection('overtime').doc();
-                    batch.set(docRef, data);
-                });
-                
+
                 await batch.commit();
-                console.log('Overtime data saved successfully');
-                
-                // PERBAIKAN: Tampilkan notifikasi sukses hanya saat tombol save diklik
+                await loadOvertimeCalculationData();
+                overtimeDataLoaded = true;
+                updateOvertimeTable();
                 showNotification('Overtime data saved successfully!', 'success');
-                
+
             } catch (error) {
                 console.error('Error saving overtime data:', error);
                 showNotification('Error saving overtime data: ' + error.message, 'error');

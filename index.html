@@ -7979,5 +7979,421 @@ body { background: var(--pro-bg); }
 })();
 </script>
 
+
+<!-- V5.2 DASHBOARD DATA INTEGRITY PATCH -->
+<script id="v52DashboardDataIntegrityPatch">
+(function () {
+    'use strict';
+
+    const __v52 = {
+        loadedAt: 0,
+        loading: null,
+        overtimeRecords: []
+    };
+
+    function v52Date(value) {
+        if (!value) return null;
+        if (value instanceof Date && !isNaN(value)) return new Date(value.getFullYear(), value.getMonth(), value.getDate());
+        if (typeof value === 'object' && typeof value.toDate === 'function') {
+            const d = value.toDate();
+            return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+        }
+        const str = String(value).trim();
+        let m;
+        if ((m = str.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})$/))) {
+            return new Date(Number(m[3]), Number(m[2]) - 1, Number(m[1]));
+        }
+        if ((m = str.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/))) {
+            return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+        }
+        const d = new Date(str);
+        return isNaN(d) ? null : new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    }
+
+    function v52Minutes(value) {
+        if (value === null || value === undefined || value === '') return 0;
+        if (typeof value === 'number') return isFinite(value) ? Math.max(0, Math.round(value * 60)) : 0;
+
+        const str = String(value).trim().toLowerCase();
+        if (!str || str === '-' || str === '0') return 0;
+
+        let m = str.match(/^(\d+)\s*:\s*(\d{1,2})(?::\d{1,2})?$/);
+        if (m) return Math.max(0, Number(m[1]) * 60 + Number(m[2]));
+
+        m = str.match(/(\d+(?:[.,]\d+)?)\s*(?:hour|hours|hr|hrs|jam)/);
+        if (m) return Math.max(0, Math.round(Number(m[1].replace(',', '.')) * 60));
+
+        m = str.match(/^(\d+(?:[.,]\d+)?)$/);
+        if (m) return Math.max(0, Math.round(Number(m[1].replace(',', '.')) * 60));
+
+        return 0;
+    }
+
+    function v52HHMM(minutes) {
+        minutes = Math.max(0, Math.round(Number(minutes) || 0));
+        return String(Math.floor(minutes / 60)).padStart(2, '0') + ':' + String(minutes % 60).padStart(2, '0');
+    }
+
+    function v52CycleFilter(rows) {
+        let cycle = null;
+        try { cycle = typeof getAttendanceCycle === 'function' ? getAttendanceCycle() : null; } catch (e) {}
+        if (!cycle || !cycle.start || !cycle.end) return rows;
+
+        const start = new Date(cycle.start.getFullYear(), cycle.start.getMonth(), cycle.start.getDate());
+        const end = new Date(cycle.end.getFullYear(), cycle.end.getMonth(), cycle.end.getDate());
+
+        return rows.filter(row => {
+            const d = v52Date(row.date || row.attendanceDate || row.overtimeDate || row.startDate);
+            return !d || (d >= start && d <= end);
+        });
+    }
+
+    function v52CollectOvertime() {
+        const rows = [];
+
+        (Array.isArray(window.overtimeCalcData) ? window.overtimeCalcData : []).forEach(x => {
+            const minutes = v52Minutes(x.overTime || x.overtime || x.overtimeDuration || x.duration || x.totalOvertime);
+            rows.push({
+                source: 'calculation',
+                name: x.name || x.employeeName || x.employee || '',
+                date: x.date || x.attendanceDate || '',
+                minutes: minutes
+            });
+        });
+
+        (Array.isArray(window.rekapLemburData) ? window.rekapLemburData : []).forEach(x => {
+            const minutes = v52Minutes(x.overtimeDuration || x.duration || x.overTime || x.overtime || x.totalOvertime);
+            rows.push({
+                source: 'form',
+                name: x.employeeName || x.name || x.employee || '',
+                date: x.date || x.overtimeDate || '',
+                minutes: minutes
+            });
+        });
+
+        __v52.overtimeRecords.forEach(x => {
+            const minutes = v52Minutes(x.overtimeDuration || x.duration || x.overTime || x.overtime || x.totalOvertime);
+            rows.push({
+                source: 'firestore-form',
+                name: x.employeeName || x.name || x.employee || '',
+                date: x.date || x.overtimeDate || '',
+                minutes: minutes
+            });
+        });
+
+        return v52CycleFilter(rows).filter(x => x.name && x.minutes > 0);
+    }
+
+    function v52AggregateOvertime() {
+        const byEmployeeDay = new Map();
+
+        v52CollectOvertime().forEach(row => {
+            const key = String(row.name).trim().toLowerCase() + '|' + String(row.date || '').trim();
+            const previous = byEmployeeDay.get(key);
+
+            // Satu lembur yang tersimpan di Overtime Calculation + Overtime Form
+            // tidak boleh dihitung dua kali. Ambil nilai durasi terbesar sebagai sumber efektif.
+            if (!previous || row.minutes > previous.minutes) byEmployeeDay.set(key, row);
+        });
+
+        const byName = {};
+        byEmployeeDay.forEach(row => {
+            const name = String(row.name).trim();
+            byName[name] = (byName[name] || 0) + row.minutes;
+        });
+
+        return Object.entries(byName)
+            .map(([name, minutes]) => ({ name, minutes }))
+            .sort((a, b) => b.minutes - a.minutes || a.name.localeCompare(b.name));
+    }
+
+    async function v52LoadDashboardSources(force) {
+        const now = Date.now();
+        if (!force && __v52.loadedAt && now - __v52.loadedAt < 30000) return __v52.overtimeRecords;
+        if (__v52.loading) return __v52.loading;
+
+        __v52.loading = (async () => {
+            const collected = [];
+            if (typeof db !== 'undefined' && db) {
+                const jobs = [
+                    db.collection('overtimeRecords').get(),
+                    db.collection('overtime').get()
+                ];
+
+                const results = await Promise.allSettled(jobs);
+
+                if (results[0].status === 'fulfilled') {
+                    results[0].value.forEach(doc => collected.push({ id: doc.id, ...doc.data() }));
+                    __v52.overtimeRecords = collected.slice();
+                    if (typeof window.rekapLemburData !== 'undefined') {
+                        window.rekapLemburData = collected.slice();
+                    }
+                }
+
+                // overtimeCalcData bisa kosong saat Analytics dibuka langsung.
+                if (results[1].status === 'fulfilled') {
+                    const calc = [];
+                    results[1].value.forEach(doc => calc.push({ id: doc.id, ...doc.data() }));
+                    if (typeof window.overtimeCalcData !== 'undefined' && calc.length) {
+                        const existing = Array.isArray(window.overtimeCalcData) ? window.overtimeCalcData : [];
+                        const map = new Map();
+                        existing.forEach(x => map.set(String(x.id || x.name + '|' + x.date), x));
+                        calc.forEach(x => map.set(String(x.id || x.name + '|' + x.date), x));
+                        window.overtimeCalcData = Array.from(map.values());
+                    }
+                }
+            }
+            __v52.loadedAt = Date.now();
+            return __v52.overtimeRecords;
+        })().catch(error => {
+            console.warn('V5.2 dashboard source refresh failed:', error);
+            return __v52.overtimeRecords;
+        }).finally(() => { __v52.loading = null; });
+
+        return __v52.loading;
+    }
+
+    function v52ScheduledRows() {
+        const source = (Array.isArray(window.outputData) && window.outputData.length)
+            ? window.outputData
+            : (Array.isArray(window.overtimeCalcData) ? window.overtimeCalcData : []);
+
+        return v52CycleFilter(source).filter(x => {
+            const shift = String(x.shift || x.shiftName || '').trim().toUpperCase();
+            return shift && !['C', 'CUTI', 'O', 'OFF', 'UNASSIGNED'].includes(shift);
+        });
+    }
+
+    function v52RenderAnalytics() {
+        const overtime = v52AggregateOvertime();
+        const scheduledRows = v52ScheduledRows();
+
+        const employeeNames = new Set();
+        scheduledRows.forEach(x => {
+            const n = String(x.name || x.employeeName || '').trim();
+            if (n) employeeNames.add(n);
+        });
+
+        if (!employeeNames.size && Array.isArray(window.absensiData)) {
+            window.absensiData.forEach(x => {
+                const n = String(x.name || '').trim();
+                if (n) employeeNames.add(n);
+            });
+        }
+
+        const employeeCount = Math.max(1,
+            employeeNames.size ||
+            (Array.isArray(window.absensiData) ? window.absensiData.length : 0) ||
+            (Array.isArray(window.initialEmployees) ? window.initialEmployees.length : 1)
+        );
+
+        let cycleDays = 31;
+        try {
+            const cycle = getAttendanceCycle();
+            cycleDays = Math.max(1, Math.round((cycle.end - cycle.start) / 86400000) + 1);
+            const periodLabel = document.getElementById('analyticsPeriodLabel');
+            if (periodLabel && typeof formatDate === 'function') {
+                periodLabel.textContent = formatDate(cycle.start) + ' — ' + formatDate(cycle.end);
+            }
+        } catch (e) {}
+
+        const attendanceRate = Math.min(100, Math.round((scheduledRows.length / Math.max(1, employeeCount * cycleDays)) * 100));
+        const totalMinutes = overtime.reduce((sum, x) => sum + x.minutes, 0);
+        const leaveCount = (Array.isArray(window.cutiData) ? window.cutiData.length : 0) +
+                           (Array.isArray(window.cutiDetailData) ? window.cutiDetailData.length : 0);
+
+        const set = (id, value) => {
+            const el = document.getElementById(id);
+            if (el) el.textContent = value;
+        };
+
+        set('analyticsAttendanceRate', attendanceRate + '%');
+        set('analyticsOvertimeHours', v52HHMM(totalMinutes));
+        set('analyticsActiveCrew', employeeNames.size);
+        set('analyticsLeaveImpact', leaveCount);
+
+        const topEl = document.getElementById('analyticsTopOvertime');
+        if (topEl) {
+            topEl.innerHTML = overtime.length
+                ? overtime.slice(0, 5).map((x, i) =>
+                    '<div class="d-flex justify-content-between align-items-center border-bottom py-2">' +
+                    '<span><strong>#' + (i + 1) + '</strong> ' + (typeof escapeHtmlV5 === 'function' ? escapeHtmlV5(x.name) : x.name) + '</span>' +
+                    '<span class="badge bg-warning text-dark">' + v52HHMM(x.minutes) + '</span></div>'
+                  ).join('')
+                : '<div class="activity-empty">No overtime data available for the selected attendance period.</div>';
+        }
+
+        const shiftCounts = {};
+        const shiftSource = (Array.isArray(window.outputData) && window.outputData.length)
+            ? v52CycleFilter(window.outputData)
+            : v52CycleFilter(Array.isArray(window.overtimeCalcData) ? window.overtimeCalcData : []);
+
+        shiftSource.forEach(x => {
+            const shift = String(x.shift || x.shiftName || 'Unassigned').trim() || 'Unassigned';
+            shiftCounts[shift] = (shiftCounts[shift] || 0) + 1;
+        });
+
+        const shifts = Object.entries(shiftCounts).sort((a, b) => b[1] - a[1]).slice(0, 6);
+        const shiftEl = document.getElementById('analyticsShiftDistribution');
+        if (shiftEl) {
+            shiftEl.innerHTML = shifts.length
+                ? shifts.map(([name, count]) =>
+                    '<div class="d-flex justify-content-between align-items-center border-bottom py-2">' +
+                    '<span>' + (typeof escapeHtmlV5 === 'function' ? escapeHtmlV5(name) : name) + '</span>' +
+                    '<span class="badge bg-primary">' + count + ' records</span></div>'
+                  ).join('')
+                : '<div class="activity-empty">No shift data available.</div>';
+        }
+    }
+
+    function v52RenderDashboardCharts() {
+        const source = (Array.isArray(window.outputData) && window.outputData.length)
+            ? v52CycleFilter(window.outputData)
+            : v52CycleFilter(Array.isArray(window.overtimeCalcData) ? window.overtimeCalcData : []);
+
+        const groups = {};
+        source.forEach(x => {
+            const d = String(x.date || x.attendanceDate || '');
+            if (d) groups[d] = (groups[d] || 0) + 1;
+        });
+
+        const days = Object.entries(groups).sort((a, b) => String(a[0]).localeCompare(String(b[0]))).slice(-10);
+        const maxDays = Math.max(1, ...days.map(x => x[1]));
+        const attendanceEl = document.getElementById('dashAttendanceChart');
+        if (attendanceEl) {
+            attendanceEl.innerHTML = days.length
+                ? days.map(([d, c]) => '<div class="v5-bar-wrap"><div class="v5-bar-value">' + c +
+                    '</div><div class="v5-bar" style="height:' + Math.max(4, c / maxDays * 165) +
+                    'px"></div><div class="v5-bar-label">' + (typeof escapeHtmlV5 === 'function' ? escapeHtmlV5(String(d).slice(0, 5)) : String(d).slice(0, 5)) +
+                    '</div></div>').join('')
+                : '<div class="v5-empty">No attendance records for chart.</div>';
+        }
+
+        const overtime = v52AggregateOvertime().slice(0, 8);
+        const maxOt = Math.max(1, ...overtime.map(x => x.minutes));
+        const overtimeEl = document.getElementById('dashOvertimeChart');
+        if (overtimeEl) {
+            overtimeEl.innerHTML = overtime.length
+                ? overtime.map(x => '<div class="v5-bar-wrap"><div class="v5-bar-value">' + v52HHMM(x.minutes) +
+                    '</div><div class="v5-bar ot" style="height:' + Math.max(4, x.minutes / maxOt * 165) +
+                    'px"></div><div class="v5-bar-label">' + (typeof escapeHtmlV5 === 'function' ? escapeHtmlV5(x.name.split(' ')[0]) : x.name.split(' ')[0]) +
+                    '</div></div>').join('')
+                : '<div class="v5-empty">No overtime records for chart.</div>';
+        }
+    }
+
+    function v52UpdateDashboardMetrics() {
+        const employees = new Set();
+        (Array.isArray(window.absensiData) ? window.absensiData : []).forEach(x => x.name && employees.add(x.name));
+        if (!employees.size) (Array.isArray(window.initialEmployees) ? window.initialEmployees : []).forEach(x => employees.add(x.name || x));
+
+        const scheduled = v52ScheduledRows().length;
+        const overtimeRows = v52AggregateOvertime();
+        const leaveCount = (Array.isArray(window.cutiData) ? window.cutiData.length : 0) +
+                           (Array.isArray(window.cutiDetailData) ? window.cutiDetailData.length : 0);
+
+        const set = (id, value) => {
+            const el = document.getElementById(id);
+            if (el) el.textContent = value;
+        };
+
+        set('dashTotalEmployees', employees.size);
+        set('dashScheduledRecords', scheduled);
+        set('dashOvertimeRecords', overtimeRows.length);
+        set('dashLeaveRecords', leaveCount);
+
+        try {
+            const cycle = getAttendanceCycle();
+            const label = document.getElementById('dashboardPeriodLabel');
+            if (label && typeof formatDate === 'function') label.textContent = formatDate(cycle.start) + ' — ' + formatDate(cycle.end);
+        } catch (e) {}
+    }
+
+    // Override analytics/dashboard renderers without changing the existing application architecture.
+    window.updateAnalytics = function () {
+        v52RenderAnalytics();
+        v52LoadDashboardSources(false).then(() => v52RenderAnalytics());
+    };
+
+    window.updateRealDashboardCharts = function () {
+        v52RenderDashboardCharts();
+        v52LoadDashboardSources(false).then(() => v52RenderDashboardCharts());
+    };
+
+    window.updateDashboardMetrics = function () {
+        v52UpdateDashboardMetrics();
+        v52LoadDashboardSources(false).then(() => v52UpdateDashboardMetrics());
+    };
+
+    const originalShowAnalytics = window.showAnalytics;
+    window.showAnalytics = function () {
+        if (typeof originalShowAnalytics === 'function') originalShowAnalytics.apply(this, arguments);
+        v52RenderAnalytics();
+        v52LoadDashboardSources(true).then(() => v52RenderAnalytics());
+    };
+
+    const originalShowDashboard = window.showDashboard;
+    window.showDashboard = function () {
+        if (typeof originalShowDashboard === 'function') originalShowDashboard.apply(this, arguments);
+        v52UpdateDashboardMetrics();
+        v52RenderDashboardCharts();
+        v52LoadDashboardSources(true).then(() => {
+            v52UpdateDashboardMetrics();
+            v52RenderDashboardCharts();
+        });
+    };
+
+    // Refresh dashboard data after overtime data is manually refreshed/saved.
+    const originalRefreshOvertimeData = window.refreshOvertimeData;
+    if (typeof originalRefreshOvertimeData === 'function') {
+        window.refreshOvertimeData = async function () {
+            const result = await originalRefreshOvertimeData.apply(this, arguments);
+            __v52.loadedAt = 0;
+            await v52LoadDashboardSources(true);
+            v52RenderAnalytics();
+            v52UpdateDashboardMetrics();
+            v52RenderDashboardCharts();
+            return result;
+        };
+    }
+
+    // Universal delegated fallback: all dashboard intelligence menu items always route correctly.
+    document.addEventListener('click', function (e) {
+        const link = e.target.closest('.sidebar-menu a[data-tab]');
+        if (!link) return;
+        const tab = link.getAttribute('data-tab');
+        if (!['dashboard','analytics','online-monitor','activity-score','notification-center','admin-activity'].includes(tab)) return;
+
+        setTimeout(() => {
+            // Handler utama initSidebar biasanya sudah menangani klik ini.
+            // Fallback hanya berjalan bila tab belum benar-benar aktif.
+            if (typeof currentTab !== 'undefined' && currentTab === tab) return;
+            if (tab === 'dashboard') window.showDashboard && window.showDashboard();
+            else if (tab === 'analytics') window.showAnalytics && window.showAnalytics();
+            else if (typeof window.showV5AdminPanel === 'function') window.showV5AdminPanel(tab);
+        }, 0);
+    });
+
+    window.refreshDashboardAnalyticsV52 = async function () {
+        __v52.loadedAt = 0;
+        await v52LoadDashboardSources(true);
+        v52RenderAnalytics();
+        v52UpdateDashboardMetrics();
+        v52RenderDashboardCharts();
+    };
+
+    document.addEventListener('DOMContentLoaded', function () {
+        setTimeout(() => {
+            v52UpdateDashboardMetrics();
+            v52RenderDashboardCharts();
+            v52LoadDashboardSources(false).then(() => {
+                v52UpdateDashboardMetrics();
+                v52RenderDashboardCharts();
+            });
+        }, 1500);
+    });
+})();
+</script>
+
 </body>
 </html>

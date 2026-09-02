@@ -2497,6 +2497,7 @@ body { background: var(--pro-bg); }
                                     <thead>
                                         <tr>
                                             <th>No</th>
+                                            <th>User ID</th>
                                             <th>Email</th>
                                             <th>Employee Name</th>
                                             <th>Job Position</th>
@@ -2580,6 +2581,11 @@ body { background: var(--pro-bg); }
                         <input type="email" class="form-control form-control-sm" id="newUserEmail">
                     </div>
                     <div class="mb-3">
+                        <label for="newUserUsername" class="form-label">User ID</label>
+                        <input type="text" class="form-control form-control-sm" id="newUserUsername" placeholder="Set User ID" autocomplete="username">
+                        <div class="form-text">Admin menentukan User ID untuk login. Gunakan huruf/angka dan karakter . _ -</div>
+                    </div>
+                    <div class="mb-3">
                         <label for="newUserPassword" class="form-label">Password</label>
                         <input type="password" class="form-control form-control-sm" id="newUserPassword">
                     </div>
@@ -2620,6 +2626,11 @@ body { background: var(--pro-bg); }
                     <div class="mb-3">
                         <label for="editUserEmail" class="form-label">Email</label>
                         <input type="email" class="form-control form-control-sm" id="editUserEmail" readonly>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editUserUsername" class="form-label">User ID</label>
+                        <input type="text" class="form-control form-control-sm" id="editUserUsername" autocomplete="username">
+                        <div class="form-text">User ID digunakan saat login dan dapat diubah oleh Admin.</div>
                     </div>
                     <div class="mb-3">
                         <label for="editUserName" class="form-label">Employee Name</label>
@@ -3354,7 +3365,7 @@ body { background: var(--pro-bg); }
             
             if (users.length === 0) {
                 const row = document.createElement('tr');
-                row.innerHTML = `<td colspan="7" class="text-center">No users found</td>`;
+                row.innerHTML = `<td colspan="8" class="text-center">No users found</td>`;
                 tbody.appendChild(row);
                 return;
             }
@@ -3373,6 +3384,7 @@ body { background: var(--pro-bg); }
                 
                 row.innerHTML = `
                     <td>${index + 1}</td>
+                    <td><span class="badge bg-primary-subtle text-primary-emphasis border">${user.username || String(user.email || '').split('@')[0]}</span></td>
                     <td>${user.email}</td>
                     <td>${user.name || '-'}</td>
                     <td>${user.position || '-'}</td>
@@ -3575,130 +3587,124 @@ body { background: var(--pro-bg); }
         // PERBAIKAN 4: FIX USER MANAGEMENT FUNCTIONS
         // =============================================
 
-        // PERBAIKAN: Fungsi untuk membuat user baru dengan password management yang benar
+        // USER ID CUSTOM: Admin menentukan User ID saat membuat user
         async function createNewUser() {
-            const email = document.getElementById('newUserEmail').value;
+            const email = document.getElementById('newUserEmail').value.trim();
+            const username = document.getElementById('newUserUsername').value.trim().toLowerCase();
             const password = document.getElementById('newUserPassword').value;
-            const name = document.getElementById('newUserName').value;
-            const position = document.getElementById('newUserPosition').value;
+            const name = document.getElementById('newUserName').value.trim();
+            const position = document.getElementById('newUserPosition').value.trim();
             const role = document.getElementById('newUserRole').value;
-            
-            if (!email || !password) {
-                showNotification('Email and password must be filled', 'error');
+
+            if (!email || !username || !password) {
+                showNotification('Email, User ID and password must be filled', 'error');
                 return;
             }
-            
+            if (!/^[a-z0-9._-]{3,40}$/.test(username)) {
+                showNotification('User ID must be 3-40 characters and only use letters, numbers, dot (.), underscore (_) or dash (-)', 'error');
+                return;
+            }
             if (password.length < 6) {
                 showNotification('Password must be at least 6 characters', 'error');
                 return;
             }
-            
+
             try {
                 showLoading(true);
-                
-                // Create user in Firebase Auth
+                // Cek unik terhadap User ID baru maupun user lama yang masih memakai prefix email
+                const existingUsers = await db.collection('users').get();
+                const duplicate = existingUsers.docs.some(doc => {
+                    const data = doc.data() || {};
+                    const existingUsername = String(data.username || '').trim().toLowerCase();
+                    const legacyPrefix = String(data.email || '').split('@')[0].trim().toLowerCase();
+                    return existingUsername === username || legacyPrefix === username;
+                });
+                if (duplicate) {
+                    showNotification('User ID is already in use. Please choose another User ID.', 'error');
+                    return;
+                }
+
                 const userCredential = await auth.createUserWithEmailAndPassword(email, password);
                 const userId = userCredential.user.uid;
-                
-                // Save user data to Firestore dengan password
                 await db.collection('users').doc(userId).set({
                     email: email,
-                    username: String(email).split('@')[0].trim().toLowerCase(),
+                    username: username,
                     name: name,
                     position: position,
                     role: role,
                     password: password,
                     createdAt: firebase.firestore.FieldValue.serverTimestamp()
                 });
-                
-                // Close modal
+
                 const modal = bootstrap.Modal.getInstance(document.getElementById('addUserModal'));
-                modal.hide();
-                
-                // Clear form
+                if (modal) modal.hide();
                 document.getElementById('newUserEmail').value = '';
+                document.getElementById('newUserUsername').value = '';
                 document.getElementById('newUserPassword').value = '';
                 document.getElementById('newUserName').value = '';
                 document.getElementById('newUserPosition').value = '';
                 document.getElementById('newUserRole').value = 'user';
-                
-                // Reload user data
                 await loadUsers();
-                
                 showNotification('User created successfully', 'success');
-                
             } catch (error) {
                 console.error('Error creating user:', error);
-                
-                if (error.code === 'auth/email-already-in-use') {
-                    showNotification('Email is already in use', 'error');
-                } else if (error.code === 'auth/invalid-email') {
-                    showNotification('Invalid email address', 'error');
-                } else if (error.code === 'auth/operation-not-allowed') {
-                    showNotification('Email/password accounts are not enabled', 'error');
-                } else if (error.code === 'auth/weak-password') {
-                    showNotification('Password is too weak', 'error');
-                } else {
-                    showNotification('Error creating user: ' + error.message, 'error');
-                }
+                if (error.code === 'auth/email-already-in-use') showNotification('Email is already in use', 'error');
+                else if (error.code === 'auth/invalid-email') showNotification('Invalid email address', 'error');
+                else if (error.code === 'auth/operation-not-allowed') showNotification('Email/password accounts are not enabled', 'error');
+                else if (error.code === 'auth/weak-password') showNotification('Password is too weak', 'error');
+                else showNotification('Error creating user: ' + error.message, 'error');
             } finally {
                 showLoading(false);
             }
         }
 
-        // PERBAIKAN: Fungsi untuk mengupdate user dengan password management yang benar
+        // USER ID CUSTOM: Admin dapat mengubah User ID setiap user
         async function updateUser() {
             const userId = document.getElementById('editUserId').value;
-            const email = document.getElementById('editUserEmail').value;
+            const email = document.getElementById('editUserEmail').value.trim();
+            const username = document.getElementById('editUserUsername').value.trim().toLowerCase();
             const role = document.getElementById('editUserRole').value;
-            const name = document.getElementById('editUserName').value;
-            const position = document.getElementById('editUserPosition').value;
+            const name = document.getElementById('editUserName').value.trim();
+            const position = document.getElementById('editUserPosition').value.trim();
             const newPassword = document.getElementById('editUserPassword').value;
-            
-            if (!email || !role) {
-                showNotification('Email and role must be filled', 'error');
+
+            if (!email || !username || !role) {
+                showNotification('Email, User ID and role must be filled', 'error');
                 return;
             }
-            
+            if (!/^[a-z0-9._-]{3,40}$/.test(username)) {
+                showNotification('User ID must be 3-40 characters and only use letters, numbers, dot (.), underscore (_) or dash (-)', 'error');
+                return;
+            }
             try {
                 showLoading(true);
-                
-                // Data update dasar
-                const updateData = {
-                    email,
-                    role,
-                    name,
-                    position,
-                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-                };
-                
-                // PERBAIKAN: Jika ada password baru, update di Firestore
+                // Cek unik terhadap User ID baru maupun prefix email user lama
+                const existingUsers = await db.collection('users').get();
+                const duplicate = existingUsers.docs.some(doc => {
+                    if (doc.id === userId) return false;
+                    const data = doc.data() || {};
+                    const existingUsername = String(data.username || '').trim().toLowerCase();
+                    const legacyPrefix = String(data.email || '').split('@')[0].trim().toLowerCase();
+                    return existingUsername === username || legacyPrefix === username;
+                });
+                if (duplicate) {
+                    showNotification('User ID is already used by another user.', 'error');
+                    return;
+                }
+                const updateData = { email, username, role, name, position, updatedAt: firebase.firestore.FieldValue.serverTimestamp() };
                 if (newPassword) {
                     if (newPassword.length < 6) {
                         showNotification('New password must be at least 6 characters', 'error');
                         return;
                     }
-                    
                     updateData.password = newPassword;
                     updateData.passwordUpdatedAt = firebase.firestore.FieldValue.serverTimestamp();
                 }
-                
-                // Update data di Firestore
                 await db.collection('users').doc(userId).update(updateData);
-                
-                if (newPassword) {
-                    showNotification('User data and password updated successfully in user management', 'success');
-                } else {
-                    showNotification('User data updated successfully', 'success');
-                }
-                
-                // Close modal
                 const modal = bootstrap.Modal.getInstance(document.getElementById('editUserModal'));
-                modal.hide();
-                
-                // Reload user data
+                if (modal) modal.hide();
                 await loadUsers();
-                
+                showNotification(newPassword ? 'User ID, user data and password updated successfully' : 'User ID and user data updated successfully', 'success');
             } catch (error) {
                 console.error('Error updating user:', error);
                 showNotification('Error updating user: ' + error.message, 'error');
@@ -3706,7 +3712,7 @@ body { background: var(--pro-bg); }
                 showLoading(false);
             }
         }
-
+        
         // =============================================
         // FUNGSI-FUNGSI LAIN YANG SUDAH ADA (TETAP SAMA)
         // =============================================
@@ -4243,7 +4249,7 @@ body { background: var(--pro-bg); }
                 // Clear previous errors
                 document.getElementById('loginError').style.display = 'none';
                 
-                // Login dengan User ID: username = bagian sebelum @ dari email.
+                // Login dengan User ID custom yang ditentukan Admin. User lama tetap fallback ke nama sebelum @ email.
                 const userIdInput = String(email || '').trim().toLowerCase();
                 if (!userIdInput || !password) throw new Error('User ID and password are required');
                 let resolvedEmail = userIdInput.includes('@') ? userIdInput : null;
@@ -7428,6 +7434,7 @@ body { background: var(--pro-bg); }
                 // PERBAIKAN: Tampilkan password user pada list user management
                 row.innerHTML = `
                     <td>${index + 1}</td>
+                    <td><span class="badge bg-primary-subtle text-primary-emphasis border">${user.username || String(user.email || '').split('@')[0]}</span></td>
                     <td>${user.email}</td>
                     <td>${user.name || '-'}</td>
                     <td>${user.position || '-'}</td>
@@ -7454,6 +7461,7 @@ body { background: var(--pro-bg); }
             // Isi form modal edit
             document.getElementById('editUserId').value = user.id;
             document.getElementById('editUserEmail').value = user.email;
+            document.getElementById('editUserUsername').value = user.username || String(user.email || '').split('@')[0];
             document.getElementById('editUserRole').value = user.role;
             
             // Isi nilai field

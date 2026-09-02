@@ -1663,7 +1663,6 @@ body { background: var(--pro-bg); }
             <div class="mb-3">
                 <label for="email" class="form-label">User ID</label>
                 <input type="text" class="form-control" id="email" placeholder="Enter User ID (contoh: budi)">
-                <div class="form-text">Gunakan nama sebelum tanda @ pada email.</div>
             </div>
             <div class="mb-3">
                 <label for="password" class="form-label">Password</label>
@@ -1868,7 +1867,7 @@ body { background: var(--pro-bg); }
 
             <!-- Filter Section for Main Folder -->
             <div class="filter-section filter-section-main" id="filterSectionMain">
-                <h6>Main Folder Filter</h6>
+                <h6 id="filterTitleMain">Date Filter</h6>
                 <div class="row g-2">
                     <div class="col-12 col-md-6 col-lg-4">
                         <label for="dateRangeMain" class="form-label">Date Range</label>
@@ -1901,7 +1900,7 @@ body { background: var(--pro-bg); }
 
             <!-- PERBAIKAN: Filter Section untuk Overtime Calculation dan Attendance Output -->
             <div class="filter-section filter-section-overtime-output" id="filterSectionOvertimeOutput" style="display: none;">
-                <h6>Overtime & Output Filter</h6>
+                <h6 id="filterTitleOvertimeOutput">Date Filter</h6>
                 <div class="row g-2">
                     <div class="col-12 col-md-6 col-lg-4">
                         <label for="dateRangeOvertimeOutput" class="form-label">Date Range</label>
@@ -1934,7 +1933,7 @@ body { background: var(--pro-bg); }
 
             <!-- PERBAIKAN: Filter Section untuk Attendance Table -->
             <div class="filter-section filter-section-absen-tabel" id="filterSectionAbsenTabel" style="display: none;">
-                <h6>Attendance Table Filter</h6>
+                <h6 id="filterTitleAbsenTabel">Date Filter</h6>
                 <div class="row g-2">
                     <div class="col-12 col-md-6 col-lg-4">
                         <label for="dateRangeAbsenTabel" class="form-label">Date Range</label>
@@ -5404,6 +5403,36 @@ body { background: var(--pro-bg); }
             });
         }
 
+        // Update judul filter agar selalu sesuai dengan menu aktif
+        function updateFilterSectionTitle(tabName) {
+            const titles = {
+                'entry': 'Attendance Entry',
+                'cuti': 'Leave Management',
+                'summary-overtime': 'Summary Overtime',
+                'output': 'Attendance Output',
+                'overtime': 'Overtime Calculation',
+                'form-rekap-lembur': 'Overtime Form',
+                'overtime-detail-admin': 'Overtime Detail',
+                'absen-tabel': 'Attendance Table',
+                'cuti-detail': 'Summarize Leave'
+            };
+
+            const title = titles[tabName] || '';
+            const mainTitle = document.getElementById('filterTitleMain');
+            const overtimeOutputTitle = document.getElementById('filterTitleOvertimeOutput');
+            const absenTabelTitle = document.getElementById('filterTitleAbsenTabel');
+
+            if (mainTitle && ['entry', 'cuti', 'summary-overtime'].includes(tabName)) {
+                mainTitle.textContent = title;
+            }
+            if (overtimeOutputTitle && ['output', 'overtime', 'form-rekap-lembur', 'overtime-detail-admin'].includes(tabName)) {
+                overtimeOutputTitle.textContent = title;
+            }
+            if (absenTabelTitle && ['absen-tabel', 'cuti-detail'].includes(tabName)) {
+                absenTabelTitle.textContent = title;
+            }
+        }
+
         // PERBAIKAN: Initialize sidebar dengan benar untuk semua role
         function initSidebar() {
             const sidebar = document.getElementById('sidebar');
@@ -5455,6 +5484,7 @@ body { background: var(--pro-bg); }
                     document.getElementById('analyticsShell')?.classList.remove('active');
                     document.getElementById('analyticsShell')?.style.setProperty('display','none');
                     currentTab = tabName;
+                    updateFilterSectionTitle(tabName);
                     
                     document.querySelectorAll('.tab-pane').forEach(tab => {
                         tab.classList.remove('show', 'active');

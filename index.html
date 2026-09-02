@@ -1577,6 +1577,13 @@
         }
     
 
+
+/* V4.6 GENERAL ACCESS GUARANTEE */
+#generalFolder { display:block !important; }
+#generalFolder .sidebar-menu a { pointer-events:auto !important; opacity:1 !important; }
+#generalFolder.expanded .sidebar-folder-content { display:block !important; }
+.sidebar.expanded #generalFolder .sidebar-folder-content { display:block !important; }
+
 /* ============================================================
    CDC EAST PROFESSIONAL UI UPGRADE v3
    ============================================================ */
@@ -4276,7 +4283,7 @@ body { background: var(--pro-bg); }
                     
                     if (userDoc.exists) {
                         userData = userDoc.data();
-                        currentUser.role = userData.role;
+                        currentUser.role = normalizeRole(userData.role);
                         currentUser.name = userData.name || userData.email.split('@')[0];
                         currentUser.position = userData.position || '';
                     } else {
@@ -4320,8 +4327,8 @@ body { background: var(--pro-bg); }
                 
                 // Load initial data
                 await loadInitialData();
-                if (currentUser.role === 'admin') showDashboard();
-                else document.querySelector('#generalFolder [data-tab="absen-tabel"]')?.click();
+                if (normalizeRole(currentUser.role) === 'admin') showDashboard();
+                else openDefaultGeneralTab();
                 
                 showLoading(false);
                 checkConnection();
@@ -5093,26 +5100,39 @@ body { background: var(--pro-bg); }
             // Auto-save hanya dilakukan saat tombol save diklik
         }
 
-        // Access Control: USER hanya boleh membuka modul di folder GENERAL
-        const ROLE_ACCESS = {
-            admin: ['dashboard','analytics','absen-tabel','cuti-detail','overtime-detail-admin','entry','output','overtime','cuti','summary-overtime','setting'],
-            user: ['absen-tabel','cuti-detail','form-rekap-lembur']
-        };
+        // ACCESS CONTROL V4.6
+        // Jaminan: SEMUA user yang berhasil login selalu dapat mengakses seluruh menu GENERAL.
+        const GENERAL_TABS = ['absen-tabel','cuti-detail','form-rekap-lembur','overtime-detail-admin'];
+        const ADMIN_TABS = ['dashboard','analytics','entry','output','overtime','cuti','summary-overtime','setting'];
+
+        function normalizeRole(role) {
+            return String(role || 'user').trim().toLowerCase() === 'admin' ? 'admin' : 'user';
+        }
 
         function canAccessTab(tabName) {
-            const role = (currentUser && currentUser.role) ? currentUser.role : 'user';
-            return (ROLE_ACCESS[role] || ROLE_ACCESS.user).includes(tabName);
+            // General selalu boleh untuk semua akun yang sudah berhasil login.
+            if (GENERAL_TABS.includes(tabName)) return !!currentUser;
+            const role = normalizeRole(currentUser && currentUser.role);
+            return role === 'admin' && ADMIN_TABS.includes(tabName);
+        }
+
+        function openDefaultGeneralTab() {
+            const generalFolder = document.getElementById('generalFolder');
+            if (generalFolder) generalFolder.classList.add('expanded');
+            const defaultMenu = document.querySelector('#generalFolder [data-tab="absen-tabel"]');
+            if (defaultMenu) defaultMenu.click();
         }
 
         function denyTabAccess(tabName) {
             showNotification('Access Denied: menu ini hanya dapat diakses oleh Admin.', 'error');
-            if (currentUser && currentUser.role === 'user') {
-                document.querySelector('#generalFolder [data-tab="absen-tabel"]')?.click();
-            }
+            openDefaultGeneralTab();
         }
 
         // Setup menu berdasarkan role
         function setupMenuByRole(role) {
+            role = normalizeRole(role);
+            if (currentUser) currentUser.role = role;
+
             // Sembunyikan semua menu dulu
             document.querySelectorAll('.sidebar-menu a').forEach(menu => { menu.style.display = 'none'; });
             document.getElementById('dashboardMenuItem').style.display = 'none';
@@ -5122,10 +5142,15 @@ body { background: var(--pro-bg); }
                 folder.style.display = 'none';
             });
             
-            // GENERAL adalah area utama USER; Admin juga dapat melihat menu General sesuai hak akses.
-            document.getElementById('generalFolder').style.display = 'block';
+            // V4.6: GENERAL WAJIB tersedia untuk SEMUA USER + ADMIN.
+            const generalFolder = document.getElementById('generalFolder');
+            generalFolder.style.display = 'block';
+            generalFolder.classList.add('expanded');
             document.querySelectorAll('#generalFolder .sidebar-menu a').forEach(menu => {
                 menu.style.display = 'flex';
+                menu.removeAttribute('aria-disabled');
+                menu.style.pointerEvents = 'auto';
+                menu.style.opacity = '1';
             });
             
             // Tampilkan menu Main dan Settings untuk admin

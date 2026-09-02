@@ -1661,14 +1661,15 @@ body { background: var(--pro-bg); }
                 <i class="fas fa-wifi"></i> You are currently offline. Some features may be limited.
             </div>
             <div class="mb-3">
-                <label for="email" class="form-label">Email</label>
-                <input type="email" class="form-control" id="email" placeholder="Enter email">
+                <label for="email" class="form-label">User ID</label>
+                <input type="text" class="form-control" id="email" placeholder="Enter User ID (contoh: budi)">
+                <div class="form-text">Gunakan nama sebelum tanda @ pada email.</div>
             </div>
             <div class="mb-3">
                 <label for="password" class="form-label">Password</label>
                 <input type="password" class="form-control" id="password" placeholder="Enter password">
             </div>
-            <div class="login-error" id="loginError">Email or password is incorrect!</div>
+            <div class="login-error" id="loginError">User ID or password is incorrect!</div>
             <button class="btn btn-futuristic w-100" id="loginBtn">Login</button>
             <div class="provider-text">L23-51xE by Kim Jong Un</div>
         </div>
@@ -3491,6 +3492,7 @@ body { background: var(--pro-bg); }
                 // Save user data to Firestore dengan password
                 await db.collection('users').doc(userId).set({
                     email: email,
+                    username: String(email).split('@')[0].trim().toLowerCase(),
                     name: name,
                     position: position,
                     role: role,
@@ -3565,6 +3567,7 @@ body { background: var(--pro-bg); }
                 // Save user data to Firestore dengan password
                 await db.collection('users').doc(userId).set({
                     email: email,
+                    username: String(email).split('@')[0].trim().toLowerCase(),
                     name: name,
                     position: position,
                     role: role,
@@ -3733,10 +3736,16 @@ body { background: var(--pro-bg); }
                             console.log('Attendance data updated:', change.doc.data());
                             // Update UI jika diperlukan
                             if (currentTab === 'entry' || currentTab === 'absen-tabel') {
-                                loadAttendanceDataByPeriod(
-                                    document.getElementById('startDateMain').valueAsDate,
-                                    document.getElementById('endDateMain').valueAsDate
-                                );
+                                const startInput = document.getElementById('startDateMain');
+                                const endInput = document.getElementById('endDateMain');
+                                const cycle = getAttendanceCycle(new Date());
+                                clearTimeout(window.__attendanceRealtimeTimer);
+                                window.__attendanceRealtimeTimer = setTimeout(() => {
+                                    loadAttendanceDataByPeriod(
+                                        startInput?.valueAsDate || cycle.start,
+                                        endInput?.valueAsDate || cycle.end
+                                    ).catch(err => console.warn('Realtime attendance refresh skipped:', err));
+                                }, 300);
                             }
                         }
                     });
@@ -3766,14 +3775,16 @@ body { background: var(--pro-bg); }
             // Listener untuk data overtime records
             const overtimeRecordsListener = db.collection('overtimeRecords')
                 .onSnapshot((snapshot) => {
-                    snapshot.docChanges().forEach((change) => {
-                        if (change.type === 'added' || change.type === 'modified' || change.type === 'removed') {
-                            console.log('Overtime records updated:', change.doc.data());
-                            if (currentTab === 'overtime-detail-admin' || currentTab === 'form-rekap-lembur') {
-                                loadAllOvertimeData();
-                            }
+                    const changes = snapshot.docChanges();
+                    if (changes.length) {
+                        console.log(`Overtime records updated: ${changes.length} change(s)`);
+                        if (currentTab === 'overtime-detail-admin' || currentTab === 'form-rekap-lembur') {
+                            clearTimeout(window.__overtimeRecordsRealtimeTimer);
+                            window.__overtimeRecordsRealtimeTimer = setTimeout(() => {
+                                loadAllOvertimeData().catch(err => console.warn('Realtime overtime refresh skipped:', err));
+                            }, 300);
                         }
-                    });
+                    }
                 }, (error) => {
                     console.error('Overtime records listener error:', error);
                 });
@@ -3878,8 +3889,12 @@ body { background: var(--pro-bg); }
                 // Load seluruh dokumen attendance lalu filter di client.
                 // Lebih kompatibel dengan data lama yang mungkin belum memiliki field period.
                 const querySnapshot = await db.collection('attendance').get();
-                const start = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
-                const end = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate());
+                // Defensive date normalization: listener/filter kadang mengirim null saat UI belum siap.
+                const cycle = getAttendanceCycle(new Date());
+                const safeStart = startDate instanceof Date && !isNaN(startDate) ? startDate : cycle.start;
+                const safeEnd = endDate instanceof Date && !isNaN(endDate) ? endDate : cycle.end;
+                const start = new Date(safeStart.getFullYear(), safeStart.getMonth(), safeStart.getDate());
+                const end = new Date(safeEnd.getFullYear(), safeEnd.getMonth(), safeEnd.getDate());
                 const employeesByKey = new Map();
 
                 querySnapshot.forEach(doc => {
@@ -4041,8 +4056,12 @@ body { background: var(--pro-bg); }
                 // Field tanggal menggunakan format DD/MM/YYYY sehingga query range Firestore
                 // secara lexicographic tidak aman. Load lalu filter sebagai Date.
                 const querySnapshot = await db.collection('overtime').get();
-                const start = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
-                const end = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate());
+                // Defensive date normalization: listener/filter kadang mengirim null saat UI belum siap.
+                const cycle = getAttendanceCycle(new Date());
+                const safeStart = startDate instanceof Date && !isNaN(startDate) ? startDate : cycle.start;
+                const safeEnd = endDate instanceof Date && !isNaN(endDate) ? endDate : cycle.end;
+                const start = new Date(safeStart.getFullYear(), safeStart.getMonth(), safeStart.getDate());
+                const end = new Date(safeEnd.getFullYear(), safeEnd.getMonth(), safeEnd.getDate());
 
                 overtimeCalcData = [];
                 querySnapshot.forEach(doc => {
@@ -4188,7 +4207,21 @@ body { background: var(--pro-bg); }
                 // Clear previous errors
                 document.getElementById('loginError').style.display = 'none';
                 
-                const userCredential = await auth.signInWithEmailAndPassword(email, password);
+                // Login dengan User ID: username = bagian sebelum @ dari email.
+                const userIdInput = String(email || '').trim().toLowerCase();
+                if (!userIdInput || !password) throw new Error('User ID and password are required');
+                let resolvedEmail = userIdInput.includes('@') ? userIdInput : null;
+                if (!resolvedEmail) {
+                    const usersSnapshot = await db.collection('users').get();
+                    usersSnapshot.forEach(doc => {
+                        const u = doc.data() || {};
+                        const storedUsername = String(u.username || '').trim().toLowerCase();
+                        const emailPrefix = String(u.email || '').split('@')[0].trim().toLowerCase();
+                        if (!resolvedEmail && (storedUsername === userIdInput || emailPrefix === userIdInput)) resolvedEmail = u.email;
+                    });
+                    if (!resolvedEmail) throw new Error('User ID not found. Please contact Admin.');
+                }
+                const userCredential = await auth.signInWithEmailAndPassword(resolvedEmail, password);
                 currentUser = {
                     uid: userCredential.user.uid,
                     email: userCredential.user.email
@@ -4212,6 +4245,7 @@ body { background: var(--pro-bg); }
                         
                         await db.collection('users').doc(currentUser.uid).set({
                             email: currentUser.email,
+                            username: currentUser.email.split('@')[0].trim().toLowerCase(),
                             role: currentUser.role,
                             name: currentUser.name,
                             position: currentUser.position,
@@ -7417,9 +7451,9 @@ body { background: var(--pro-bg); }
             
             // Setup event listeners untuk login
             document.getElementById('loginBtn').addEventListener('click', function() {
-                const email = document.getElementById('email').value;
+                const userId = document.getElementById('email').value;
                 const password = document.getElementById('password').value;
-                login(email, password);
+                login(userId, password);
             });
             
             // Enter key untuk login

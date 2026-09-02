@@ -5601,20 +5601,35 @@ body { background: var(--pro-bg); }
         function initSidebar() {
             const sidebar = document.getElementById('sidebar');
             const sidebarToggle = document.getElementById('sidebarToggle');
+            // Idempotent: listener sidebar hanya boleh dipasang sekali untuk semua role.
+            if (!sidebar || !sidebarToggle || sidebar.dataset.sidebarInitialized === 'true') return;
+            sidebar.dataset.sidebarInitialized = 'true';
+            sidebarToggle.setAttribute('type', 'button');
+            sidebarToggle.setAttribute('aria-label', 'Toggle sidebar');
             
             // Pastikan event listener terpasang dengan benar
             if (sidebarToggle) {
-                sidebarToggle.addEventListener('click', function() {
-                    sidebar.classList.toggle('expanded');
-                    document.getElementById('mainContent').classList.toggle('expanded');
-                    document.body.classList.toggle('header-expanded');
-                    document.getElementById('userPasswordSection').classList.toggle('expanded');
+                sidebarToggle.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const expanded = !sidebar.classList.contains('expanded');
+                    sidebar.classList.toggle('expanded', expanded);
+                    document.getElementById('mainContent')?.classList.toggle('expanded', expanded);
+                    document.body.classList.toggle('header-expanded', expanded);
+                    document.getElementById('userPasswordSection')?.classList.toggle('expanded', expanded);
+                    sidebarToggle.setAttribute('aria-expanded', expanded ? 'true' : 'false');
                 });
             }
             
             // Folder toggle
             document.querySelectorAll('.sidebar-folder-header').forEach(header => {
                 header.addEventListener('click', function() {
+                    if (!sidebar.classList.contains('expanded')) {
+                        sidebar.classList.add('expanded');
+                        document.getElementById('mainContent')?.classList.add('expanded');
+                        document.body.classList.add('header-expanded');
+                        document.getElementById('userPasswordSection')?.classList.add('expanded');
+                    }
                     this.parentElement.classList.toggle('expanded');
                 });
             });
@@ -5736,6 +5751,8 @@ body { background: var(--pro-bg); }
             const mobileMenuToggle = document.getElementById('mobileMenuToggle');
             const sidebar = document.getElementById('sidebar');
             const sidebarBackdrop = document.getElementById('sidebarBackdrop');
+            if (!sidebar || sidebar.dataset.mobileInitialized === 'true') return;
+            sidebar.dataset.mobileInitialized = 'true';
             
             if (mobileMenuToggle) {
                 mobileMenuToggle.addEventListener('click', function() {
@@ -7833,5 +7850,134 @@ body { background: var(--pro-bg); }
         }
     </script>
 <script>setTimeout(() => { if (typeof updateDashboardMetrics === 'function') updateDashboardMetrics(); }, 1200);</script>
+
+<!-- V5.1 ROLE + SIDEBAR STABILITY PATCH -->
+<style id="v51RoleSidebarPatch">
+/* Toggle selalu terlihat dan tidak tertutup branding */
+#sidebar .sidebar-header { position: relative !important; }
+#sidebar #sidebarToggle.sidebar-toggle {
+    position: absolute !important;
+    z-index: 5000 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 40px !important;
+    height: 40px !important;
+    min-width: 40px !important;
+    border-radius: 10px !important;
+    cursor: pointer !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+}
+#sidebar:not(.expanded) #sidebarToggle.sidebar-toggle {
+    right: 14px !important;
+    top: 20px !important;
+}
+#sidebar.expanded #sidebarToggle.sidebar-toggle {
+    right: 14px !important;
+    top: 20px !important;
+}
+#sidebar #sidebarToggle.sidebar-toggle:focus-visible {
+    outline: 2px solid #7db3ff !important;
+    outline-offset: 2px !important;
+}
+
+/* GENERAL adalah akses universal, jangan pernah disembunyikan oleh role filtering */
+#generalFolder { display: block !important; visibility: visible !important; }
+#generalFolder .sidebar-folder-header,
+#generalFolder .sidebar-folder-content,
+#generalFolder .sidebar-menu,
+#generalFolder .sidebar-menu li { pointer-events: auto !important; }
+#generalFolder .sidebar-menu a { cursor: pointer !important; }
+
+/* Saat compact, jangan paksa content GENERAL terbuka; buka melalui klik folder/toggle */
+.sidebar:not(.expanded) #generalFolder.expanded .sidebar-folder-content {
+    display: none !important;
+}
+.sidebar.expanded #generalFolder.expanded .sidebar-folder-content {
+    display: block !important;
+}
+</style>
+
+<script id="v51RoleSidebarPatchScript">
+(function () {
+    // Single source of truth untuk role: hanya admin atau user.
+    window.normalizeRole = function(role) {
+        return String(role || 'user').trim().toLowerCase() === 'admin' ? 'admin' : 'user';
+    };
+
+    window.enforceRoleAndGeneralAccess = function() {
+        if (typeof currentUser === 'undefined' || !currentUser) return;
+        currentUser.role = normalizeRole(currentUser.role);
+
+        const general = document.getElementById('generalFolder');
+        if (general) {
+            general.style.display = 'block';
+            general.classList.add('expanded');
+            general.querySelectorAll('a[data-tab]').forEach(a => {
+                a.style.display = 'flex';
+                a.style.pointerEvents = 'auto';
+                a.removeAttribute('disabled');
+                a.removeAttribute('aria-disabled');
+            });
+        }
+
+        const isAdmin = currentUser.role === 'admin';
+        const main = document.getElementById('mainFolder');
+        if (main) main.style.display = isAdmin ? 'block' : 'none';
+
+        const setting = document.querySelector('[data-tab="setting"]');
+        if (setting) setting.style.display = isAdmin ? 'flex' : 'none';
+
+        const dashboardIds = [
+            'dashboardMenuItem','analyticsMenuItem','onlineMonitorMenuItem',
+            'activityScoreMenuItem','notificationCenterMenuItem','adminActivityMenuItem'
+        ];
+        dashboardIds.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.style.display = isAdmin ? 'block' : 'none';
+        });
+
+        const userOt = document.getElementById('overtimeFormMenuItem');
+        const adminOt = document.getElementById('overtimeDetailMenuItem');
+        if (userOt) userOt.style.display = isAdmin ? 'none' : 'flex';
+        if (adminOt) adminOt.style.display = isAdmin ? 'flex' : 'none';
+
+        const logout = document.getElementById('logoutBtn');
+        if (logout) logout.style.display = 'flex';
+    };
+
+    document.addEventListener('DOMContentLoaded', function() {
+        // Bind sidebar segera setelah DOM siap, tidak menunggu Firebase/load data.
+        if (typeof initSidebar === 'function') initSidebar();
+        if (typeof initMobileMenu === 'function') initMobileMenu();
+
+        // Safety hook: setelah klik menu/folder, GENERAL tidak boleh hilang.
+        document.addEventListener('click', function(e) {
+            const generalHeader = e.target.closest('#generalFolder .sidebar-folder-header');
+            if (generalHeader) {
+                setTimeout(() => {
+                    const g = document.getElementById('generalFolder');
+                    if (g) { g.style.display = 'block'; }
+                }, 0);
+            }
+        });
+    });
+
+    // Perbaiki setup role lama tanpa mengubah arsitektur aplikasi.
+    const previousSetup = window.setupMenuByRole;
+    if (typeof previousSetup === 'function') {
+        window.setupMenuByRole = function(role) {
+            const normalized = normalizeRole(role);
+            const result = previousSetup(normalized);
+            if (window.currentUser) currentUser.role = normalized;
+            enforceRoleAndGeneralAccess();
+            return result;
+        };
+    }
+})();
+</script>
+
 </body>
 </html>

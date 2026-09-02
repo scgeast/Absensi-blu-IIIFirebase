@@ -1633,6 +1633,43 @@ body { background: var(--pro-bg); }
         /* PRO V4.1 role/access polish */
         .pro-brand{display:flex;align-items:center;gap:12px;padding:2px 0}.pro-brand-mark{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;background:rgba(255,255,255,.12)}.pro-brand h3{margin:0;font-size:17px;letter-spacing:1.5px}.pro-brand small{opacity:.65;font-size:9px;letter-spacing:1.4px}
         .sidebar-folder-header{letter-spacing:.8px;font-size:11px;text-transform:uppercase}
+
+
+/* ============================================================
+   CDC EAST UI FIX V4.4 - SIDEBAR + LOGIN
+   ============================================================ */
+/* Sidebar compact state: bersih, tidak ada brand bertumpuk */
+.sidebar { overflow-x: visible !important; }
+.sidebar-header { position: relative; }
+.sidebar:not(.expanded) .pro-brand { display: none !important; }
+.sidebar:not(.expanded) .sidebar-header { height: 96px; min-height: 96px; padding: 14px 8px !important; justify-content: center; }
+.sidebar:not(.expanded) .sidebar-header::before { content: 'CDC' !important; position: absolute; top: 16px; left: 0; width: 100%; text-align: center; font-size: .92rem; letter-spacing: 2px; }
+.sidebar:not(.expanded) .sidebar-header::after { content: 'EAST' !important; position: absolute; top: 40px; left: 0; width: 100%; text-align: center; color: #dbe4f4; font-size: .78rem; font-weight: 800; letter-spacing: 1.5px; }
+.sidebar:not(.expanded) .sidebar-toggle {
+    position: fixed; left: 14px; top: 63px; width: 42px; height: 34px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 9px; background: rgba(255,255,255,.10); border: 1px solid rgba(255,255,255,.15);
+    color: #fff; box-shadow: 0 5px 16px rgba(0,0,0,.20); z-index: 1201;
+}
+.sidebar:not(.expanded) .sidebar-toggle:hover { background: rgba(47,128,237,.9); }
+.sidebar.expanded .sidebar-header { padding-right: 58px !important; }
+.sidebar.expanded .sidebar-toggle {
+    position: absolute; right: 14px; top: 22px; width: 38px; height: 38px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 9px; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.12);
+}
+.sidebar:not(.expanded) .sidebar-folder-header { justify-content: center; padding-left: 0 !important; padding-right: 0 !important; }
+.sidebar:not(.expanded) .sidebar-folder-header span { display: none; }
+.sidebar:not(.expanded) .sidebar-folder-header i { margin-right: 0 !important; }
+.sidebar:not(.expanded) .sidebar-menu a { justify-content: center; padding-left: 0 !important; padding-right: 0 !important; }
+.sidebar:not(.expanded) .sidebar-menu i { margin-right: 0 !important; }
+/* Login input konsisten */
+.login-form #email { height: 58px; border: 1px solid #c9d0db; border-radius: 8px; background: #fff; padding: 12px 18px; font-size: 1rem; box-shadow: none; }
+.login-form #email:focus { border-color: #6d7fa8; box-shadow: 0 0 0 .15rem rgba(71,91,137,.12); }
+@media (max-width: 992px) {
+    .sidebar:not(.expanded) .sidebar-toggle { position: absolute; left: auto; right: 14px; top: 20px; }
+}
+
 </style>
 </head>
 <body>
@@ -1662,7 +1699,7 @@ body { background: var(--pro-bg); }
             </div>
             <div class="mb-3">
                 <label for="email" class="form-label">User ID</label>
-                <input type="text" class="form-control" id="email" placeholder="Enter User ID (contoh: budi)">
+                <input type="text" class="form-control" id="email" placeholder="Enter User ID">
             </div>
             <div class="mb-3">
                 <label for="password" class="form-label">Password</label>
@@ -6245,37 +6282,46 @@ body { background: var(--pro-bg); }
             overtimeEmployeeFilter.addEventListener('change', updateOvertimeDetailTable);
         }
 
-        // PERBAIKAN: Fungsi untuk memuat data overtime user - DIPERBAIKI
+        // PERBAIKAN V4.4: Load overtime tanpa composite index Firestore.
+        // Query employeeEmail + orderBy(date) membutuhkan composite index. Kita filter lalu sort di client.
         async function loadUserOvertimeData() {
             if (!currentUser) return;
-            
+
             try {
-                let query;
+                let querySnapshot;
                 if (currentUser.role === 'admin') {
-                    // Admin bisa melihat semua data
-                    query = db.collection('overtimeRecords').orderBy('date', 'desc');
+                    // Admin: ambil data lalu urutkan lokal agar tidak bergantung index tambahan.
+                    querySnapshot = await db.collection('overtimeRecords').get();
                 } else {
-                    // User biasa hanya bisa melihat data sendiri berdasarkan email
-                    query = db.collection('overtimeRecords')
+                    // User: filter berdasarkan email TANPA orderBy agar composite index tidak diperlukan.
+                    querySnapshot = await db.collection('overtimeRecords')
                         .where('employeeEmail', '==', currentUser.email)
-                        .orderBy('date', 'desc');
+                        .get();
                 }
-                
-                const querySnapshot = await query.get();
-                
+
                 rekapLemburData = [];
                 querySnapshot.forEach(doc => {
-                    rekapLemburData.push({
-                        id: doc.id,
-                        ...doc.data()
-                    });
+                    rekapLemburData.push({ id: doc.id, ...doc.data() });
                 });
-                
+
+                // Sort terbaru ke terlama di browser. Support string DD/MM/YYYY, YYYY-MM-DD dan Timestamp.
+                rekapLemburData.sort((a, b) => {
+                    const toTime = (value) => {
+                        if (!value) return 0;
+                        if (value.toDate && typeof value.toDate === 'function') return value.toDate().getTime();
+                        if (value instanceof Date) return value.getTime();
+                        const parsed = parseDateFromString(value);
+                        return parsed ? parsed.getTime() : new Date(value).getTime() || 0;
+                    };
+                    return toTime(b.date) - toTime(a.date);
+                });
+
                 updateOvertimeDetailTable();
                 updateTotalOvertime();
-                
+
             } catch (error) {
                 console.error('Error loading overtime data:', error);
+                showNotification('Gagal memuat data overtime: ' + (error.message || error), 'error');
             }
         }
 

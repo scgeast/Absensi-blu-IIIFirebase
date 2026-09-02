@@ -2842,11 +2842,36 @@ body { background: var(--pro-bg); }
         const auth = firebase.auth();
         const db = firebase.firestore();
 
-        // Enable offline persistence
-        db.enablePersistence()
-          .catch((err) => {
-              console.log('Persistence failed: ', err);
-          });
+        // FIRESTORE PERSISTENCE V5.3
+        // Disabled by default to prevent failed-precondition when the application is opened
+        // in multiple tabs or an older tab still owns the IndexedDB persistence lock.
+        // Firestore remains fully functional online without offline persistence.
+        const ENABLE_FIRESTORE_OFFLINE_PERSISTENCE = false;
+        let firestorePersistenceEnabled = false;
+
+        async function initializeFirestorePersistence() {
+            if (!ENABLE_FIRESTORE_OFFLINE_PERSISTENCE) {
+                console.info('Firestore offline persistence disabled for multi-tab login stability.');
+                return;
+            }
+            try {
+                // synchronizeTabs prevents exclusive IndexedDB ownership conflicts between app tabs.
+                await db.enablePersistence({ synchronizeTabs: true });
+                firestorePersistenceEnabled = true;
+                console.info('Firestore offline persistence enabled with multi-tab synchronization.');
+            } catch (err) {
+                // IMPORTANT: never throw here and never block authentication/login.
+                firestorePersistenceEnabled = false;
+                if (err && err.code === 'failed-precondition') {
+                    console.warn('Firestore persistence skipped because another tab/session owns the persistence layer. Login continues normally.');
+                } else if (err && err.code === 'unimplemented') {
+                    console.warn('Firestore persistence is not supported by this browser. Login continues normally.');
+                } else {
+                    console.warn('Firestore persistence unavailable. Login continues normally.', err);
+                }
+            }
+        }
+        initializeFirestorePersistence();
 
         // Data matrik untuk shift
         const shiftMatrix = {
@@ -4275,7 +4300,7 @@ body { background: var(--pro-bg); }
             console.error(`Firebase error during ${operation}:`, error);
             
             if (error.code === 'failed-precondition') {
-                alert('Multiple tabs open. Please close other tabs and refresh this page.');
+                alert('Firebase operation requires a precondition that is currently unavailable. Please refresh and try again.');
             } else if (error.code === 'unavailable') {
                 if (isOnline) {
                     alert('Service unavailable. Please check your connection.');
@@ -4301,15 +4326,22 @@ body { background: var(--pro-bg); }
                 if (!userIdInput || !password) throw new Error('User ID and password are required');
                 let resolvedEmail = userIdInput.includes('@') ? userIdInput : null;
                 if (!resolvedEmail) {
-                    const usersSnapshot = await db.collection('users').get();
-                    usersSnapshot.forEach(doc => {
-                        const u = doc.data() || {};
-                        const storedUsername = String(u.username || '').trim().toLowerCase();
-                        const emailPrefix = String(u.email || '').split('@')[0].trim().toLowerCase();
-                        if (!resolvedEmail && (storedUsername === userIdInput || emailPrefix === userIdInput)) resolvedEmail = u.email;
-                    });
+                    try {
+                        const usersSnapshot = await db.collection('users').get();
+                        usersSnapshot.forEach(doc => {
+                            const u = doc.data() || {};
+                            const storedUsername = String(u.username || '').trim().toLowerCase();
+                            const emailPrefix = String(u.email || '').split('@')[0].trim().toLowerCase();
+                            if (!resolvedEmail && (storedUsername === userIdInput || emailPrefix === userIdInput)) resolvedEmail = u.email;
+                        });
+                    } catch (lookupError) {
+                        console.error('User ID lookup failed:', lookupError);
+                        throw new Error('Unable to verify User ID. Please check your internet connection or sign in using your registered email address.');
+                    }
                     if (!resolvedEmail) throw new Error('User ID not found. Please contact Admin.');
                 }
+
+                // Authentication is independent from Firestore offline persistence.
                 const userCredential = await auth.signInWithEmailAndPassword(resolvedEmail, password);
                 currentUser = {
                     uid: userCredential.user.uid,
